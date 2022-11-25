@@ -1,0 +1,23 @@
+
+
+累積ＤＢへログイン
+本番：10.1.181.18
+テスト：10.1.181.20
+user:db2inst1
+pass:db2inst1
+
+
+[db2inst1@KEA00IAW08 shell]$ db2 list application
+SQL1611W  No data was returned by Database System Monitor.
+[db2inst1@KEA00IAW08 shell]$ sh ./dbn_reboot.sh
+DB20000I  The FORCE APPLICATION command completed successfully.
+DB21024I  This command is asynchronous and may not be effective immediately.
+
+SQL1064N  DB2STOP processing was successful.
+SQL1063N  DB2START processing was successful.
+[db2inst1@KEA00IAW08 shell]$
+
+
+
+
+

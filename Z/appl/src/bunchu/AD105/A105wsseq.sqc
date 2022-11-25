@@ -1,0 +1,196 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： A105wsseq.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "A105wsseq.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+    sqlint32 wstbnknr;
+    char    knskisymd[11];
+    char    knsgrp[17];
+    char    wssbt[11];
+    sqlint32  wsno;
+    sqlint32  knsseqst;
+    sqlint32  knsseqed;
+    sqlint32  knsseqsu;
+    char    ksktkbn;
+    char    dtnrtts[9];
+    char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Wsseqknri
+
+BmlDMMInfo	WsseqknriArray[] = {
+	DMM_SLONG( wstbnknr ),
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( wssbt ),
+	DMM_SLONG( wsno ),
+	DMM_SLONG( knsseqst ),
+	DMM_SLONG( knsseqed ),
+	DMM_SLONG( knsseqsu ),
+	DMM_SCHAR( ksktkbn ),
+	DMM_SSTRING( dtnrtts ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * A105wsAllSel()
+ *    WSSEQKNRI レコード全件取得
+ * ■引数
+ *    [O]  Wsseqknri** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long A105wsAllSel( Wsseqknri** arrayOut, int* numOut )
+{
+    Wsseqknri*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		WSTBNKNR,
+		KNSKISYMD,
+		KNSGRP,
+		WSSBT,
+		WSNO,
+		KNSSEQST,
+		KNSSEQED,
+		KNSSEQSU,
+		KSKTKBN,
+		DTNRTTS,
+		KSNDH
+    FROM
+        WSSEQKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Wsseqknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+		:wstbnknr,
+		:knskisymd,
+		:knsgrp,
+		:wssbt,
+		:wsno,
+		:knsseqst,
+		:knsseqed,
+		:knsseqsu,
+		:ksktkbn,
+		:dtnrtts,
+		:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Wsseqknri*)ZbmlRealloc( array,
+                                    sizeof( Wsseqknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Wsseqknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, WsseqknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * A105wsInsert()
+ *    WSSEQKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Wsseqknri* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long A105wsInsert( Wsseqknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, WsseqknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO WSSEQKNRI
+    (
+		WSTBNKNR,
+		KNSKISYMD,
+		KNSGRP,
+		WSSBT,
+		WSNO,
+		KNSSEQST,
+		KNSSEQED,
+		KNSSEQSU,
+		KSKTKBN,
+		DTNRTTS,
+		KSNDH
+    ) VALUES (
+		:wstbnknr,
+		:knskisymd,
+		:knsgrp,
+		:wssbt,
+		:wsno,
+		:knsseqst,
+		:knsseqed,
+		:knsseqsu,
+		:ksktkbn,
+		:dtnrtts,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

@@ -1,0 +1,280 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： JD112Knssnkjyk.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-03-23                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "JD112Knssnkjyk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+#define MAX_DATE		"2100-12-31"				// ADD 1.05
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	sqlint32  keikseq;
+	char    koteikbn;
+	char    datazok;
+	char    bskkbn[5];
+	char    bskgok[7];
+	sqlint32  syukka;
+	char    jikan[5];
+	char    ksndh[27];
+	char    knskisymd2[27];					// ADD
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Knssnkjyk
+
+BmlDMMInfo	KnssnkjykArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SLONG( keikseq ),
+	DMM_SCHAR( koteikbn ),
+	DMM_SCHAR( datazok ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bskgok ),
+	DMM_SLONG( syukka ),
+	DMM_SSTRING( jikan ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKnssnkjykJD112SelectJikan()
+ *    KNSSNKJYK 同一時間帯のレコード取得
+ * ■引数
+ *    [I]  Knssnkjyk* pKey		取得するレコードのキー
+ *    [O]  Knssnkjyk* pRec		取得レコード配列格納領域
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnssnkjykJD112SelectJikan( Knssnkjyk* pKey, Knssnkjyk* pRec )
+{
+    if( !pKey || !pRec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KnssnkjykArray ) )
+        return HRC_INVALID_VALUE;
+
+	EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		KEIKSEQ,
+		KOTEIKBN,
+		DATAZOK,
+		BSKKBN,
+		BSKGOK,
+		SYUKKA,
+		JIKAN,
+		KSNDH
+    FROM
+        KNSSNKJYK
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KOTEIKBN = :koteikbn AND
+		DATAZOK = :datazok AND
+		BSKKBN = :bskkbn AND
+		BSKGOK = :bskgok AND
+		JIKAN = :jikan
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+	EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:keikseq,
+			:koteikbn,
+			:datazok,
+			:bskkbn,
+			:bskgok,
+			:syukka,
+			:jikan,
+			:ksndh;
+
+	ZbmlMapHostToStruct( (char*)pRec, KnssnkjykArray );
+
+    EXEC SQL CLOSE c1;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+	EXEC SQL WHENEVER NOT FOUND CONTINUE;
+	return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnssnkjykInsert()
+ *    KNSSNKJYK レコードを挿入する
+ * ■引数
+ *    [I]  Knssnkjyk* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnssnkjykInsert( Knssnkjyk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnssnkjykArray ) )
+        return HRC_INVALID_VALUE;
+
+	// ADD
+	strcpy( knskisymd2,	MAX_DATE );
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KNSSNKJYK
+    (
+		KNSKISYMD,
+		KEIKSEQ,
+		KOTEIKBN,
+		DATAZOK,
+		BSKKBN,
+		BSKGOK,
+		SYUKKA,
+		JIKAN,
+		KSNDH
+		, KNSKISYMD2		
+    ) VALUES (
+		:knskisymd,
+		:keikseq,
+		:koteikbn,
+		:datazok,
+		:bskkbn,
+		:bskgok,
+		:syukka,
+		:jikan,
+--		:ksndh
+		CURRENT TIMESTAMP
+		,:knskisymd2	
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnssnkjykUpdate()
+ *    KNSSNKJYK レコードを更新する
+ * ■引数
+ *    [I]  Knssnkjyk* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnssnkjykUpdate( Knssnkjyk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnssnkjykArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KNSSNKJYK
+    SET (
+		SYUKKA,
+		JIKAN,
+		KSNDH
+    ) = (
+		:syukka,
+		:jikan,
+--		:ksndh
+		CURRENT TIMESTAMP
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		KEIKSEQ = :keikseq AND
+		KOTEIKBN = :koteikbn AND
+		DATAZOK = :datazok AND
+		BSKKBN = :bskkbn AND
+		BSKGOK = :bskgok;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnssnkjykDelete()
+ *    KNSSNKJYK レコードを削除する
+ * ■引数
+ *    [I]  Knssnkjyk* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnssnkjykDelete( Knssnkjyk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnssnkjykArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KNSSNKJYK
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KEIKSEQ = :keikseq AND
+		KOTEIKBN = :koteikbn AND
+		DATAZOK = :datazok AND
+		BSKKBN = :bskkbn AND
+		BSKGOK = :bskgok;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

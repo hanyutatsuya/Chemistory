@@ -1,0 +1,325 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Knkyulot.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Knkyulot.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    seccd[3];
+	short   kkirilotno;
+	char    jsndh[27];
+	char    hkkdh[27];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Knkyulot
+
+BmlDMMInfo	KnkyulotArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( seccd ),
+	DMM_SSHORT( kkirilotno ),
+	DMM_STIMESTAMP( jsndh ),
+	DMM_STIMESTAMP( hkkdh ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKnkyulotSelectAll()
+ *    KNKYULOT レコード全件取得
+ * ■引数
+ *    [O]  Knkyulot** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkyulotSelectAll( Knkyulot** arrayOut, int* numOut )
+{
+    Knkyulot*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SECCD,
+		KKIRILOTNO,
+		JSNDH,
+		HKKDH,
+		KSNDH
+    FROM
+        KNKYULOT FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Knkyulot* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:seccd,
+			:kkirilotno,
+			:jsndh,
+			:hkkdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knkyulot*)ZbmlRealloc( array,
+                                    sizeof( Knkyulot ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knkyulot ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnkyulotArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKnkyulotSelectKey()
+ *    KNKYULOT レコードKey条件取得
+ * ■引数
+ *    [I]  Knkyulot* pKey       取得するレコードのキー
+ *    [O]  Knkyulot** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkyulotSelectKey( Knkyulot* pKey, Knkyulot** arrayOut, int* numOut )
+{
+    Knkyulot*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KnkyulotArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SECCD,
+		KKIRILOTNO,
+		JSNDH,
+		HKKDH,
+		KSNDH
+    FROM
+        KNKYULOT
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SECCD = :seccd AND
+		KKIRILOTNO = :kkirilotno FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Knkyulot* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:seccd,
+			:kkirilotno,
+			:jsndh,
+			:hkkdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knkyulot*)ZbmlRealloc( array,
+                                    sizeof( Knkyulot ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knkyulot ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnkyulotArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkyulotInsert()
+ *    KNKYULOT レコードを挿入する
+ * ■引数
+ *    [I]  Knkyulot* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkyulotInsert( Knkyulot* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkyulotArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KNKYULOT
+    (
+		KNSKISYMD,
+		SECCD,
+		KKIRILOTNO,
+		JSNDH,
+		HKKDH,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:seccd,
+		:kkirilotno,
+		:jsndh,
+		:hkkdh,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkyulotUpdate()
+ *    KNKYULOT レコードを更新する
+ * ■引数
+ *    [I]  Knkyulot* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkyulotUpdate( Knkyulot* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkyulotArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KNKYULOT
+    SET (
+		JSNDH,
+		HKKDH,
+		KSNDH
+    ) = (
+		:jsndh,
+		:hkkdh,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		SECCD = :seccd AND
+		KKIRILOTNO = :kkirilotno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkyulotDelete()
+ *    KNKYULOT レコードを削除する
+ * ■引数
+ *    [I]  Knkyulot* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkyulotDelete( Knkyulot* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkyulotArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KNKYULOT
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SECCD = :seccd AND
+		KKIRILOTNO = :kkirilotno;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

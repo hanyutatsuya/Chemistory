@@ -1,0 +1,547 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Ijyosya.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Ijyosya.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    sstcd[8];
+	char    knjnmn[61];
+	char    rawdata[21];
+	char    knskka1[13];
+	char    knskka2[25];
+	char    knskka2kbn[3];
+	char    kkahskcd[4];
+	char    sdi[4];
+	char    kkacmt1[6];
+	char    kkacmt2[6];
+	char    ijkbnm;
+	char    ijkbnf;
+	char    ijkbnn;
+	char    tbijkbnm;
+	char    tbijkbnf;
+	char    tbijkbnn;
+	char    ksbr[16];
+	char    nbdo[3];
+	char    ykdo[3];
+	char    hkkdh[27];
+	char    ksndh[27];
+	char	oyasstcd[8];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Ijyosya
+
+BmlDMMInfo	IjyosyaArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( knjnmn ),
+	DMM_SSTRING( rawdata ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( sdi ),
+	DMM_SSTRING( kkacmt1 ),
+	DMM_SSTRING( kkacmt2 ),
+	DMM_SCHAR( ijkbnm ),
+	DMM_SCHAR( ijkbnf ),
+	DMM_SCHAR( ijkbnn ),
+	DMM_SCHAR( tbijkbnm ),
+	DMM_SCHAR( tbijkbnf ),
+	DMM_SCHAR( tbijkbnn ),
+	DMM_SSTRING( ksbr ),
+	DMM_SSTRING( nbdo ),
+	DMM_SSTRING( ykdo ),
+	DMM_STIMESTAMP( hkkdh ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_SSTRING( oyasstcd ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbIjyosyaSelectAll()
+ *    IJYOSYA レコード全件取得
+ * ■引数
+ *    [O]  Ijyosya** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbIjyosyaSelectAll( Ijyosya** arrayOut, int* numOut )
+{
+    Ijyosya*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SSTCD,
+		KNJNMN,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		KSBR,
+		NBDO,
+		YKDO,
+		HKKDH,
+		KSNDH,
+		OYASSTCD
+    FROM
+        IJYOSYA FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Ijyosya* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:sstcd,
+			:knjnmn,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:ijkbnm,
+			:ijkbnf,
+			:ijkbnn,
+			:tbijkbnm,
+			:tbijkbnf,
+			:tbijkbnn,
+			:ksbr,
+			:nbdo,
+			:ykdo,
+			:hkkdh,
+			:ksndh,
+			:oyasstcd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ijyosya*)ZbmlRealloc( array,
+                                    sizeof( Ijyosya ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ijyosya ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, IjyosyaArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbIjyosyaSelectKey()
+ *    IJYOSYA レコードKey条件取得
+ * ■引数
+ *    [I]  Ijyosya* pKey       取得するレコードのキー
+ *    [O]  Ijyosya** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbIjyosyaSelectKey( Ijyosya* pKey, Ijyosya** arrayOut, int* numOut )
+{
+    Ijyosya*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, IjyosyaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SSTCD,
+		KNJNMN,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		KSBR,
+		NBDO,
+		YKDO,
+		HKKDH,
+		KSNDH,
+		OYASSTCD
+    FROM
+        IJYOSYA
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Ijyosya* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:sstcd,
+			:knjnmn,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:ijkbnm,
+			:ijkbnf,
+			:ijkbnn,
+			:tbijkbnm,
+			:tbijkbnf,
+			:tbijkbnn,
+			:ksbr,
+			:nbdo,
+			:ykdo,
+			:hkkdh,
+			:ksndh,
+			:oyasstcd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ijyosya*)ZbmlRealloc( array,
+                                    sizeof( Ijyosya ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ijyosya ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, IjyosyaArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbIjyosyaInsert()
+ *    IJYOSYA レコードを挿入する
+ * ■引数
+ *    [I]  Ijyosya* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbIjyosyaInsert( Ijyosya* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IjyosyaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO IJYOSYA
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SSTCD,
+		KNJNMN,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		KSBR,
+		NBDO,
+		YKDO,
+		HKKDH,
+		KSNDH,
+		OYASSTCD
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:knsgrp,
+		:kmkcd,
+		:sstcd,
+		:knjnmn,
+		:rawdata,
+		:knskka1,
+		:knskka2,
+		:knskka2kbn,
+		:kkahskcd,
+		:sdi,
+		:kkacmt1,
+		:kkacmt2,
+		:ijkbnm,
+		:ijkbnf,
+		:ijkbnn,
+		:tbijkbnm,
+		:tbijkbnf,
+		:tbijkbnn,
+		:ksbr,
+		:nbdo,
+		:ykdo,
+		:hkkdh,
+		CURRENT TIMESTAMP,
+		:oyasstcd
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbIjyosyaUpdate()
+ *    IJYOSYA レコードを更新する
+ * ■引数
+ *    [I]  Ijyosya* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbIjyosyaUpdate( Ijyosya* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IjyosyaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE IJYOSYA
+    SET (
+		IRIKETFLG,
+		SSTCD,
+		KNJNMN,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		KSBR,
+		NBDO,
+		YKDO,
+		HKKDH,
+		KSNDH,
+		OYASSTCD
+    ) = (
+		:iriketflg,
+		:sstcd,
+		:knjnmn,
+		:rawdata,
+		:knskka1,
+		:knskka2,
+		:knskka2kbn,
+		:kkahskcd,
+		:sdi,
+		:kkacmt1,
+		:kkacmt2,
+		:ijkbnm,
+		:ijkbnf,
+		:ijkbnn,
+		:tbijkbnm,
+		:tbijkbnf,
+		:tbijkbnn,
+		:ksbr,
+		:nbdo,
+		:ykdo,
+		:hkkdh,
+		CURRENT TIMESTAMP,
+		:oyasstcd
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbIjyosyaDelete()
+ *    IJYOSYA レコードを削除する
+ * ■引数
+ *    [I]  Ijyosya* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbIjyosyaDelete( Ijyosya* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IjyosyaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM IJYOSYA
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

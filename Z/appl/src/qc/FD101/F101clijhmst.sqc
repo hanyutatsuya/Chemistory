@@ -1,0 +1,171 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： F101ctrlijhmst.sqc
+ *     機能概要  ：コントロール異常判定マスタ
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-27                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+
+#include "F101ctrlijhmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+//INTEC ADD
+#include "FD101IjouChk.h"
+
+#define ALLOC_UNIT      1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+    char    bskkbn[5];
+    char    nbkmkcd[8];
+    short   ctrlhnsu;
+    char    kyuhniflg;
+    short   sjhnsu;
+    char    kaiymd[11];
+    char    haiymd[11];
+    char    hnktntid[9];
+    char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT  Ctrlijhmst
+
+BmlDMMInfo  CtrlijhmstArray[] = {
+    DMM_SSTRING( bskkbn ),
+    DMM_SSTRING( nbkmkcd ),
+    DMM_SSHORT( ctrlhnsu ),
+    DMM_SCHAR( kyuhniflg ),
+    DMM_SSHORT( sjhnsu ),
+    DMM_SDATE( kaiymd ),
+    DMM_SDATE( haiymd ),
+    DMM_SSTRING( hnktntid ),
+    DMM_STIMESTAMP( ksndh ),
+    DMM_NULL
+};
+
+/******************************************************************************
+ * FCtrlijhmstSelectByKey()
+ *    検査結果情報テーブルを検索
+ * ■引数
+ *    [I]  Ctrlijhmst*  pKey         検索キー
+ *    [O]  Ctrlijhmst** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FCtrlijhmstSelectByKey( Ctrlijhmst* pKey, Ctrlijhmst** arrayOut, int* numOut )
+{
+    Ctrlijhmst*      array = NULL;
+    int         num = 0;
+
+	// INTEC ADDトレースログ出力
+    mcrPutTrace(&stEnv, TRCKIND_TRACE, "FCtrlijhmstSelectByKey", ""
+						, MYAPP_LOG_ERRCODE_NON, "Start Function.");
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, CtrlijhmstArray ) )
+        return HRC_INVALID_VALUE;
+
+		
+/*INTEC DEBUG STA */
+	char	buf[256];
+	sprintf( buf, "pKey bskkbn[%s] nbkmkcd[%s] kaiymd[%s]\n"
+			,pKey->bskkbn,pKey->nbkmkcd, pKey->kaiymd);
+    mcrPutTrace(&stEnv, TRCKIND_DEBUG, "FCtrlijhmstSelectByKey", ""
+						, MYAPP_LOG_ERRCODE_NON, buf);
+/*INTEC DEBUG END */
+	
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+             BSKKBN
+            ,NBKMKCD
+            ,CTRLHNSU
+            ,KYUHNIFLG
+            ,SJHNSU
+            ,KAIYMD
+            ,HAIYMD
+            ,HNKTNTID
+            ,KSNDH
+    FROM    CTRLIJHTMST
+    WHERE   BSKKBN      =  :bskkbn
+    AND     NBKMKCD     =  :nbkmkcd
+/*
+    AND     CTRLHNSU    =  :ctrlhnsu
+*/
+    AND     KAIYMD      <= :kaiymd
+/* 1.01 INTEC DELL
+DEL AND     HAIYMD      >  :kaiymd
+*/
+    AND     HAIYMD      >=  :kaiymd
+    FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Ctrlijhmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+             :bskkbn
+            ,:nbkmkcd
+            ,:ctrlhnsu
+            ,:kyuhniflg
+            ,:sjhnsu
+            ,:kaiymd
+            ,:haiymd
+            ,:hnktntid
+            ,:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ctrlijhmst*)ZbmlRealloc( array,
+                     sizeof( Ctrlijhmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ctrlijhmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, CtrlijhmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

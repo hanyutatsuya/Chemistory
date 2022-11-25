@@ -1,0 +1,209 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Jdkmkmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "A105Jdkmk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    jknsgrp[17];
+	char    jkmkcd[8];
+	char    hhkumflg;
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Jdkmkmst
+
+BmlDMMInfo	JdkmkmstArray[] = {
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( jknsgrp ),
+	DMM_SSTRING( jkmkcd ),
+	DMM_SCHAR( hhkumflg ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbJdkmkmstSelectKey()
+ *    JDKMKMST レコードKey条件取得
+ * ■引数
+ *    [I]  Jdkmkmst* pKey       取得するレコードのキー
+ *    [O]  Jdkmkmst** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long A105JdkmkSelKey( Jdkmkmst* pKey, Jdkmkmst** arrayOut, int* numOut )
+{
+    Jdkmkmst*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, JdkmkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSGRP,
+		KMKCD,
+		JKNSGRP,
+		JKMKCD,
+		HHKUMFLG,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        JDKMKMST
+    WHERE
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		KAIYMD <= :kaiymd AND 
+		HAIYMD >= :kaiymd
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Jdkmkmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knsgrp,
+			:kmkcd,
+			:jknsgrp,
+			:jkmkcd,
+			:hhkumflg,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Jdkmkmst*)ZbmlRealloc( array,
+                                    sizeof( Jdkmkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Jdkmkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, JdkmkmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+long A105JdkmkSelAll( Jdkmkmst** arrayOut, int* numOut )
+{
+    Jdkmkmst*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c3 CURSOR FOR
+    SELECT
+		KNSGRP,
+		KMKCD,
+		JKNSGRP,
+		JKMKCD,
+		HHKUMFLG,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        JDKMKMST
+	FOR READ ONLY;
+
+    EXEC SQL OPEN c3;
+
+    while( 1 ) {
+        Jdkmkmst* rec;
+
+        EXEC SQL FETCH c3 INTO
+			:knsgrp,
+			:kmkcd,
+			:jknsgrp,
+			:jkmkcd,
+			:hhkumflg,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Jdkmkmst*)ZbmlRealloc( array,
+                                    sizeof( Jdkmkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Jdkmkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, JdkmkmstArray );
+    }
+
+    EXEC SQL CLOSE c3;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

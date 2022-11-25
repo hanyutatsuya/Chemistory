@@ -1,0 +1,437 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Ninsiki.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Ninsiki.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    chkmj[5];
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    id2[11];
+	short   id2pos;
+	char    id3[11];
+	short   id3pos;
+	char    fuksuhn;
+	char    ksndh[27];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Ninsiki
+
+BmlDMMInfo	NinsikiArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( chkmj ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SSTRING( id2 ),
+	DMM_SSHORT( id2pos ),
+	DMM_SSTRING( id3 ),
+	DMM_SSHORT( id3pos ),
+	DMM_SCHAR( fuksuhn ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbNinsikiSelectAll()
+ *    NINSIKI レコード全件取得
+ * ■引数
+ *    [O]  Ninsiki** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbNinsikiSelectAll( Ninsiki** arrayOut, int* numOut )
+{
+    Ninsiki*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		ID3,
+		ID3POS,
+		FUKSUHN,
+		KSNDH,
+		TRKDH
+    FROM
+        NINSIKI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Ninsiki* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:chkmj,
+			:asyrckid,
+			:asyrckpos,
+			:id2,
+			:id2pos,
+			:id3,
+			:id3pos,
+			:fuksuhn,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ninsiki*)ZbmlRealloc( array,
+                                    sizeof( Ninsiki ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ninsiki ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, NinsikiArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbNinsikiSelectKey()
+ *    NINSIKI レコードKey条件取得
+ * ■引数
+ *    [I]  Ninsiki* pKey       取得するレコードのキー
+ *    [O]  Ninsiki** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbNinsikiSelectKey( Ninsiki* pKey, Ninsiki** arrayOut, int* numOut )
+{
+    Ninsiki*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, NinsikiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		ID3,
+		ID3POS,
+		FUKSUHN,
+		KSNDH,
+		TRKDH
+    FROM
+        NINSIKI
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Ninsiki* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:chkmj,
+			:asyrckid,
+			:asyrckpos,
+			:id2,
+			:id2pos,
+			:id3,
+			:id3pos,
+			:fuksuhn,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ninsiki*)ZbmlRealloc( array,
+                                    sizeof( Ninsiki ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ninsiki ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, NinsikiArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbNinsikiInsert()
+ *    NINSIKI レコードを挿入する
+ * ■引数
+ *    [I]  Ninsiki* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbNinsikiInsert( Ninsiki* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, NinsikiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO NINSIKI
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		ID3,
+		ID3POS,
+		FUKSUHN,
+		KSNDH,
+		TRKDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:chkmj,
+		:asyrckid,
+		:asyrckpos,
+		:id2,
+		:id2pos,
+		:id3,
+		:id3pos,
+		:fuksuhn,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbNinsikiUpdate()
+ *    NINSIKI レコードを更新する
+ * ■引数
+ *    [I]  Ninsiki* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbNinsikiUpdate( Ninsiki* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, NinsikiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE NINSIKI
+    SET (
+		IRIKETFLG,
+		KNTKETFLG,
+		CHKMJ,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		ID3,
+		ID3POS,
+		FUKSUHN,
+		KSNDH,
+		TRKDH
+    ) = (
+		:iriketflg,
+		:kntketflg,
+		:chkmj,
+		:asyrckid,
+		:asyrckpos,
+		:id2,
+		:id2pos,
+		:id3,
+		:id3pos,
+		:fuksuhn,
+		CURRENT TIMESTAMP,
+		:trkdh
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbNinsikiDelete()
+ *    NINSIKI レコードを削除する
+ * ■引数
+ *    [I]  Ninsiki* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbNinsikiDelete( Ninsiki* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, NinsikiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM NINSIKI
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

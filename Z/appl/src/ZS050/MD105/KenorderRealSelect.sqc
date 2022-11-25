@@ -1,0 +1,307 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム												  */
+/*																			  */
+/* 　システム名：次世代システム 											  */
+/* 　ファイル名：BD301_01.sqc												  */
+/* 　概　　　要：結果登録													  */
+/******************************************************************************/
+/*	Ver.	 日付			名前		   修正内容 						  */
+/* -------------------------------------------------------------------------- */
+/*	1.00	 2006/07/05 	芳賀弘幸	   新規作成 						  */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言 														  */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "Realchk.h"
+#include "Kenorder.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言															  */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+struct 
+{
+  char zrcd[5];
+  char sbtkbn;
+  char ksktkbn;
+  char sc[6];
+  char tj[6];
+  char tjtni;
+  char age[4];
+  char agekbn;
+  char sstme[9];
+  char tnryo[6];
+  char tnryotni;
+  char renjicflg;
+  char soukn1flg;
+  char kanrenflg;
+  char bunkkuflg;
+  char kesseiflg;
+  char rirekiflg;
+  char syougoflg;
+  char keisanflg;
+  char per100flg;
+  char tousekflg;
+  char kisyakflg;
+  char kouseiflg;
+  char syoungflg;
+  char soukn2flg;
+  char fukaptflg;
+  char yobiflg01;
+  char tobiflg02;
+  char yobiflg03;
+  char yobiflg04;
+  char yobiflg05;
+} sql_Buf;
+
+char	sel_kntno[14];
+char	sel_knsgrp[17];
+char	sel_kmkcd[8];
+short	sel_knssu;
+short	sel_knssueda;
+char	sel_knskisymd[11];
+char	sel_asyrckid[11];
+short	sel_asyrckpos;
+
+// ADD 2006-08-31 S.Ueda >>
+sqlint32	num_realchk;
+// ADD 2006-08-31 S.Ueda <<
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言 																  */
+/******************************************************************************/
+
+/******************************************************************************/
+/*	関 数 名　：sFncSelKENORDER_REALCHK()									  */
+/*	機能概要　：検査オーダー情報・即時チェック情報検索						  */
+/*	入　　力　：															  */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	検査オーダー情報検索結果格納構造体						  */
+/*　 第６引数 ：	即時チェック情報検索結果格納構造体						  */
+/*　 第７引数 ：	検索データ件数											  */
+/*	出　　力　：															  */
+/*	復帰情報　：int 														  */
+/*					 0	正常												  */
+/*					 2	デッドロック										  */
+/*					-1	異常												  */
+/******************************************************************************/
+long ZdbKenorderRealchkSelectKey( Kenorder* pKey, Kenorder** arrayOut_K, Realchk** arrayOut_R, int* numOut )
+{
+	int 					 irecCnt ;
+	Kenorder				*rec_K ;
+	Realchk 				*rec_R ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化
+	 ***/
+	irecCnt = 0 ;
+	*arrayOut_K = NULL;
+	*arrayOut_R = NULL;
+	//	検索キー
+	strcpy ( sel_kntno,  pKey->kntno ) ;
+	strcpy ( sel_knsgrp, pKey->knsgrp ) ;
+	strcpy ( sel_kmkcd,  pKey->kmkcd ) ;
+	sel_knssu	 = pKey->knssu ;
+	sel_knssueda = pKey->knssueda ;
+	strcpy ( sel_knskisymd, pKey->knskisymd ) ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT	 O.ZRCD
+			,O.SBTKBN
+			,O.KSKTKBN
+			,O.SC
+			,O.TJ
+			,O.TJTNI
+			,O.SBTKBN
+			,O.AGE
+			,O.AGEKBN
+			,O.SSTME
+			,O.TNRYO
+			,O.TNRYOTNI
+			,R.RENJICFLG
+			,R.SOUKN1FLG
+			,R.KANRENFLG
+			,R.BUNKKUFLG
+			,R.KESSEIFLG
+			,R.RIREKIFLG
+			,R.SYOUGOFLG
+			,R.KEISANFLG
+			,R.PER100FLG
+			,R.TOUSEKFLG
+			,R.KISYAKFLG
+			,R.KOUSEIFLG
+			,R.SYOUNGFLG
+			,R.SOUKN2FLG
+			,R.FUKAPTFLG
+			,R.YOBIFLG01
+			,R.TOBIFLG02
+			,R.YOBIFLG03
+			,R.YOBIFLG04
+			,R.YOBIFLG05
+	  FROM	KENORDER O, REALCHK R
+	 WHERE	O.KNTNO 	=  :sel_kntno
+	   AND	O.KNSGRP	=  :sel_knsgrp 
+	   AND	O.KMKCD 	=  :sel_kmkcd 
+	   AND	O.KNSSU 	=  :sel_knssu
+	   AND	O.KNSSUEDA	=  :sel_knssueda
+	   AND	O.KNSKISYMD =  :sel_knskisymd 
+	   AND	O.KNTNO 	=  R.KNTNO
+	   AND	O.KNSGRP	=  R.KNSGRP
+	   AND	O.KMKCD 	=  R.KMKCD
+	   AND	O.KNSSU 	=  R.KNSSU
+	   AND	O.KNSSUEDA	=  R.KNSSUEDA 
+	   AND	O.KNSKISYMD =  R.KNSKISYMD
+	   AND	O.SRIYMD	=  R.SRIYMD
+	 FOR READ ONLY ;
+
+	/***
+	 ***	検索
+	 ***/
+	EXEC SQL OPEN c1 ;
+	while( 1 ) {
+		EXEC SQL FETCH c1 INTO :sql_Buf ;
+		if ( SQLCODE == 100 ) {
+			break;
+		}
+		*arrayOut_K = ( Kenorder * ) realloc ( *arrayOut_K, sizeof ( Kenorder ) * ( irecCnt + 1 ) ) ;
+		if ( arrayOut_K == NULL ) {
+			return ( -1 ) ;
+		}
+		memset ( &(*arrayOut_K)[irecCnt], '\0', sizeof ( Kenorder ) ) ;
+		rec_K = &(*arrayOut_K)[irecCnt] ;
+		memcpy ( rec_K->zrcd,	  sql_Buf.zrcd, 	sizeof(rec_K->zrcd));
+		rec_K->sbtkbn = sql_Buf.sbtkbn;
+		rec_K->ksktkbn = sql_Buf.ksktkbn;
+		memcpy ( rec_K->sc, 	  sql_Buf.sc,		sizeof(rec_K->sc));
+		memcpy ( rec_K->tj, 	  sql_Buf.tj,		sizeof(rec_K->tj));
+		rec_K->tjtni = sql_Buf.tjtni;
+		memcpy ( rec_K->age,	  sql_Buf.age,		sizeof(rec_K->age));
+		rec_K->agekbn = sql_Buf.agekbn;
+		memcpy ( rec_K->sstme,	  sql_Buf.sstme,	sizeof(rec_K->sstme));
+		memcpy ( rec_K->tnryo,	  sql_Buf.tnryo,	sizeof(rec_K->tnryo));
+		rec_K->tnryotni = sql_Buf.tnryotni;
+		*arrayOut_R = ( Realchk * ) realloc ( *arrayOut_R, sizeof ( Realchk ) * ( irecCnt + 1 ) ) ;
+		if ( arrayOut_R == NULL ) {
+			return ( -1 ) ;
+		}
+		memset ( &(*arrayOut_R)[irecCnt], '\0', sizeof ( Realchk ) ) ;
+		rec_R = &(*arrayOut_R)[irecCnt] ;
+		rec_R->renjicflg = sql_Buf.renjicflg;
+		rec_R->soukn1flg = sql_Buf.soukn1flg;
+		rec_R->kanrenflg = sql_Buf.kanrenflg;
+		rec_R->bunkkuflg = sql_Buf.bunkkuflg;
+		rec_R->kesseiflg = sql_Buf.kesseiflg;
+		rec_R->rirekiflg = sql_Buf.rirekiflg;
+		rec_R->syougoflg = sql_Buf.syougoflg;
+		rec_R->keisanflg = sql_Buf.keisanflg;
+		rec_R->per100flg = sql_Buf.per100flg;
+		rec_R->tousekflg = sql_Buf.tousekflg;
+		rec_R->kisyakflg = sql_Buf.kisyakflg;
+		rec_R->kouseiflg = sql_Buf.kouseiflg;
+		rec_R->syoungflg = sql_Buf.syoungflg;
+		rec_R->soukn2flg = sql_Buf.soukn2flg;
+		rec_R->fukaptflg = sql_Buf.fukaptflg;
+		rec_R->yobiflg01 = sql_Buf.yobiflg01;
+		rec_R->tobiflg02 = sql_Buf.tobiflg02;
+		rec_R->yobiflg03 = sql_Buf.yobiflg03;
+		rec_R->yobiflg04 = sql_Buf.yobiflg04;
+		rec_R->yobiflg05 = sql_Buf.yobiflg05;
+		irecCnt ++ ;
+	}
+
+	EXEC SQL CLOSE c1;
+
+	*numOut   = irecCnt ;
+
+	return irecCnt ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return ( sqlca.sqlcode ) ;
+}
+// ADD 2006-08-31 S.Ueda >>
+// UPD 2007-05-22 Nagata >>
+/******************************************************************************/
+/*	関 数 名　：sFncSel_REALCHK 											  */
+/*	機能概要　：即時チェック情報検索(血清情報)								  */
+/*	入　　力　：															  */
+/*　 第１引数 ：	検体No													  */
+/*　 第２引数 ：	検査グループ											  */
+/*	出　　力　：															  */
+/*	復帰情報　：long														  */
+/*					 0以上	正常(realchkデータ件数) 						  */
+/*					 0未満	SQL Error										  */
+/* 2007-05-22 Nagata 条件追加 (アッセイラックID,アッセイラックPOS） 		  */
+/******************************************************************************/
+int sFncSel_REALCHK( char * aKnskisymd, char * aKntno, char * aKnsgrp,char *aAsyrckid,short aAsyrckpos )
+{
+	// 変数初期化
+	memset( sel_kntno, '\0', sizeof(sel_kntno) );
+	memset( sel_knsgrp, '\0', sizeof(sel_knsgrp) );
+	memset( sel_knskisymd, '\0',sizeof(sel_knskisymd) ) ;
+	memset( sel_asyrckid, '\0',sizeof(sel_asyrckid) ) ;
+	sel_asyrckpos = 0 ;
+
+	// ホスト変数へ複写
+	memcpy( sel_kntno, aKntno, sizeof(sel_kntno)-1 );
+	memcpy( sel_knsgrp, aKnsgrp, sizeof(sel_knsgrp)-1 );
+	strcpy ( sel_knskisymd, aKnskisymd ) ;
+	strcpy ( sel_asyrckid, aAsyrckid ) ;
+	sel_asyrckpos = aAsyrckpos;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	EXEC SQL
+		SELECT	COUNT(*)
+		INTO	:num_realchk
+		FROM	REALCHK R,kenorder K
+		WHERE	R.KNTNO   = :sel_kntno
+		 AND	R.KNSGRP  = :sel_knsgrp
+		 AND	R.KNSKISYMD   = :sel_knskisymd
+		 AND	R.KESSEIPARA != '00'
+		 AND	K.ASYRCKID = :sel_asyrckid
+		 AND	K.ASYRCKPOS = :sel_asyrckpos
+		 AND	R.KNSKISYMD = K.KNSKISYMD
+		 AND	R.SRIYMD = K.SRIYMD
+		 AND	R.KNTNO = K.KNTNO
+		 AND	R.KNSGRP = K.KNSGRP
+		 AND	R.KMKCD = K.KMKCD
+		 AND	R.KNSSU = K.KNSSU
+		 AND	R.KNSSUEDA = K.KNSSUEDA
+	;
+		/* SELECT	COUNT(*)
+		INTO	:num_realchk
+		FROM	REALCHK
+		WHERE	KNTNO	= :sel_kntno
+		 AND	KNSGRP	= :sel_knsgrp
+		 AND	KNSKISYMD	= :sel_knskisymd
+		 AND	KESSEIPARA != '00'
+	; */
+
+	return num_realchk;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return ( sqlca.sqlcode ) ;
+}
+// UPD 2007-05-22 Nagata >>
+// ADD 2006-08-31 S.Ueda <<
+/** End of File *********************************************************/

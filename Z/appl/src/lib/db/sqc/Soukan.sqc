@@ -1,0 +1,537 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Soukan.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Soukan.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    skskmkcd[8];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    skssriymd[11];
+	char    skskntno[14];
+	char    sksknsgslbcd[4];
+	char    rawdata[21];
+	char    knskka1[13];
+	char    knskka2[25];
+	char    knskka2kbn[3];
+	char    kkahskcd[4];
+	char    sdi[4];
+	char    kkacmt1[6];
+	char    kkacmt2[6];
+	char    kkajkcd;
+	char    ksbr[16];
+	char    nbdo[3];
+	char    ykdo[3];
+	char    ksndh[27];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Soukan
+
+BmlDMMInfo	SoukanArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( skskmkcd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SDATE( skssriymd ),
+	DMM_SSTRING( skskntno ),
+	DMM_SSTRING( sksknsgslbcd ),
+	DMM_SSTRING( rawdata ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( sdi ),
+	DMM_SSTRING( kkacmt1 ),
+	DMM_SSTRING( kkacmt2 ),
+	DMM_SCHAR( kkajkcd ),
+	DMM_SSTRING( ksbr ),
+	DMM_SSTRING( nbdo ),
+	DMM_SSTRING( ykdo ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbSoukanSelectAll()
+ *    SOUKAN レコード全件取得
+ * ■引数
+ *    [O]  Soukan** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbSoukanSelectAll( Soukan** arrayOut, int* numOut )
+{
+    Soukan*     array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SKSKMKCD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SKSSRIYMD,
+		SKSKNTNO,
+		SKSKNSGSLBCD,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		KSBR,
+		NBDO,
+		YKDO,
+		KSNDH,
+		TRKDH
+    FROM
+        SOUKAN FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Soukan* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:skskmkcd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:skssriymd,
+			:skskntno,
+			:sksknsgslbcd,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:kkajkcd,
+			:ksbr,
+			:nbdo,
+			:ykdo,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Soukan*)ZbmlRealloc( array,
+                                    sizeof( Soukan ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Soukan ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, SoukanArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbSoukanSelectKey()
+ *    SOUKAN レコードKey条件取得
+ * ■引数
+ *    [I]  Soukan* pKey       取得するレコードのキー
+ *    [O]  Soukan** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbSoukanSelectKey( Soukan* pKey, Soukan** arrayOut, int* numOut )
+{
+    Soukan*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, SoukanArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SKSKMKCD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SKSSRIYMD,
+		SKSKNTNO,
+		SKSKNSGSLBCD,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		KSBR,
+		NBDO,
+		YKDO,
+		KSNDH,
+		TRKDH
+    FROM
+        SOUKAN
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Soukan* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:skskmkcd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:skssriymd,
+			:skskntno,
+			:sksknsgslbcd,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:kkajkcd,
+			:ksbr,
+			:nbdo,
+			:ykdo,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Soukan*)ZbmlRealloc( array,
+                                    sizeof( Soukan ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Soukan ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, SoukanArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbSoukanInsert()
+ *    SOUKAN レコードを挿入する
+ * ■引数
+ *    [I]  Soukan* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbSoukanInsert( Soukan* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, SoukanArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO SOUKAN
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		SKSKMKCD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SKSSRIYMD,
+		SKSKNTNO,
+		SKSKNSGSLBCD,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		KSBR,
+		NBDO,
+		YKDO,
+		KSNDH,
+		TRKDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:knsgrp,
+		:kmkcd,
+		:skskmkcd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:skssriymd,
+		:skskntno,
+		:sksknsgslbcd,
+		:rawdata,
+		:knskka1,
+		:knskka2,
+		:knskka2kbn,
+		:kkahskcd,
+		:sdi,
+		:kkacmt1,
+		:kkacmt2,
+		:kkajkcd,
+		:ksbr,
+		:nbdo,
+		:ykdo,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbSoukanUpdate()
+ *    SOUKAN レコードを更新する
+ * ■引数
+ *    [I]  Soukan* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbSoukanUpdate( Soukan* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, SoukanArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE SOUKAN
+    SET (
+		IRIKETFLG,
+		SKSKMKCD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SKSSRIYMD,
+		SKSKNTNO,
+		SKSKNSGSLBCD,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		KSBR,
+		NBDO,
+		YKDO,
+		KSNDH,
+		TRKDH
+    ) = (
+		:iriketflg,
+		:skskmkcd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:skssriymd,
+		:skskntno,
+		:sksknsgslbcd,
+		:rawdata,
+		:knskka1,
+		:knskka2,
+		:knskka2kbn,
+		:kkahskcd,
+		:sdi,
+		:kkacmt1,
+		:kkacmt2,
+		:kkajkcd,
+		:ksbr,
+		:nbdo,
+		:ykdo,
+		CURRENT TIMESTAMP,
+		:trkdh
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbSoukanDelete()
+ *    SOUKAN レコードを削除する
+ * ■引数
+ *    [I]  Soukan* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbSoukanDelete( Soukan* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, SoukanArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM SOUKAN
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

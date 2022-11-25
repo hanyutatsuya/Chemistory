@@ -1,0 +1,579 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Xebskflg.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Xebskflg.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[21];
+	char    kntketflg;
+	sqlint32  smpcd;
+	short   knssu;
+	short   knssueda;
+	char    flgsbt[3];
+	char    bskkbn[11];
+	char    bsklne[11];
+	char    bskgok[6];
+	char    bskmjno[6];
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    xeflg01;
+	char    xeflg02;
+	char    xeflg03;
+	char    xeflg04;
+	char    xeflg05;
+	char    xeflg06;
+	char    xeflg07;
+	char    xeflg08;
+	char    xeflg09;
+	char    xeflg10;
+	char    xeflg11;
+	char    xeflg12;
+	char    xeflg13;
+	char    xeflg14;
+	char    xeflg15;
+	char    xeflg16;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Xebskflg
+
+BmlDMMInfo	XebskflgArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SLONG( smpcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( knssueda ),
+	DMM_SSTRING( flgsbt ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bsklne ),
+	DMM_SSTRING( bskgok ),
+	DMM_SSTRING( bskmjno ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SCHAR( xeflg01 ),
+	DMM_SCHAR( xeflg02 ),
+	DMM_SCHAR( xeflg03 ),
+	DMM_SCHAR( xeflg04 ),
+	DMM_SCHAR( xeflg05 ),
+	DMM_SCHAR( xeflg06 ),
+	DMM_SCHAR( xeflg07 ),
+	DMM_SCHAR( xeflg08 ),
+	DMM_SCHAR( xeflg09 ),
+	DMM_SCHAR( xeflg10 ),
+	DMM_SCHAR( xeflg11 ),
+	DMM_SCHAR( xeflg12 ),
+	DMM_SCHAR( xeflg13 ),
+	DMM_SCHAR( xeflg14 ),
+	DMM_SCHAR( xeflg15 ),
+	DMM_SCHAR( xeflg16 ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbXebskflgSelectAll()
+ *    XEBSKFLG レコード全件取得
+ * ■引数
+ *    [O]  Xebskflg** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXebskflgSelectAll( Xebskflg** arrayOut, int* numOut )
+{
+    Xebskflg*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KNSSU,
+		KNSSUEDA,
+		FLGSBT,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		ASYRCKID,
+		ASYRCKPOS,
+		XEFLG01,
+		XEFLG02,
+		XEFLG03,
+		XEFLG04,
+		XEFLG05,
+		XEFLG06,
+		XEFLG07,
+		XEFLG08,
+		XEFLG09,
+		XEFLG10,
+		XEFLG11,
+		XEFLG12,
+		XEFLG13,
+		XEFLG14,
+		XEFLG15,
+		XEFLG16,
+		KSNDH
+    FROM
+        XEBSKFLG FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Xebskflg* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:smpcd,
+			:knssu,
+			:knssueda,
+			:flgsbt,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskmjno,
+			:asyrckid,
+			:asyrckpos,
+			:xeflg01,
+			:xeflg02,
+			:xeflg03,
+			:xeflg04,
+			:xeflg05,
+			:xeflg06,
+			:xeflg07,
+			:xeflg08,
+			:xeflg09,
+			:xeflg10,
+			:xeflg11,
+			:xeflg12,
+			:xeflg13,
+			:xeflg14,
+			:xeflg15,
+			:xeflg16,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Xebskflg*)ZbmlRealloc( array,
+                                    sizeof( Xebskflg ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Xebskflg ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, XebskflgArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbXebskflgSelectKey()
+ *    XEBSKFLG レコードKey条件取得
+ * ■引数
+ *    [I]  Xebskflg* pKey       取得するレコードのキー
+ *    [O]  Xebskflg** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXebskflgSelectKey( Xebskflg* pKey, Xebskflg** arrayOut, int* numOut )
+{
+    Xebskflg*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, XebskflgArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KNSSU,
+		KNSSUEDA,
+		FLGSBT,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		ASYRCKID,
+		ASYRCKPOS,
+		XEFLG01,
+		XEFLG02,
+		XEFLG03,
+		XEFLG04,
+		XEFLG05,
+		XEFLG06,
+		XEFLG07,
+		XEFLG08,
+		XEFLG09,
+		XEFLG10,
+		XEFLG11,
+		XEFLG12,
+		XEFLG13,
+		XEFLG14,
+		XEFLG15,
+		XEFLG16,
+		KSNDH
+    FROM
+        XEBSKFLG
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		SMPCD = :smpcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FLGSBT = :flgsbt FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Xebskflg* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:smpcd,
+			:knssu,
+			:knssueda,
+			:flgsbt,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskmjno,
+			:asyrckid,
+			:asyrckpos,
+			:xeflg01,
+			:xeflg02,
+			:xeflg03,
+			:xeflg04,
+			:xeflg05,
+			:xeflg06,
+			:xeflg07,
+			:xeflg08,
+			:xeflg09,
+			:xeflg10,
+			:xeflg11,
+			:xeflg12,
+			:xeflg13,
+			:xeflg14,
+			:xeflg15,
+			:xeflg16,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Xebskflg*)ZbmlRealloc( array,
+                                    sizeof( Xebskflg ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Xebskflg ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, XebskflgArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbXebskflgInsert()
+ *    XEBSKFLG レコードを挿入する
+ * ■引数
+ *    [I]  Xebskflg* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXebskflgInsert( Xebskflg* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, XebskflgArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO XEBSKFLG
+    (
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KNSSU,
+		KNSSUEDA,
+		FLGSBT,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		ASYRCKID,
+		ASYRCKPOS,
+		XEFLG01,
+		XEFLG02,
+		XEFLG03,
+		XEFLG04,
+		XEFLG05,
+		XEFLG06,
+		XEFLG07,
+		XEFLG08,
+		XEFLG09,
+		XEFLG10,
+		XEFLG11,
+		XEFLG12,
+		XEFLG13,
+		XEFLG14,
+		XEFLG15,
+		XEFLG16,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:smpcd,
+		:knssu,
+		:knssueda,
+		:flgsbt,
+		:bskkbn,
+		:bsklne,
+		:bskgok,
+		:bskmjno,
+		:asyrckid,
+		:asyrckpos,
+		:xeflg01,
+		:xeflg02,
+		:xeflg03,
+		:xeflg04,
+		:xeflg05,
+		:xeflg06,
+		:xeflg07,
+		:xeflg08,
+		:xeflg09,
+		:xeflg10,
+		:xeflg11,
+		:xeflg12,
+		:xeflg13,
+		:xeflg14,
+		:xeflg15,
+		:xeflg16,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbXebskflgUpdate()
+ *    XEBSKFLG レコードを更新する
+ * ■引数
+ *    [I]  Xebskflg* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXebskflgUpdate( Xebskflg* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, XebskflgArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE XEBSKFLG
+    SET (
+		KNTKETFLG,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		ASYRCKID,
+		ASYRCKPOS,
+		XEFLG01,
+		XEFLG02,
+		XEFLG03,
+		XEFLG04,
+		XEFLG05,
+		XEFLG06,
+		XEFLG07,
+		XEFLG08,
+		XEFLG09,
+		XEFLG10,
+		XEFLG11,
+		XEFLG12,
+		XEFLG13,
+		XEFLG14,
+		XEFLG15,
+		XEFLG16,
+		KSNDH
+    ) = (
+		:kntketflg,
+		:bskkbn,
+		:bsklne,
+		:bskgok,
+		:bskmjno,
+		:asyrckid,
+		:asyrckpos,
+		:xeflg01,
+		:xeflg02,
+		:xeflg03,
+		:xeflg04,
+		:xeflg05,
+		:xeflg06,
+		:xeflg07,
+		:xeflg08,
+		:xeflg09,
+		:xeflg10,
+		:xeflg11,
+		:xeflg12,
+		:xeflg13,
+		:xeflg14,
+		:xeflg15,
+		:xeflg16,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		SMPCD = :smpcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FLGSBT = :flgsbt;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbXebskflgDelete()
+ *    XEBSKFLG レコードを削除する
+ * ■引数
+ *    [I]  Xebskflg* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXebskflgDelete( Xebskflg* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, XebskflgArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM XEBSKFLG
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		SMPCD = :smpcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FLGSBT = :flgsbt;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

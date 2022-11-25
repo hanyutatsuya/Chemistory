@@ -1,0 +1,268 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：ND101_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "ND101.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+// <<   情報      >>
+sqlint32	rec_cnt ;
+
+struct {
+	char	knskisymd[10+1];
+	char	asyrckid[10+1];
+	int	asyrckpos;
+	char	utkymd[10+1];
+	char	irino[11+1];
+	char	knsgrp[16+1];
+	char	hkkbn[3+1];
+	char	ksndh[26+1];
+	char	trkdh[26+1];
+} sqlFRONRACK;
+
+char	sel_sriymd[10+1];
+char	sel_asyrckid[10+1];
+char	sel_hkkbn[3+1];
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：sFncSelKenOrder()                                                 */
+/*  機能概要　：属性チェック情報検索                                            */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：        検査開始日                                              */
+/*　 第２引数 ：        属性チェック情報検索結果格納構造体                      */
+/*　 第３引数 ：        検索データ件数                                          */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int                                                             */
+/******************************************************************************/
+int
+sFncSelKenOrder ( pSel_sriymd, pSel_asyrckid, pSel_hkkbn, precFRONRACK, precCnt )
+char		 *pSel_sriymd ;
+char		 *pSel_asyrckid ;
+char		 *pSel_hkkbn ;
+my_stDbFRONRACK **precFRONRACK ;
+int		 *precCnt ;
+{
+	int      rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*      変数初期化      */
+	rec_cnt = *precCnt = 0;
+	//      検索キー
+	strcpy ( sel_sriymd, pSel_sriymd ) ;
+	strcpy ( sel_asyrckid, pSel_asyrckid ) ;
+	strcpy ( sel_hkkbn, pSel_hkkbn ) ;
+	*precFRONRACK = NULL ;
+
+	/*      カーソル定義 */
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT DISTINCT
+		  knskisymd
+		, asyrckid
+		, asyrckpos
+		, utkymd 
+		, irino
+		, knsgrp
+		, :sel_hkkbn
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP
+	FROM	kenorder
+	WHERE	sriymd    = :sel_sriymd
+	    AND asyrckid = :sel_asyrckid
+	ORDER BY asyrckid, asyrckpos
+	FOR READ ONLY
+	;
+
+	/*      検索 */
+	EXEC SQL OPEN c1 ;
+	while( 1 ) {
+
+		memset ( &sqlFRONRACK, '\0', sizeof ( my_stDbFRONRACK ) ) ;
+		EXEC SQL FETCH c1 INTO
+		                :sqlFRONRACK ;
+
+		if ( SQLCODE == 100 ) {
+		        break;
+		}
+		*precFRONRACK = ( my_stDbFRONRACK * ) realloc ( *precFRONRACK, sizeof ( my_stDbFRONRACK ) * ( rec_cnt + 1 ) ) ;
+		if ( precFRONRACK == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelKenOrder", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+                                    "メモリ確保に失敗しました。[SRIYMD='%s' ASYRCKID='%s']", pSel_sriymd, pSel_asyrckid ) ;
+			EXEC SQL CLOSE c1;
+		        return ( RTN_NG ) ;
+		}
+		memcpy ( &(*precFRONRACK)[rec_cnt], &sqlFRONRACK, sizeof ( sqlFRONRACK ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c1;
+
+	*precCnt = rec_cnt ;
+
+	return ( RTN_OK ) ;
+
+error:
+        EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelKenOrder", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		     "SQLCODE:%ld SQLSTATE:%5.5s WHERE[SRIYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_sriymd, pSel_asyrckid ) ;
+	return ( RTN_NG );
+}
+
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKekka()							*/
+/*  機能概要　：属性情報情報							*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncInsFronRack ( db_kka )
+my_stDbFRONRACK	*db_kka ;
+{
+	/* ホスト変数へのセット */
+	memcpy( &sqlFRONRACK, db_kka, sizeof( my_stDbFRONRACK ));
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	カーソル定義 */
+	EXEC SQL INSERT INTO FRONRACK
+		( knskisymd
+		, asyrckid
+		, asyrckpos
+		, utkymd
+		, irino
+		, knsgrp
+		, hkkbn
+		, ksndh
+		, trkdh
+		)
+	VALUES 
+		( :sqlFRONRACK.knskisymd
+		, :sqlFRONRACK.asyrckid
+		, :sqlFRONRACK.asyrckpos
+		, :sqlFRONRACK.utkymd
+		, :sqlFRONRACK.irino
+		, :sqlFRONRACK.knsgrp
+		, :sqlFRONRACK.hkkbn
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP	
+	)
+	;
+	/* Commit or Rollback は呼び出し元で行う */
+	return ( RTN_OK ) ;
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	if( sqlca.sqlcode == MYAPP_SQL_DUPLICATION ){
+/*
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			    "すでに登録済みのレコードです。 検査日:%s ラックＩＤ:%s ラックＰＯＳ:%d", 
+			    sqlFRONRACK.knskisymd, sqlFRONRACK.asyrckid, sqlFRONRACK.asyrckpos );
+*/
+		return ( RTN_OK ) ;
+	} else {
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			    "SQLCODE:%ld SQLSTATE:%5.5s 検査日:%s ラックＩＤ:%s ラックＰＯＳ:%d", 
+			    sqlca.sqlcode, sqlca.sqlstate, sqlFRONRACK.knskisymd, sqlFRONRACK.asyrckid, sqlFRONRACK.asyrckpos );
+		return ( RTN_NG ) ;
+	}
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKekka()							*/
+/*  機能概要　：属性情報情報							*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncInsEnd( pSel_sriymd, pSel_asyrckid, pSel_hkkbn )
+char		 *pSel_sriymd ;
+char		 *pSel_asyrckid ;
+char		 *pSel_hkkbn ;
+{
+	/* ホスト変数へのセット */
+	strcpy ( sel_sriymd, pSel_sriymd ) ;
+	strcpy ( sel_asyrckid, pSel_asyrckid ) ;
+	strcpy ( sel_hkkbn, pSel_hkkbn ) ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	カーソル定義 */
+	EXEC SQL INSERT INTO FRONRACK
+		( knskisymd
+		, asyrckid
+		, asyrckpos
+		, utkymd
+		, irino
+		, knsgrp
+		, hkkbn
+		, ksndh
+		, trkdh
+		)
+	VALUES 
+		( :sel_sriymd
+		, :sel_asyrckid
+		, 0
+		, :sel_sriymd
+		, ' '
+		, ' '
+		, :sel_hkkbn
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP	
+	)
+	;
+	/* Commit or Rollback は呼び出し元で行う */
+	return ( RTN_OK ) ;
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	if( sqlca.sqlcode == MYAPP_SQL_DUPLICATION ){
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsEnd", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			    "すでに受信済みのＥＮＤです。 検査日:%s :%s", 
+			    sqlFRONRACK.knskisymd, sqlFRONRACK.asyrckid );
+		return ( RTN_OK ) ;
+	} else {
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsEnd", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			    "SQLCODE:%ld SQLSTATE:%5.5s 検査日:%s :%d", 
+			    sqlca.sqlcode, sqlca.sqlstate, sqlFRONRACK.knskisymd, sqlFRONRACK.asyrckid );
+		return ( RTN_NG ) ;
+	}
+}
+/** End of File *********************************************************/

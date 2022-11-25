@@ -1,0 +1,732 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：LD103_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "bml_DBCom.h"
+#include "LD103.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+// <<   情報      >>
+struct {
+        char    kjnsriymd[10+1];	// 1 基準処理日
+        char    iriendflg[1+1];		// 2 依頼ＥＮＤフラグ
+        char    bchendflg[1+1];		// 3 分注ＥＮＤフラグ
+        char    unyflg[1+1];		// 4 運用フラグ
+} sqlSYSKNR;
+
+// <<   情報      >>
+struct {
+	char	utkymd[10+1];		// 1 ＢＭＬ受付年月日 
+	char	irino[11+1];		// 2 依頼書Ｎｏ 
+	char	iriketflg[1+1];		// 3 依頼書Ｎｏ桁数フラグ 
+	short	zssdino;		// 4 属性世代Ｎｏ 
+	char	sstcd[7+1];		// 5 施設コード 
+	char	subsstcd[4+1];		// 6 サブ施設コード 
+	char	cdkbn1[2+1];		// 7 カード区分1 
+	char	cdkbn2[2+1];		// 8 カード区分2 
+	char	irimkey[40+1];		// 9 依頼元キー 
+	char	srkcd[3+1];		// 10 診療科コード 
+	char	srknm[30+1];		// 11 診療科名 
+	char	tticd[8+1];		// 12 担当医コード 
+	char	ttinm[40+1];		// 13 担当医名 
+	char	gpcd[8+1];		// 14 主治医コード 
+	char	gpnm[40+1];		// 15 主治医名 
+	char	skicd[8+1];		// 16 紹介医コード 
+	char	skinm[40+1];		// 17 紹介医名 
+	char	krtno[40+1];		// 18 カルテＮｏ          
+	char	knjid[15+1];		// 19 患者ＩＤ 
+	char	knjnmn[60+1];		// 20 患者名（カナ） 
+	char	knjnmk[30+1];		// 21 患者名（漢字） 
+	char	knjnmkey[60+1];		// 22 患者名キー 
+	char	sc[5+1];		// 23 身長  
+	char	tj[5+1];		// 24 体重  
+	char	tjtni[1+1];		// 25 体重区分 
+	char	sbtkbn[1+1];		// 26 性別区分 
+	char	birthday[8+1];		// 27 生年月日  
+	char	birthdaykbn[1+1];	// 28 生年月日区分 
+	char	age[3+1];		// 29 年齢  
+	char	agekbn[1+1];		// 30 年齢区分 
+	char	btcd[10+1];		// 31 病棟コード 
+	char	btnm[30+1];		// 32 病棟名 
+	char	utkcmtcd1[2+1];		// 33 受付コメント1  
+	char	utkcmtcd2[2+1];		// 34 受付コメント2  
+	char	utkcmtcd3[2+1];		// 35 受付コメント3  
+	char	utkcmtfr1[70+1];	// 36 受付コメントフリー1  
+	char	utkcmtfr2[70+1];	// 37 受付コメントフリー2  
+	char	utkcmtfrflg[1+1];	// 38 受付コメントフリーフラグ 
+	char	ngkbn[1+1];		// 39 入院外来区分           
+	char	nsssu[2+1];		// 40 妊娠週数  
+	char	hkncd[1+1];		// 41 保険コード 
+	char	ktshsu[2+1];		// 42 検体総本数 
+	char	iniriymd[10+1];		// 43 院内依頼日 
+	char	zssflg[1+1];		// 44 属性修正フラグ 
+	char	kkiriflg[1+1];		// 45 緊急依頼フラグ 
+	char	hknskbn[1+1];		// 46 非検査区分 
+	char	utkkbn[1+1];		// 47 受付区分 
+	char	nekbn[1+1];		// 48 ＮＥ区分 
+	char	inknskbn[1+1];		// 49 院内検査区分 
+	char	utkjkkbn[1+1];		// 50 受付状態区分 
+	char	krflg[1+1];		// 51 完了フラグ 
+	char	fdhhkkflg[1+1];		// 52 ＦＤ非報告フラグ 
+	char	utkdh[8+1];		// 53 受付時刻 
+	char	mutkymd[10+1];		// 54 元ＢＭＬ受付日 
+	char	mirino[11+1];		// 55 元依頼書Ｎｏ 
+	char	knsjslbcd1[3+1];	// 56 検査実施ラボコード１ 
+	char	knsjslbcd2[3+1];	// 57 検査実施ラボコード２ 
+	char	knsjslbcd3[3+1];	// 58 検査実施ラボコード３ 
+	char	knsjslbcd4[3+1];	// 59 検査実施ラボコード４ 
+	char	ymhkkflg[1+1];		// 60 翌日未報告フラグ 
+	char	hkkkbdh[8+1];		// 61 報告希望時間 
+	char	ecd[3+1];		// 62 営業所コード 
+	char	shcd[2+1];		// 63 集配コード 
+	char	sstssnmj[40+1];		// 64 施設名正式名称 
+	char	sstssnmn[40+1];		// 65 施設名正式名称（カナ） 
+	char	sstrsj[20+1];		// 66 施設名略称 
+	char	sstrsn[20+1];		// 67 施設名略称（カナ） 
+	char	sstsbt[2+1];		// 68 施設種別 
+	char	ttsstflg[1+1];		// 69 特定施設フラグ 
+	char	rucd[2+1];		// 70 理由コード 
+	short	irikmksu;		// 71 依頼項目数 
+	char	bmskn[50+1];		// 72 病名及び所見 
+	char	irinrsbt[2+1];		// 73 依頼入力種別 
+	char	irihsmkbn[1+1];		// 74 依頼発生元区分 
+	char	caresstflg[1+1];	// 75 特別注意施設フラグ 
+	char	tktyflg[1+1];		// 76 治験拡張フラグ 
+	char	apkntino[13+1];		// 77 AUTO-P検体Ｎｏ 
+	char	sdnm[20+1];		// 78 診断名 
+	char	bko1[20+1];		// 79 備考１ 
+	char	bko2[20+1];		// 80 備考２ 
+	char	bko3[20+1];		// 81 備考３ 
+	char	zstrdh[26+1];		// 82 属性登録日時 
+	char	zsssdh[26+1];		// 83 属性修正日時 
+	char	stlzsssdh[26+1];	// 84 サテライト内属性修正日時 
+	char	stlzsssip[15+1];	// 85 サテライト内属性修正端末IP 
+	char	stlzssssyaid[8+1];	// 86 サテライト内属性修正入力者 
+	char	ksndh[26+1];		// 87 情報更新日時 
+	char	oyasstcd[7+1];		// 88 親施設コード 
+	char	trkdh[26+1];		// 89 登録日時 
+} sqlKANJYA;
+
+struct {
+	char	utkymd[10+1];		// 1  ＢＭＬ受付年月日
+	char	irino[11+1];		// 2  依頼書Ｎｏ
+	char	knsgrp[16+1];		// 3  検査グループ
+	char	kmkcd[7+1];		// 4  項目コード
+	char	sc[5+1];		// 5  身長
+	char	scflg[1+1];		// 6  身長 チェックフラグ
+	char	tj[5+1];		// 7  体重
+	char	tjflg[1+1];		// 8  体重  チェックフラグ
+	char	tjtni[1+1];		// 9  体重区分
+	char	tjtniflg[1+1];		// 10 体重区分チェックフラグ
+	char	sbtkbn[1+1];		// 11 性別区分
+	char	sbtkbnflg[1+1];		// 12 性別区分チェックフラグ
+	char	age[3+1];		// 13 年齢
+	char	ageflg[1+1];		// 14 年齢チェックフラグ
+	char	agekbn[1+1];		// 15 年齢区分
+	char	agekbnflg[1+1];		// 16 年齢区分チェックフラグ
+} sqlCHKZOK;
+
+// <<   保留依頼情報      >>
+struct {
+	char	utkymd[10+1];		// 1 ＢＭＬ受付年月日
+	char	irino[11+1];		// 2 依頼書Ｎｏ
+	char	knsgrp[16+1];		// 3 検査グループ
+	char	kmkcd[7+1];		// 4 項目コード
+	char	hkkhrkbn[1+1];		// 5 報告管理区分
+	char	hkkhrcmt[64+1];		// 6 報告管理コメント
+	char	ksndh[26+1];		// 7 更新日時
+	char	trkdh[26+1];		// 8 登録日時
+} sqlHKHRIRAI;
+
+sqlint32	rec_cnt ;
+short		ind_cnt ;
+char		sel_utkymd[10+1];
+char		sel_irino[11+1];
+char		sel_knsgrp[16+1];
+char		sel_kmkcd[7+1];
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：sFncSelSysKnr()							*/
+/*  機能概要　：システム管理情報検索				  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	属性チェック情報検索結果格納構造体			*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncSelSysKnr ( precSYSKNR )
+struct my_stSYSKNR	*precSYSKNR ;
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT  
+		kjnsriymd
+		, iriendflg
+		, bchendflg
+		, unyflg
+	FROM    sysknrmst
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c1 ;
+
+	memset ( &sqlSYSKNR, '\0', sizeof ( sqlSYSKNR ) ) ;
+	EXEC SQL FETCH c1 INTO
+			:sqlSYSKNR ;
+
+	if ( SQLCODE == 100 ) {
+		return ( -1 ) ;
+	}
+
+	memcpy ( precSYSKNR, &sqlSYSKNR, sizeof ( sqlSYSKNR ) ) ;
+
+	EXEC SQL CLOSE c1;
+
+	return ( 0 ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelSysKnr", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+	//デッドロック
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncChkZoK()							*/
+/*  機能概要　：属性情報確認(当日)						*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検索対象：検査開始日					*/
+/*　 第２引数 ：	検索対象：依頼書ＮＯ					*/
+/*　 第３引数 ：	属性チェック情報検索結果格納構造体			*/
+/*　 第４引数 ：	検索結果件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncChkZok ( pSel_utkymd, pSel_irino, precCHKZOK, precCnt )
+char			 *pSel_utkymd ;
+char			 *pSel_irino ;
+my_stCHKZOK		**precCHKZOK ;
+int			 *precCnt ;
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/* 変数初期化	*/
+	rec_cnt = *precCnt = 0;
+
+	/* 検索キー */
+	strcpy ( sel_utkymd, pSel_utkymd ) ;
+	strcpy ( sel_irino, pSel_irino ) ;
+
+	/* カーソル定義 */
+	EXEC SQL DECLARE c2 CURSOR FOR
+        SELECT
+		iri.utkymd
+		, iri.irino
+		, iri.knsgrp
+		, iri.kmkcd
+		, kan.sc
+		, COALESCE(chkzok.scflg, '0')
+		, kan.tj
+		, COALESCE(chkzok.tjflg, '0')
+		, kan.tjtni
+		, COALESCE(chkzok.tjtniflg, '0')
+		, kan.sbtkbn
+		, COALESCE(chkzok.sbtkbnflg, '0')
+		, kan.age
+		, COALESCE(chkzok.ageflg, '0')
+		, kan.agekbn
+		, COALESCE(chkzok.agekbnflg, '0')
+        FROM    irai iri
+		, vcmnkanjya kan
+        LEFT JOIN chkzokmst chkzok
+	     ON chkzok.knsgrp = iri.knsgrp
+            AND chkzok.kmkcd = iri.kmkcd
+            AND chkzok.kaiymd  <= iri.utkymd
+            AND chkzok.haiymd  >= iri.utkymd
+	WHERE	iri.utkymd   = :sel_utkymd
+	    AND	iri.irino  = :sel_irino
+            AND kan.utkymd   = iri.utkymd
+            AND kan.irino    = iri.irino
+	FOR READ ONLY
+	;
+
+	/* 検索 */
+	EXEC SQL OPEN c2 ;
+	while( 1 ) {
+		memset ( &sqlCHKZOK, '\0', sizeof ( sqlCHKZOK ) ) ;
+		EXEC SQL FETCH c2 INTO
+			:sqlCHKZOK ;
+
+		if ( SQLCODE == 100 ) {
+			break;
+		}
+                *precCHKZOK = ( my_stCHKZOK * ) realloc ( *precCHKZOK, sizeof ( my_stCHKZOK ) * ( rec_cnt + 1 ) ) ;
+		if ( precCHKZOK == NULL ) {
+		        return ( -1 ) ;
+		}
+		memcpy ( &(*precCHKZOK)[rec_cnt], &sqlCHKZOK, sizeof ( sqlCHKZOK ) ) ;
+		rec_cnt++ ;
+	}
+
+	EXEC SQL CLOSE c2;
+
+	*precCnt = rec_cnt;
+
+	return ( RTN_OK ) ;
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncChkZok", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[UTKYMD='%s'][IRINO='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_utkymd, pSel_irino ) ;
+	//デッドロック
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncRuiChkZoK()							*/
+/*  機能概要　：属性情報確認(累積)						*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検索対象：検査開始日					*/
+/*　 第２引数 ：	検索対象：依頼書ＮＯ					*/
+/*　 第３引数 ：	属性チェック情報検索結果格納構造体			*/
+/*　 第４引数 ：	検索結果件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncRuiChkZok ( pSel_utkymd, pSel_irino, precCHKZOK, precCnt )
+char			 *pSel_utkymd ;
+char			 *pSel_irino ;
+my_stCHKZOK		**precCHKZOK ;
+int			 *precCnt ;
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/* 変数初期化	*/
+	rec_cnt = *precCnt = 0;
+
+	/* 検索キー */
+	strcpy ( sel_utkymd, pSel_utkymd ) ;
+	strcpy ( sel_irino, pSel_irino ) ;
+
+	/* カーソル定義 */
+	EXEC SQL DECLARE c3 CURSOR FOR
+        SELECT
+		iri.utkymd
+		, iri.irino
+		, iri.knsgrp
+		, iri.kmkcd
+		, kan.sc
+		, COALESCE(chkzok.scflg, '0')
+		, kan.tj
+		, COALESCE(chkzok.tjflg, '0')
+		, kan.tjtni
+		, COALESCE(chkzok.tjtniflg, '0')
+		, kan.sbtkbn
+		, COALESCE(chkzok.sbtkbnflg, '0')
+		, kan.age
+		, COALESCE(chkzok.ageflg, '0')
+		, kan.agekbn
+		, COALESCE(chkzok.agekbnflg, '0')
+        FROM	rui_irai iri
+		, rui_kanjya kan
+        LEFT JOIN chkzokmst chkzok
+	     ON chkzok.knsgrp = iri.knsgrp
+            AND chkzok.kmkcd = iri.kmkcd
+            AND chkzok.kaiymd  <= iri.utkymd
+            AND chkzok.haiymd  >= iri.utkymd
+	WHERE	iri.utkymd   = :sel_utkymd
+	    AND	iri.irino  = :sel_irino
+            AND kan.utkymd   = iri.utkymd
+            AND kan.irino    = iri.irino
+	FOR READ ONLY
+	;
+
+	/* 検索 */
+	EXEC SQL OPEN c3 ;
+	while( 1 ) {
+		memset ( &sqlCHKZOK, '\0', sizeof ( sqlCHKZOK ) ) ;
+		EXEC SQL FETCH c3 INTO
+			:sqlCHKZOK ;
+
+		if ( SQLCODE == 100 ) {
+			break;
+		}
+                *precCHKZOK = ( my_stCHKZOK * ) realloc ( *precCHKZOK, sizeof ( my_stCHKZOK ) * ( rec_cnt + 1 ) ) ;
+		if ( precCHKZOK == NULL ) {
+		        return ( -1 ) ;
+		}
+		memcpy ( &(*precCHKZOK)[rec_cnt], &sqlCHKZOK, sizeof ( sqlCHKZOK ) ) ;
+		rec_cnt++ ;
+	}
+
+	EXEC SQL CLOSE c3;
+
+	*precCnt = rec_cnt;
+
+	return ( RTN_OK ) ;
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncRuiChkZok", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[UTKYMD='%s'][IRINO='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_utkymd, pSel_irino ) ;
+	//デッドロック
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncMoveRuiTou()						*/
+/*  機能概要　：属性情報戻し処理						*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	戻し対象：検査開始日					*/
+/*　 第２引数 ：	戻し対象：依頼書ＮＯ					*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncMoveRuiTou ( pSel_utkymd, pSel_irino )
+char			*pSel_utkymd ;
+char			*pSel_irino ;
+{
+	long sql_code = 0;
+	char sql_state[1024];
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/* 検索キー */
+	strcpy ( sel_utkymd, pSel_utkymd ) ;
+	strcpy ( sel_irino, pSel_irino ) ;
+
+	/* カーソル定義 */
+	EXEC SQL INSERT INTO bunchu 
+	SELECT * FROM rui_bunchu WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO chikenzok
+	SELECT * FROM rui_chikenzok WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO irai
+	SELECT * FROM rui_irai WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO kanjya
+	SELECT * FROM rui_kanjya WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO kekka
+	SELECT * FROM rui_kekka WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO kenorder
+	SELECT * FROM rui_kenorder WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO kenzok
+	SELECT * FROM rui_kenzok WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL INSERT INTO ninsiki
+	SELECT * FROM rui_ninsiki WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+//	EXEC SQL INSERT INTO kenpos
+//	SELECT * FROM rui_kenpos WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+//	;
+
+	EXEC SQL INSERT INTO otherkka 
+	SELECT * FROM rui_otherkka WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL COMMIT;
+
+	EXEC SQL DELETE FROM rui_bunchu
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_chikenzok
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_irai
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_kanjya
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_kekka
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_kenorder
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_kenzok
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL DELETE FROM rui_ninsiki
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+//	EXEC SQL DELETE FROM rui_kenpos
+//	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+//	;
+
+	EXEC SQL DELETE FROM rui_otherkka 
+	WHERE utkymd = :sel_utkymd AND irino = :sel_irino
+	;
+
+	EXEC SQL COMMIT;
+
+	return ( 0 ) ;
+
+error:
+	sql_code = sqlca.sqlcode;
+	strcpy (sql_state, sqlca.sqlstate);
+
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncRuiMoveTou", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[UTKYMD='%s'][IRINO='%s']", sql_code, sql_state, pSel_utkymd, pSel_irino ) ;
+	EXEC SQL ROLLBACK;
+
+	//デッドロック
+	return ( sql_code ) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncMoveRuiTou()						*/
+/*  機能概要　：属性情報戻し処理						*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	戻し対象：検査開始日					*/
+/*　 第２引数 ：	戻し対象：依頼書ＮＯ					*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int sFncUpdateKanjya( precCHKZOK )
+my_stCHKZOK     *precCHKZOK ;
+{
+        EXEC SQL WHENEVER SQLERROR GO TO error;
+
+        strcpy ( sqlCHKZOK.utkymd, precCHKZOK->utkymd ) ;
+        strcpy ( sqlCHKZOK.irino, precCHKZOK->irino ) ;
+        strcpy ( sqlCHKZOK.knsgrp, precCHKZOK->knsgrp ) ;
+        strcpy ( sqlCHKZOK.kmkcd, precCHKZOK->kmkcd ) ;
+        strcpy ( sqlCHKZOK.sc, precCHKZOK->sc ) ;
+        strcpy ( sqlCHKZOK.tj, precCHKZOK->tj ) ;
+        strcpy ( sqlCHKZOK.tjtni, precCHKZOK->tjtni ) ;
+        strcpy ( sqlCHKZOK.sbtkbn, precCHKZOK->sbtkbn ) ;
+        strcpy ( sqlCHKZOK.age, precCHKZOK->age ) ;
+        strcpy ( sqlCHKZOK.agekbn, precCHKZOK->agekbn ) ;
+
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "sFncUpdateKanjya", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "%s,%s,%s,%s.%s,%s,%s.%s,%s,%s", 
+				     sqlCHKZOK.utkymd, sqlCHKZOK.irino, sqlCHKZOK.knsgrp, sqlCHKZOK.kmkcd, sqlCHKZOK.sc, sqlCHKZOK.tj, sqlCHKZOK.tjtni, sqlCHKZOK.sbtkbn, sqlCHKZOK.age, sqlCHKZOK.agekbn  ) ;
+	EXEC SQL UPDATE KANJYA
+	SET (
+		SC,
+		TJ,
+		TJTNI,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		KSNDH
+	) = (
+		:sqlCHKZOK.sc,
+		:sqlCHKZOK.tj,
+		:sqlCHKZOK.tjtni,
+		:sqlCHKZOK.sbtkbn,
+		:sqlCHKZOK.age,
+		:sqlCHKZOK.agekbn,
+		CURRENT TIMESTAMP
+	) WHERE
+		UTKYMD = :sqlCHKZOK.utkymd
+	AND	IRINO = :sqlCHKZOK.irino;
+
+	EXEC SQL COMMIT;
+
+	return( RTN_OK );
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	EXEC SQL ROLLBACK;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdateKanjya", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[UTKYMD='%s'][IRINO='%s']", 
+				    sqlca.sqlcode, sqlca.sqlstate, sqlCHKZOK.utkymd, sqlCHKZOK.irino ) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************
+ * InsHkHrIrai()
+ *    HKHRIRAI レコードを挿入する
+ * ■引数
+ *    [I]  HrIrai* rec       挿入レコード
+ * ■戻り値
+ ******************************************************************************/
+int InsHkHrIrai( precCHKZOK, intHkkhrkbn )
+my_stCHKZOK     *precCHKZOK ;
+int		intHkkhrkbn ;
+{
+	if( !precCHKZOK )
+		return ( -3 ) ;
+
+	strcpy ( sqlHKHRIRAI.utkymd, precCHKZOK->utkymd ) ;
+	strcpy ( sqlHKHRIRAI.irino, precCHKZOK->irino ) ;
+	strcpy ( sqlHKHRIRAI.knsgrp, precCHKZOK->knsgrp ) ;
+	strcpy ( sqlHKHRIRAI.kmkcd, precCHKZOK->kmkcd ) ;
+	sprintf ( sqlHKHRIRAI.hkkhrkbn, "%d", intHkkhrkbn ) ;
+	memset ( sqlHKHRIRAI.hkkhrcmt, '\0', sizeof ( sqlHKHRIRAI.hkkhrcmt ) ) ;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "InsHRIRAI", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		     "TBL[HKHRIRAI] UPDATE [utkymd:%s, irino:%s, knsgrp:%s, kmkcd:%s hkkhrkbn:%s:%d]",
+		     sqlHKHRIRAI.utkymd, sqlHKHRIRAI.irino, sqlHKHRIRAI.knsgrp, sqlHKHRIRAI.kmkcd, sqlHKHRIRAI.hkkhrkbn, intHkkhrkbn ) ;
+
+	EXEC SQL INSERT INTO HKHRIRAI
+	(
+		UTKYMD,
+		IRINO,
+		KNSGRP,
+		KMKCD,
+		HKKHRKBN,
+		HKKHRCMT,
+		KSNDH,
+		TRKDH
+	) VALUES (
+		:sqlHKHRIRAI.utkymd,
+		:sqlHKHRIRAI.irino,
+		:sqlHKHRIRAI.knsgrp,
+		:sqlHKHRIRAI.kmkcd,
+		:sqlHKHRIRAI.hkkhrkbn,
+		:sqlHKHRIRAI.hkkhrcmt,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+	);
+	if ( sqlca.sqlcode == MYAPP_SQL_DUPLICATION ) {
+		/* 重複エラーが発生した場合、UPDATEする */
+		EXEC SQL UPDATE HKHRIRAI
+		SET (
+			HKKHRKBN,
+			HKKHRCMT,
+			KSNDH
+		) = (
+			:sqlHKHRIRAI.hkkhrkbn,
+			:sqlHKHRIRAI.hkkhrcmt,
+			CURRENT TIMESTAMP
+		) WHERE
+			UTKYMD = :sqlHKHRIRAI.utkymd
+		    AND IRINO = :sqlHKHRIRAI.irino
+		    AND KNSGRP = :sqlHKHRIRAI.knsgrp
+		    AND KMKCD = :sqlHKHRIRAI.kmkcd
+		;
+		if( sqlca.sqlcode < 0 ){
+			EXEC SQL WHENEVER SQLERROR CONTINUE;
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "InsHRIRAI", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				     "SQLCODE:%ld SQLSTATE:%5.5s TBL[HRIRAI] UPDATE [utkymd:%s, irino:%s, knsgrp:%s, kmkcd:%s]",
+				     sqlca.sqlcode, sqlca.sqlstate, sqlHKHRIRAI.utkymd, sqlHKHRIRAI.irino, sqlHKHRIRAI.knsgrp, sqlHKHRIRAI.kmkcd ) ;
+
+			return ( sqlca.sqlcode) ;
+		}
+	}
+	else if( sqlca.sqlcode < 0 ){
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "InsHRIRAI", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		             "SQLCODE:%ld SQLSTATE:%5.5s TBL[HRIRAI] INSERT [utkymd:%s, irino:%s, knsgrp:%s, kmkcd:%s]",
+		             sqlca.sqlcode, sqlca.sqlstate, sqlHKHRIRAI.utkymd, sqlHKHRIRAI.irino, sqlHKHRIRAI.knsgrp, sqlHKHRIRAI.kmkcd ) ;
+
+		return ( sqlca.sqlcode) ;
+	}
+
+	return ( 0 );
+}
+
+/******************************************************************************
+ * sFncCntOrder()
+ ******************************************************************************/
+int sFncCntOrder( precCHKZOK , precCnt)
+my_stCHKZOK     *precCHKZOK ;
+int		*precCnt ;
+{
+        int             ret;
+        struct  sqlca   sqlca;
+
+	/* 初期処理     */
+	rec_cnt = *precCnt = 0;
+	ind_cnt = 0;
+
+	/* ホスト変数へのキー項目セット */
+        strcpy ( sel_utkymd, precCHKZOK->utkymd ) ;
+        strcpy ( sel_irino, precCHKZOK->irino ) ;
+        strcpy ( sel_knsgrp, precCHKZOK->knsgrp ) ;
+        strcpy ( sel_kmkcd, precCHKZOK->kmkcd ) ;
+
+	EXEC SQL SELECT COUNT( kmkcd )
+		INTO	:rec_cnt	INDICATOR :ind_cnt
+		FROM	KENORDER
+		WHERE	UTKYMD = :sel_utkymd
+		AND	IRINO  = :sel_irino
+		AND	KNSGRP = :sel_knsgrp
+		AND	KMKCD  = :sel_kmkcd
+		;
+
+	// 標識変数による判断
+	if( ind_cnt == 0 ) {
+		*precCnt = rec_cnt;
+
+		ret=RTN_OK;
+	} else {
+	        sFncPutLog( TRCKIND_ERROR, __FILE__, "sFncCntOrder", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				"オーダー(kenorder)の件数取得に失敗しました。[%s %s %s]",
+				precCHKZOK->utkymd, precCHKZOK->irino, precCHKZOK->kmkcd );
+
+		ret=RTN_NG;
+	}
+	return( ret );
+}
+/** End of File *********************************************************/

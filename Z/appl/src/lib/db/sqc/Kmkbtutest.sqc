@@ -1,0 +1,395 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kmkbtutest.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kmkbtutest.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    knsgrp[17];
+	char    kmkcd[8];
+	sqlint32  iriallsu;
+	sqlint32  irijsnsu;
+	sqlint32  kensasu;
+	sqlint32  stadsu;
+	sqlint32  ctrlsu;
+	sqlint32  testsu;
+	sqlint32  savysu;
+	sqlint32  kbrtsu;
+	sqlint32  kstatsu;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kmkbtutest
+
+BmlDMMInfo	KmkbtutestArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SLONG( iriallsu ),
+	DMM_SLONG( irijsnsu ),
+	DMM_SLONG( kensasu ),
+	DMM_SLONG( stadsu ),
+	DMM_SLONG( ctrlsu ),
+	DMM_SLONG( testsu ),
+	DMM_SLONG( savysu ),
+	DMM_SLONG( kbrtsu ),
+	DMM_SLONG( kstatsu ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKmkbtutestSelectAll()
+ *    KMKBTUTEST レコード全件取得
+ * ■引数
+ *    [O]  Kmkbtutest** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKmkbtutestSelectAll( Kmkbtutest** arrayOut, int* numOut )
+{
+    Kmkbtutest* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		KNSGRP,
+		KMKCD,
+		IRIALLSU,
+		IRIJSNSU,
+		KENSASU,
+		STADSU,
+		CTRLSU,
+		TESTSU,
+		SAVYSU,
+		KBRTSU,
+		KSTATSU,
+		KSNDH
+    FROM
+        KMKBTUTEST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Kmkbtutest* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:knsgrp,
+			:kmkcd,
+			:iriallsu,
+			:irijsnsu,
+			:kensasu,
+			:stadsu,
+			:ctrlsu,
+			:testsu,
+			:savysu,
+			:kbrtsu,
+			:kstatsu,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kmkbtutest*)ZbmlRealloc( array,
+                                    sizeof( Kmkbtutest ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kmkbtutest ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KmkbtutestArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKmkbtutestSelectKey()
+ *    KMKBTUTEST レコードKey条件取得
+ * ■引数
+ *    [I]  Kmkbtutest* pKey     取得するレコードのキー
+ *    [O]  Kmkbtutest** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKmkbtutestSelectKey( Kmkbtutest* pKey, Kmkbtutest** arrayOut, int* numOut )
+{
+    Kmkbtutest* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KmkbtutestArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		KNSGRP,
+		KMKCD,
+		IRIALLSU,
+		IRIJSNSU,
+		KENSASU,
+		STADSU,
+		CTRLSU,
+		TESTSU,
+		SAVYSU,
+		KBRTSU,
+		KSTATSU,
+		KSNDH
+    FROM
+        KMKBTUTEST
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Kmkbtutest* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:knsgrp,
+			:kmkcd,
+			:iriallsu,
+			:irijsnsu,
+			:kensasu,
+			:stadsu,
+			:ctrlsu,
+			:testsu,
+			:savysu,
+			:kbrtsu,
+			:kstatsu,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kmkbtutest*)ZbmlRealloc( array,
+                                    sizeof( Kmkbtutest ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kmkbtutest ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KmkbtutestArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKmkbtutestInsert()
+ *    KMKBTUTEST レコードを挿入する
+ * ■引数
+ *    [I]  Kmkbtutest* rec      挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKmkbtutestInsert( Kmkbtutest* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KmkbtutestArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KMKBTUTEST
+    (
+		KNSKISYMD,
+		KNSGRP,
+		KMKCD,
+		IRIALLSU,
+		IRIJSNSU,
+		KENSASU,
+		STADSU,
+		CTRLSU,
+		TESTSU,
+		SAVYSU,
+		KBRTSU,
+		KSTATSU,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:knsgrp,
+		:kmkcd,
+		:iriallsu,
+		:irijsnsu,
+		:kensasu,
+		:stadsu,
+		:ctrlsu,
+		:testsu,
+		:savysu,
+		:kbrtsu,
+		:kstatsu,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKmkbtutestUpdate()
+ *    KMKBTUTEST レコードを更新する
+ * ■引数
+ *    [I]  Kmkbtutest* rec      更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKmkbtutestUpdate( Kmkbtutest* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KmkbtutestArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KMKBTUTEST
+    SET (
+		IRIALLSU,
+		IRIJSNSU,
+		KENSASU,
+		STADSU,
+		CTRLSU,
+		TESTSU,
+		SAVYSU,
+		KBRTSU,
+		KSTATSU,
+		KSNDH
+    ) = (
+		:iriallsu,
+		:irijsnsu,
+		:kensasu,
+		:stadsu,
+		:ctrlsu,
+		:testsu,
+		:savysu,
+		:kbrtsu,
+		:kstatsu,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKmkbtutestDelete()
+ *    KMKBTUTEST レコードを削除する
+ * ■引数
+ *    [I]  Kmkbtutest* rec      削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKmkbtutestDelete( Kmkbtutest* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KmkbtutestArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KMKBTUTEST
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

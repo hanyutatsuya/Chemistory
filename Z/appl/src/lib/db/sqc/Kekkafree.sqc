@@ -1,0 +1,420 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kekkafree.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kekkafree.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	short   knssu;
+	short   knssueda;
+	char    frsb;
+	char    freetext[16385];
+	char    ssssflg;
+	char    ssknsflg;
+	char    dtnrtts[9];
+	char    dtnrdh[27];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kekkafree
+
+BmlDMMInfo	KekkafreeArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( knssueda ),
+	DMM_SCHAR( frsb ),
+	DMM_SSTRING( freetext ),
+	DMM_SCHAR( ssssflg ),
+	DMM_SCHAR( ssknsflg ),
+	DMM_SSTRING( dtnrtts ),
+	DMM_STIMESTAMP( dtnrdh ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKekkafreeSelectAll()
+ *    KEKKAFREE レコード全件取得
+ * ■引数
+ *    [O]  Kekkafree** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkafreeSelectAll( Kekkafree** arrayOut, int* numOut )
+{
+    Kekkafree*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		FRSB,
+		FREETEXT,
+		SSSSFLG,
+		SSKNSFLG,
+		DTNRTTS,
+		DTNRDH,
+		KSNDH
+    FROM
+        KEKKAFREE FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Kekkafree* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knsgrp,
+			:kmkcd,
+			:knssu,
+			:knssueda,
+			:frsb,
+			:freetext,
+			:ssssflg,
+			:ssknsflg,
+			:dtnrtts,
+			:dtnrdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kekkafree*)ZbmlRealloc( array,
+                                    sizeof( Kekkafree ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kekkafree ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KekkafreeArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKekkafreeSelectKey()
+ *    KEKKAFREE レコードKey条件取得
+ * ■引数
+ *    [I]  Kekkafree* pKey      取得するレコードのキー
+ *    [O]  Kekkafree** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkafreeSelectKey( Kekkafree* pKey, Kekkafree** arrayOut, int* numOut )
+{
+    Kekkafree*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkafreeArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		FRSB,
+		FREETEXT,
+		SSSSFLG,
+		SSKNSFLG,
+		DTNRTTS,
+		DTNRDH,
+		KSNDH
+    FROM
+        KEKKAFREE
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FRSB = :frsb FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Kekkafree* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knsgrp,
+			:kmkcd,
+			:knssu,
+			:knssueda,
+			:frsb,
+			:freetext,
+			:ssssflg,
+			:ssknsflg,
+			:dtnrtts,
+			:dtnrdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kekkafree*)ZbmlRealloc( array,
+                                    sizeof( Kekkafree ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kekkafree ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KekkafreeArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkafreeInsert()
+ *    KEKKAFREE レコードを挿入する
+ * ■引数
+ *    [I]  Kekkafree* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkafreeInsert( Kekkafree* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KekkafreeArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KEKKAFREE
+    (
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		FRSB,
+		FREETEXT,
+		SSSSFLG,
+		SSKNSFLG,
+		DTNRTTS,
+		DTNRDH,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:knsgrp,
+		:kmkcd,
+		:knssu,
+		:knssueda,
+		:frsb,
+		:freetext,
+		:ssssflg,
+		:ssknsflg,
+		:dtnrtts,
+		:dtnrdh,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkafreeUpdate()
+ *    KEKKAFREE レコードを更新する
+ * ■引数
+ *    [I]  Kekkafree* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkafreeUpdate( Kekkafree* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KekkafreeArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KEKKAFREE
+    SET (
+		KNTKETFLG,
+		FREETEXT,
+		SSSSFLG,
+		SSKNSFLG,
+		DTNRTTS,
+		DTNRDH,
+		KSNDH
+    ) = (
+		:kntketflg,
+		:freetext,
+		:ssssflg,
+		:ssknsflg,
+		:dtnrtts,
+		:dtnrdh,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FRSB = :frsb;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkafreeDelete()
+ *    KEKKAFREE レコードを削除する
+ * ■引数
+ *    [I]  Kekkafree* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkafreeDelete( Kekkafree* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KekkafreeArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KEKKAFREE
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno AND
+		KNSGRP         = :knsgrp         AND
+		KMKCD = :kmkcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		FRSB = :frsb;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

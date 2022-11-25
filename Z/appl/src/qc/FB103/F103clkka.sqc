@@ -1,0 +1,304 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： F103ctrlkka.sqc
+ *     機能概要  ：コントロール結果情報の入出力
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-27                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+
+#include "F103ctrlkka.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT      1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+    char    	knskisymd[11];
+    char    	bskkbn[5];
+    char    	bsklne[5];
+    char    	bskgok[7];
+    char    	knsgrp[17];
+    char    	kmkcd[8];
+    char    	nbkmkcd[8];
+    sqlint32	ctrlno;
+    char    	ctrlsbt[21];
+    short   	ctrlsbteda;
+    char    	ctrllbl[3];
+    char    	tstrflg;
+    char    	asyrckid[11];
+    short   	asyrckpos;
+    sqlint32   	knsseq;
+    sqlint32   	bskseq;
+    short   	bthno;
+    sqlint32   	bthrckjbn;
+    char    	syklotno[21];
+    char    	sktti[25];
+    char    	knzti[25];
+    char    	knztistflg;
+    char    	sktdh[27];
+    short   	ctrljti;
+    char    	chkzmflg;
+    char    	facter[13];
+    char    	base[13];
+    char    	kosijt;
+    char    	kositts[9];
+    char    	kosidh[27];
+    char    	ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT  Ctrlkka
+
+BmlDMMInfo  CtrlkkaArray[] = {
+    DMM_SDATE( knskisymd ),
+    DMM_SSTRING( bskkbn ),
+    DMM_SSTRING( bsklne ),
+    DMM_SSTRING( bskgok ),
+    DMM_SSTRING( knsgrp ),
+    DMM_SSTRING( kmkcd ),
+    DMM_SSTRING( nbkmkcd ),
+    DMM_SLONG( ctrlno ),
+    DMM_SSTRING( ctrlsbt ),
+    DMM_SSHORT( ctrlsbteda ),
+    DMM_SSTRING( ctrllbl ),
+    DMM_SCHAR( tstrflg ),
+    DMM_SSTRING( asyrckid ),
+    DMM_SSHORT( asyrckpos ),
+    DMM_SLONG( knsseq ),
+    DMM_SLONG( bskseq ),
+    DMM_SSHORT( bthno ),
+    DMM_SLONG( bthrckjbn ),
+    DMM_SSTRING( syklotno ),
+    DMM_SSTRING( sktti ),
+    DMM_SSTRING( knzti ),
+    DMM_SCHAR( knztistflg ),
+    DMM_STIMESTAMP( sktdh ),
+    DMM_SSHORT( ctrljti ),
+    DMM_SCHAR( chkzmflg ),
+    DMM_SSTRING( facter ),
+    DMM_SSTRING( base ),
+    DMM_SCHAR( kosijt ),
+    DMM_SSTRING( kositts ),
+    DMM_STIMESTAMP( kosidh ),
+    DMM_STIMESTAMP( ksndh ),
+    DMM_NULL
+};
+
+/******************************************************************************
+ * FCtrlkkkaSelectAll()
+ *    コントロール結果情報テーブルの校正日時を更新
+ * ■引数
+ *    [O]  Ctrlkka** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FCtrlkkkaSelectAll( Ctrlkka** arrayOut, int* numOut )
+{
+    Ctrlkka*    array = NULL;
+    int         num = 0;
+    Ctrlkka     key;
+
+    /*
+    *   検索条件をセット
+    */
+    memset(&key, 0, sizeof(Ctrlkka));
+    /* 校正状態に'1'(自動校正)をセット */
+    key.kosijt = '1';
+    /* 校正日時に初期日付をセット */
+    strcpy(key.kosidh, DMM_NULLTIMESTAMP);
+
+    if( !ZbmlMapStructToHost( (char*)&key, CtrlkkaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+             KNSKISYMD
+            ,BSKKBN
+            ,BSKLNE
+            ,BSKGOK
+            ,KNSGRP
+            ,KMKCD
+            ,NBKMKCD
+            ,CTRLNO
+            ,CTRLSBT
+            ,CTRLSBTEDA
+            ,CTRLLBL
+            ,TSTRFLG
+            ,ASYRCKID
+            ,ASYRCKPOS
+            ,KNSSEQ
+            ,BSKSEQ
+            ,BTHNO
+            ,BTHRCKJBN
+            ,SYKLOTNO
+            ,SKTTI
+            ,KNZTI
+            ,KNZTISTFLG
+            ,SKTDH
+            ,CTRLJTI
+            ,CHKZMFLG
+            ,FACTER
+            ,BASE
+            ,KOSIJT
+            ,KOSITTS
+            ,KOSIDH
+            ,KSNDH
+    FROM    CTRLKKA
+    WHERE   KOSIJT  = :kosijt
+    AND     KOSIDH  = '1000-01-01 00:00:00.000000'
+/*
+    AND     KOSIDH  = :kosidh
+*/
+    ORDER BY
+             KNSKISYMD
+            ,BSKKBN
+            ,BSKGOK
+            ,KMKCD
+            ,CTRLNO
+            ,CTRLSBT
+            ,CTRLSBTEDA
+    FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+    while( 1 ) {
+        Ctrlkka* rec;
+
+        EXEC SQL FETCH c1 INTO
+             :knskisymd
+            ,:bskkbn
+            ,:bsklne
+            ,:bskgok
+            ,:knsgrp
+            ,:kmkcd
+            ,:nbkmkcd
+            ,:ctrlno
+            ,:ctrlsbt
+            ,:ctrlsbteda
+            ,:ctrllbl
+            ,:tstrflg
+            ,:asyrckid
+            ,:asyrckpos
+            ,:knsseq
+            ,:bskseq
+            ,:bthno
+            ,:bthrckjbn
+            ,:syklotno
+            ,:sktti
+            ,:knzti
+            ,:knztistflg
+            ,:sktdh
+            ,:ctrljti
+            ,:chkzmflg
+            ,:facter
+            ,:base
+            ,:kosijt
+            ,:kositts
+            ,:kosidh
+            ,:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ctrlkka*)ZbmlRealloc( array,
+                                    sizeof( Ctrlkka ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ctrlkka ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, CtrlkkaArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+printf("error code=%d %s\n",sqlca.sqlcode, &sqla_program_id[1]);
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+
+/******************************************************************************
+ * FKsidhUpdate()
+ *    コントロール結果情報テーブルの校正日時を更新
+ * ■引数
+ *    [I]  Ctrlkka* rec         更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FKsidhUpdate( Ctrlkka* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, CtrlkkaArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE CTRLKKA
+    SET
+         KOSIDH     = CURRENT TIMESTAMP
+        ,KSNDH      = CURRENT TIMESTAMP
+    WHERE   KNSKISYMD   = :knskisymd
+    AND     BSKKBN      = :bskkbn
+    AND     BSKGOK      = :bskgok
+    AND     KMKCD       = :kmkcd
+    AND     CTRLNO      = :ctrlno
+    AND     CTRLSBT     = :ctrlsbt
+    AND     CTRLSBTEDA  = :ctrlsbteda
+    ;
+printf("update code=%d %s\n",sqlca.sqlcode, &sqla_program_id[1]);
+
+    return sqlca.sqlcode;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+printf("error code=%d %s\n",sqlca.sqlcode, &sqla_program_id[1]);
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

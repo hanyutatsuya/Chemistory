@@ -1,0 +1,281 @@
+/**********************************************************************
+ *
+ *	 ＢＭＬ様向け検査システム
+ *
+ *	 システム名：次世代
+ *	 ファイル名： JD112Sysknrmst.sqc
+ *	 機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.	 Date		   Name		   History
+ * --------------------------------------------------------------------
+ *  1.00	 2006-03-07					Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "JD112Sysknrmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT	  1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char	lbcd[4];
+	char	sateid[4];
+	char	kjnsriymd[11];
+	char	kkkjsriymd[11];
+	char	nxirisriymd[11];
+	char	ncnsksriymd[11];
+	char	nxbchsriymd[11];
+	char	iriendflg;
+	char	irienddh[27];
+	char	nskendflg;
+	char	nskenddh[27];
+	char	bchendflg;
+	char	bchend0dh[27];
+	char	bchend1dh[27];
+	char	bchend2dh[27];
+	char	bchend3dh[27];
+	char	bchend4dh[27];
+	char	unyflg;
+	sqlint32  ssntubn;
+	char	sriknflg01;
+	char	sriknflg02;
+	char	sriknflg03;
+	char	sriknflg04;
+	char	sriknflg05;
+	char	sriknflg06;
+	char	sriknflg07;
+	char	sriknflg08;
+	char	sriknflg09;
+	char	sriknflg10;
+	char	sriknflg11;
+	char	sriknflg12;
+	char	sriknflg13;
+	char	sriknflg14;
+	char	sriknflg15;
+	char	sriknflg16;
+	char	sriknflg17;
+	char	sriknflg18;
+	char	sriknflg19;
+	char	sriknflg20;
+	char	ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT  Sysknrmst
+
+BmlDMMInfo  SysknrmstArray[] = {
+	DMM_SSTRING( lbcd ),
+	DMM_SSTRING( sateid ),
+	DMM_SDATE( kjnsriymd ),
+	DMM_SDATE( kkkjsriymd ),
+	DMM_SDATE( nxirisriymd ),
+	DMM_SDATE( ncnsksriymd ),
+	DMM_SDATE( nxbchsriymd ),
+	DMM_SCHAR( iriendflg ),
+	DMM_STIMESTAMP( irienddh ),
+	DMM_SCHAR( nskendflg ),
+	DMM_STIMESTAMP( nskenddh ),
+	DMM_SCHAR( bchendflg ),
+	DMM_STIMESTAMP( bchend0dh ),
+	DMM_STIMESTAMP( bchend1dh ),
+	DMM_STIMESTAMP( bchend2dh ),
+	DMM_STIMESTAMP( bchend3dh ),
+	DMM_STIMESTAMP( bchend4dh ),
+	DMM_SCHAR( unyflg ),
+	DMM_SLONG( ssntubn ),
+	DMM_SCHAR( sriknflg01 ),
+	DMM_SCHAR( sriknflg02 ),
+	DMM_SCHAR( sriknflg03 ),
+	DMM_SCHAR( sriknflg04 ),
+	DMM_SCHAR( sriknflg05 ),
+	DMM_SCHAR( sriknflg06 ),
+	DMM_SCHAR( sriknflg07 ),
+	DMM_SCHAR( sriknflg08 ),
+	DMM_SCHAR( sriknflg09 ),
+	DMM_SCHAR( sriknflg10 ),
+	DMM_SCHAR( sriknflg11 ),
+	DMM_SCHAR( sriknflg12 ),
+	DMM_SCHAR( sriknflg13 ),
+	DMM_SCHAR( sriknflg14 ),
+	DMM_SCHAR( sriknflg15 ),
+	DMM_SCHAR( sriknflg16 ),
+	DMM_SCHAR( sriknflg17 ),
+	DMM_SCHAR( sriknflg18 ),
+	DMM_SCHAR( sriknflg19 ),
+	DMM_SCHAR( sriknflg20 ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbSysknrmstSelect()
+ *	SYSKNRMST レコード全件取得
+ * ■引数
+ *	[O]  Sysknrmst* pRec	取得レコード配列格納領域
+ * ■戻り値
+ *	(long) HRC_SQL_NORMAL	 正常終了（レコードあり）
+ *		   HRC_SQL_NOT_FOUND  レコードなし
+ *		   HRC_SQL_ERR		DBエラー
+ ******************************************************************************/
+long ZdbSysknrmstSelect( Sysknrmst* pRec )
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+/* 緊急基準処理年月日をはずしておく */
+/*		KKKJSRIYMD,*/
+/*		:kkkjsriymd,*/
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT
+		LBCD,
+		SATEID,
+		KJNSRIYMD,
+		NXIRISRIYMD,
+		NCNSKSRIYMD,
+		NXBCHSRIYMD,
+		IRIENDFLG,
+		IRIENDDH,
+		NSKENDFLG,
+		NSKENDDH,
+		BCHENDFLG,
+		BCHEND0DH,
+		BCHEND1DH,
+		BCHEND2DH,
+		BCHEND3DH,
+		BCHEND4DH,
+		UNYFLG,
+		SSNTUBN,
+		SRIKNFLG01,
+		SRIKNFLG02,
+		SRIKNFLG03,
+		SRIKNFLG04,
+		SRIKNFLG05,
+		SRIKNFLG06,
+		SRIKNFLG07,
+		SRIKNFLG08,
+		SRIKNFLG09,
+		SRIKNFLG10,
+		SRIKNFLG11,
+		SRIKNFLG12,
+		SRIKNFLG13,
+		SRIKNFLG14,
+		SRIKNFLG15,
+		SRIKNFLG16,
+		SRIKNFLG17,
+		SRIKNFLG18,
+		SRIKNFLG19,
+		SRIKNFLG20,
+		KSNDH
+	FROM
+		SYSKNRMST FOR READ ONLY;
+
+	EXEC SQL OPEN c1;
+
+	EXEC SQL FETCH c1 INTO
+		:lbcd,
+		:sateid,
+		:kjnsriymd,
+		:nxirisriymd,
+		:ncnsksriymd,
+		:nxbchsriymd,
+		:iriendflg,
+		:irienddh,
+		:nskendflg,
+		:nskenddh,
+		:bchendflg,
+		:bchend0dh,
+		:bchend1dh,
+		:bchend2dh,
+		:bchend3dh,
+		:bchend4dh,
+		:unyflg,
+		:ssntubn,
+		:sriknflg01,
+		:sriknflg02,
+		:sriknflg03,
+		:sriknflg04,
+		:sriknflg05,
+		:sriknflg06,
+		:sriknflg07,
+		:sriknflg08,
+		:sriknflg09,
+		:sriknflg10,
+		:sriknflg11,
+		:sriknflg12,
+		:sriknflg13,
+		:sriknflg14,
+		:sriknflg15,
+		:sriknflg16,
+		:sriknflg17,
+		:sriknflg18,
+		:sriknflg19,
+		:sriknflg20,
+		:ksndh;
+
+	ZbmlMapHostToStruct( (char*)pRec, SysknrmstArray );
+
+	EXEC SQL CLOSE c1;
+
+	return (sqlca.sqlcode == 0) ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbSysknrmstUpdate()
+ *	SYSKNRMST レコードを更新する
+ * ■引数
+ *	[I]  Sysknrmst* pRec	   更新対象レコード
+ * ■戻り値
+ *	(long) HRC_SQL_NORMAL	 正常終了
+ *		   HRC_SQL_NOT_FOUND  対象レコードなし
+ *		   HRC_NULL_POINTER   パラメータエラー
+ *		   HRC_INVALID_VALUE  設定値不正
+ *		   HRC_SQL_ERR		DBエラー
+ ******************************************************************************/
+long ZdbSysknrmstUpdate( Sysknrmst* pRec )
+{
+	if( !pRec )
+		return HRC_NULL_POINTER;
+
+	if( !ZbmlMapStructToHost( (char*)pRec, SysknrmstArray ) )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+	EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+	EXEC SQL UPDATE SYSKNRMST
+	SET (
+		SSNTUBN,
+		KSNDH
+	) = (
+		:ssntubn,
+		current timestamp
+	) WHERE
+		LBCD = :lbcd AND
+		SATEID = :sateid;
+
+	return HRC_SQL_NORMAL;
+
+notfound:
+	EXEC SQL WHENEVER NOT FOUND CONTINUE;
+	return HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

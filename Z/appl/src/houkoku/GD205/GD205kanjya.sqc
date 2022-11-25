@@ -1,0 +1,110 @@
+/******************************************************************************/
+/*   ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/*   システム名：次世代システム                                               */
+/*   ファイル名：GD205wscd.sqc                                                */
+/*   概      要：緊急対応　AS400側WSCD取得                                    */
+/*   OS        ：SUSE LINUX Enterprise Server 9 (s390x)                       */
+/*                 - Kernel 2.6.5-7.139-s390x (2).                            */
+/*   言語      ：DB2/C                                                        */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2007/06/01     INTEC.INC      CREATE                             */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include	<stdio.h>
+#include 	<stdlib.h>
+#include 	<string.h>
+#include	<sqlca.h>
+#include	"bml_base.h"
+#include	"bmllog.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+struct	_KINKMMST {
+	char	kmkcd[7+1];
+	char	aswscd[3+1];
+} hkinkmmst;
+char	hst_ymd[10+1];
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/*  関 数 名  ：GD205_GetWscd                                                 */
+/*  機能概要  ：AS400側WSコード取得                                           */
+/*  入    力  ：                                                              */
+/*   第１引数 ：char  aswscd;          :(O)AS側WSコード                       */
+/*   第２引数 ：char  kmkcd;           :(I)項目コード                         */
+/*   第３引数 ：char  knskisymd;       :(I)結果．検査開始日                   */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		GD205_GetWscd( aswscd, kmkcd, knskisymd )
+char	aswscd[];
+char	kmkcd[];
+char	knskisymd[];
+{
+	int		ret;
+	struct	sqlca			sqlca;
+
+	/* 初期処理	*/
+	//トレースログ
+    sFncPutLog( TRCKIND_TRACE, __FILE__, "GD205_GetWscd", __LINE__,
+                EXEFLG_NON, "00000000",
+                "Start Function");	
+
+	/* ======================== */
+	/*	施設別処理マスタの取得	*/
+	/* ======================== */
+		// ホスト変数へのキー項目セット
+	memset( &hkinkmmst,	'\0',	sizeof( struct	_KINKMMST ));
+	memset( hst_ymd,	'\0',	sizeof( hst_ymd	 ));
+	memset( aswscd,		'\0',	sizeof( aswscd	 ));
+	strcpy( hkinkmmst.kmkcd,	kmkcd );
+	strcpy( hst_ymd,			knskisymd );
+
+EXEC SQL DECLARE ssr_cur CURSOR FOR
+	SELECT	aswscd
+	FROM	kinkmmst
+	WHERE	kmkcd	=	:hkinkmmst.kmkcd
+	AND		kaiymd	<=	:hst_ymd
+	AND		haiymd	>=	:hst_ymd
+	ORDER BY smpcd DESC
+	FOR READ ONLY;
+	;
+
+EXEC SQL OPEN ssr_cur;
+
+	while( sqlca.sqlcode == 0 ){
+EXEC SQL FETCH ssr_cur
+		INTO	:hkinkmmst.aswscd
+		;
+		if ( sqlca.sqlcode == 0 ) {		/* OK */
+			strcpy( aswscd, hkinkmmst.aswscd );
+			ret = RTN_OK;
+			break;
+		} else  if ( sqlca.sqlcode == 100 ){	/* NOT FOUND */
+			ret = RTN_ZERO;
+			break;
+		} else {
+			// ERROR
+			sFncPutLog( TRCKIND_WARNING, __FILE__, "GD205_GetWscd", __LINE__,
+						EXEFLG_SEL, "020",
+						"KINKMMST SELECT ERROR [%d][%s]", 
+						sqlca.sqlcode, hkinkmmst.kmkcd);	
+			ret = RTN_DBERR;
+			break;
+		}
+		// １件読み込んだら抜ける
+		break;
+	}
+EXEC SQL CLOSE	ssr_cur;
+
+	return( ret );
+}
+
+/** End of File ***************************************************************/

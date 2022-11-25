@@ -1,0 +1,1026 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：LD106_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "bml_misc.h"
+#include "bml_DBCom.h"
+#include "bml_dbrc.h"
+#include "LD106.h"
+#include "LD106_db.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+// <<   情報      >>
+struct {
+	char		utkymd[10+1];	// 1  ＢＭＬ受付年月日
+	char		irino[11+1];	// 2  依頼書Ｎｏ
+	char		knsgrp[16+1];	// 3  検査グループ
+	char		kmkcd[7+1];	// 4  項目コード
+	char		sstcd[7+1];	// 5  施設コード
+	char		zrcd[4+1];	// 6  材料コード
+	char		sc[5+1];	// 7  身長
+	char		tj[5+1];	// 8  体重
+	char		tjtni[1+1];	// 9  体重区分
+	char		sbtkbn[1+1];	// 10 性別区分
+	char		age[3+1];	// 11 年齢
+	char		agekbn[1+1];	// 12 年齢区分
+	char		tntme[4+1];	// 13 蓄尿時間
+	char		tntni[1+1];	// 14 蓄尿時間区分
+	char		tnryo[5+1];	// 15 蓄尿量
+	char		tnryotni[1+1];	// 16 蓄尿量区分
+} sqlCALC;
+
+struct 
+{
+	char		knskisymd[10+1];
+	char		sriymd[10+1];
+	char		kntno[13+1];
+	char		kntketflg;
+	char		knsgrp[16+1];
+	char		kmkcd[7+1];
+	short		knssu;
+	short		knssueda;
+	char		irihsmkbn;
+	char		irikbn;
+	char		ksktkbn;
+	char		utkymd[10+1];
+	char		irino[11+1];
+	char		iriketflg;
+	short		zssdino;
+	char		sstcd[7+1];
+	char		trid[10+1];
+	short		trpos;
+	char		asyrckid[10+1];
+	short		asyrckpos;
+	char		oyakmkcd[7+1];
+	char		seccd[2+1];
+	char		bkfkkbn;
+	char		smpcd[7+1];
+	char		bskkbn[4+1];
+	char		bsklne[4+1];
+	char		bskgok[6+1];
+	sqlint32	bskseq;
+	char		bskerrsts[2+1];
+	char		sktdh[26+1];
+	char		nbkmkcd[7+1];
+	char		tstrflg;
+	char		zrcd[4+1];
+	char		ysnlbl[2+1];
+	char		kjno[3+1];
+	char		fkhkknohjkbn;
+	char		tbkjno[3+1];
+	char		tbkjflg;
+	char		htkfkhms[24+1];
+	char		skflg;
+	char		tskflg[2+1];
+	char		tktflg[2+1];
+	char		jisksbr[15+1];
+	char		kkflg;
+	char		kkiriflg;
+	short		kkirilotno;
+	char		hsykflg;
+	char		hskflg;
+	char		hhkkflg;
+	char		rawdata[20+1];
+	char		knskka1[12+1];
+	char		knskka2[24+1];
+	char		knskka2kbn[2+1];
+	char		kkahskcd[3+1];
+	char		hjkka[24+1];
+	char		sdi[3+1];
+	char		kkacmt1[5+1];
+	char		kkacmt2[5+1];
+	char		kkajkcd;
+	char		pncrgflg;
+	char		knspncrgflg;
+	char		kkaksflg;
+	char		kkassflg;
+	char		ijkbnm;
+	char		ijkbnf;
+	char		ijkbnn;
+	char		tbijkbnm;
+	char		tbijkbnf;
+	char		tbijkbnn;
+	char		nbdolbl[2+1];
+	char		nbdoerr[3+1];
+	char		ykdolbl[2+1];
+	char		ykdoerr[3+1];
+	char		etclbl[2+1];
+	char		etcerr[3+1];
+	sqlint32	ctrlno;
+	sqlint32	knsseq;
+	short		bthno;
+	sqlint32	pltno;
+	sqlint32	pltseq;
+	char		dtnrtts[8+1];
+	char		dtnrdh[26+1];
+	char		knskrdh[26+1];
+	char		hkkdh[26+1];
+	char		hkkkbdh[8+1];
+	char		zkhkkyymd[10+1];
+	char		zkhkkytme[4+1];
+	char		frkkaflg;
+	char		gzbsflg;
+	char		hsiflg;
+	char		kkaysnflg;
+	char		tnyrkflg;
+	char		siyflg;
+	char		knsflg;
+	char		renjicflg;
+	char		soukn1flg;
+	char		kanrenflg;
+	char		bunkkuflg;
+	char		kesseiflg;
+	char		rirekiflg;
+	char		syougoflg;
+	char		keisanflg;
+	char		per100flg;
+	char		tousekflg;
+	char		kisyakflg;
+	char		kouseiflg;
+	char		syoungflg;
+	char		soukn2flg;
+	char		fukaptflg;
+	char		yobiflg01;
+	char		tobiflg02;
+	char		yobiflg03;
+	char		yobiflg04;
+	char		yobiflg05;
+	char		skrycda[3+1];
+	char		skrycdb[3+1];
+	char		skrycdc[3+1];
+	char		ksndh[26+1];
+	char		trkdh[26+1];
+	char		skkka[23+1];
+} sqlKEKKA;
+
+sqlint32	rec_cnt ;
+char		sel_knskisymd[10+1];
+char		sel_knskisymd_from[10+1];
+char		sel_knskisymd_to[10+1];
+char		sel_utkymd[10+1];
+char		sel_irino[11+1];
+char		sel_knsgrp[16+1];
+char		sel_kmkcd [7+1];
+char		sel_knskka1[12+1];
+char		sel_kkahskcd[3+1];
+char		sel_knskka2kbn[2+1];
+char		sel_knsflg[1+1];
+char		sel_calckmkcd [7+1];
+char		sel_zaicd[4+1];
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelCalc()							*/
+/*  機能概要　：計算元情報検索					  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	属性チェック情報検索結果格納構造体			*/
+/*　 第２引数 ：	検索データ件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelCalc( precCALC ,precCnt )
+my_stCALC	**precCALC ;
+int		 *precCnt ;
+{
+	int	 rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = *precCnt = 0;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c2 CURSOR FOR
+	SELECT
+		HKHR.UTKYMD,
+		HKHR.IRINO,
+		ODR.KNSGRP,
+		ODR.KMKCD,
+		KAN.SSTCD,
+		ODR.ZRCD,
+		KAN.SC,
+		KAN.TJ,
+		KAN.TJTNI,
+		KAN.SBTKBN,
+		KAN.AGE,
+		KAN.AGEKBN,
+		ZOK.TNTME,
+		ZOK.TNTNI,
+		ZOK.TNRYO,
+		ZOK.TNRYOTNI
+	FROM
+		HKHRIRAI HKHR
+	INNER	JOIN KANJYA KAN 
+		ON HKHR.UTKYMD = KAN.UTKYMD AND HKHR.IRINO = KAN.IRINO 
+	INNER	JOIN KENORDER ODR 
+		ON HKHR.UTKYMD = ODR.UTKYMD AND HKHR.IRINO = ODR.IRINO AND HKHR.KMKCD = ODR.KMKCD AND ODR.KNSSU = 1
+	INNER	JOIN KENZOK ZOK 
+		ON ODR.SRIYMD = ZOK.SRIYMD AND ODR.KNTNO = ZOK.KNTNO
+	WHERE
+		HKHR.HKKHRKBN = '3'
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c2 ;
+	while( 1 ) {
+
+		memset ( &sqlCALC, '\0', sizeof ( sqlCALC ) ) ;
+		EXEC SQL FETCH c2 INTO
+				:sqlCALC ;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precCALC = ( my_stCALC * ) realloc ( *precCALC, sizeof ( my_stCALC ) * ( rec_cnt + 1 ) ) ;
+		if ( precCALC == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalc", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precCALC)[rec_cnt], &sqlCALC, sizeof ( sqlCALC ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c2;
+
+	*precCnt = rec_cnt ;
+
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalc", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelCalcOther()						*/
+/*  機能概要　：他サテライト計算対象検索			  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：検査開始日							*/
+/*  出　　力　：                                                              */
+/*　 第２引数 ：検索結果							*/
+/*　 第３引数 ：対象件数							*/
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelCalcOther( pSel_knskisymd_from, pSel_knskisymd_to, precCALCSYSMST, precCALC, precCnt )
+char		 *pSel_knskisymd_from ;
+char		 *pSel_knskisymd_to ;
+my_stCALCSYSMST	 *precCALCSYSMST ;
+my_stCALC	**precCALC ;
+int		 *precCnt ;
+{
+	int	rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = *precCnt = 0;
+	//	検索キー
+	strcpy ( sel_knskisymd_from, pSel_knskisymd_from ) ;
+	strcpy ( sel_knskisymd_to, pSel_knskisymd_to ) ;
+	strcpy ( sel_knsgrp, precCALCSYSMST->knsgrp ) ;
+	strcpy ( sel_kmkcd, precCALCSYSMST->kmkcd ) ;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c4 CURSOR FOR
+	SELECT
+		IRI.UTKYMD,
+		IRI.IRINO,
+		IRI.KNSGRP,
+		IRI.KMKCD,
+		KAN.SSTCD,
+		IRI.STSRCD AS ZRCD,
+		KAN.SC,
+		KAN.TJ,
+		KAN.TJTNI,
+		KAN.SBTKBN,
+		KAN.AGE,
+		KAN.AGEKBN,
+		ZOK.TNTME,
+		ZOK.TNTNI,
+		ZOK.TNRYO,
+		ZOK.TNRYOTNI
+	FROM
+		IRAI IRI
+	INNER	JOIN KANJYA KAN 
+		ON IRI.UTKYMD = KAN.UTKYMD AND IRI.IRINO = KAN.IRINO 
+	INNER	JOIN KENORDER ODR 
+		ON IRI.UTKYMD = ODR.UTKYMD AND IRI.IRINO = ODR.IRINO AND IRI.KNSGRP = ODR.KNSGRP AND IRI.KMKCD = ODR.KMKCD AND ODR.KNSSU = 1
+	INNER	JOIN KENZOK ZOK 
+		ON ODR.SRIYMD = ZOK.SRIYMD AND ODR.KNTNO = ZOK.KNTNO
+	WHERE
+		    IRI.UTKYMD >= :sel_knskisymd_from
+		AND IRI.UTKYMD <= :sel_knskisymd_to
+		AND IRI.KNSGRP = :sel_knsgrp
+		AND IRI.KMKCD = :sel_kmkcd
+		AND NOT EXISTS (SELECT * FROM KEKKA KKA WHERE KKA.UTKYMD = IRI.UTKYMD AND KKA.IRINO = IRI.IRINO AND KKA.KMKCD = IRI.KMKCD)
+                AND NOT EXISTS (SELECT * FROM HKHRIRAI HKHR WHERE HKHR.UTKYMD = IRI.UTKYMD AND HKHR.IRINO = IRI.IRINO AND HKHR.KMKCD = IRI.KMKCD AND HKKHRKBN IN ('0','4') )
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c4 ;
+	while( 1 ) {
+
+		memset ( &sqlCALC, '\0', sizeof ( sqlCALC ) ) ;
+		EXEC SQL FETCH c4 INTO
+				:sqlCALC ;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precCALC = ( my_stCALC * ) realloc ( *precCALC, sizeof ( my_stCALC ) * ( rec_cnt + 1 ) ) ;
+		if ( precCALC == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcOther", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precCALC)[rec_cnt], &sqlCALC, sizeof ( sqlCALC ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c4;
+
+	*precCnt = rec_cnt ;
+	if(rec_cnt == 0) {
+		return ( HRC_SQL_NOT_FOUND ) ;
+	}
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcOther", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[KNSKISYMD_FROM='%s' KNSKISYMD_TO='%s' KNSGRP='%s' KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd_from, pSel_knskisymd_to, sel_knsgrp, sel_kmkcd ) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelKenorderKekka()						*/
+/*  機能概要　：検査オーダーから結果情報レコード作成		  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検索条件						*/
+/*　 第２引数 ：	検査オーダー情報 検索結果格納構造体			*/
+/*　 第３引数 ：	検索データ件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelKenorderKekka( pCalc, precKEKKA, precCnt )
+my_stCALC	 *pCalc ;
+my_stKEKKA	**precKEKKA ;
+int		 *precCnt ;
+{
+	int	rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	rec_cnt = *precCnt = 0;
+	//	検索キー
+	strcpy ( sel_utkymd, pCalc->utkymd ) ;
+	strcpy ( sel_irino,  pCalc->irino ) ;
+	strcpy ( sel_kmkcd,  pCalc->kmkcd ) ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+	EXEC SQL DECLARE c5 CURSOR FOR
+	SELECT 
+		ODR.knskisymd,
+		ODR.sriymd,
+		ODR.kntno,
+		ODR.kntketflg,
+		ODR.knsgrp,
+		ODR.kmkcd,
+		ODR.knssu,
+		ODR.knssueda,
+		ODR.irihsmkbn,
+		ODR.irikbn,
+		ODR.ksktkbn,
+		ODR.utkymd,
+		ODR.irino,
+		ODR.iriketflg,
+		ODR.zssdino,
+		ODR.sstcd,
+		ODR.trid,
+		ODR.trpos,
+		ODR.asyrckid,
+		ODR.asyrckpos,
+		ODR.oyakmkcd,
+		ODR.seccd,
+		ODR.bkfkkbn,
+		ODR.smpcd,
+		ODR.bskkbn,
+		' ' AS bsklne,
+		' ' AS bskgok,
+		0 AS bskseq,
+		' ' AS bskerrsts,
+		CURRENT TIMESTAMP AS sktdh,
+		ODR.nbkmkcd,
+		KMK.TSTRFLG AS tstrflg,
+		ODR.zrcd,
+		ODR.ysnlbl,
+		ODR.kjno,
+		ODR.fkhkknohjkbn,
+		ODR.tbkjno,
+		ODR.tbkjflg,
+		ODR.htkfkhms,
+		ODR.skflg,
+		ODR.tskflg,
+		ODR.tktflg,
+		'1' AS jisksbr,
+		ODR.kkflg,
+		ODR.kkiriflg,
+		ODR.kkirilotno,
+		' ' AS hsykflg,
+		' ' AS hskflg,
+		' ' AS hhkkflg,
+		' ' AS rawdata,
+		' ' AS knskka1,
+		' ' AS knskka2,
+		'  ' AS knskka2kbn,
+		' ' AS kkahskcd,
+		' ' AS hjkka,
+		' ' AS sdi,
+		' ' AS kkacmt1,
+		' ' AS kkacmt2,
+		'3' AS kkajkcd,
+		'0' AS pncrgflg,
+		'0' AS knspncrgflg,
+		' ' AS kkaksflg,
+		'0' AS kkassflg,
+		' ' AS ijkbnm,
+		' ' AS ijkbnf,
+		' ' AS ijkbnn,
+		' ' AS tbijkbnm,
+		' ' AS tbijkbnf,
+		' ' AS tbijkbnn,
+		'0' AS nbdolbl,
+		' ' AS nbdoerr,
+		'0' AS ykdolbl,
+		' ' AS ykdoerr,
+		'0' AS etclbl,
+		' ' AS etcerr,
+		0 AS ctrlno,
+		ODR.knsseq,
+		ODR.bthno,
+		0 AS pltno,
+		0 AS pltseq,
+		'system' AS dtnrtts,
+		CURRENT TIMESTAMP AS dtnrdh,
+		'1000-01-01-00.00.00.000001' AS knskrdh,
+		'1000-01-01-00.00.00.000001' AS hkkdh,
+		'00:00:01' AS hkkkbdh,
+		'1000-01-01' AS zkhkkyymd,
+		' ' AS zkhkkytme,
+		'0' AS frkkaflg,
+		'0' AS gzbsflg,
+		' ' AS hsiflg,
+		'1' AS kkaysnflg,
+		' ' AS tnyrkflg,
+		'1' AS siyflg,
+		'S' AS knsflg,
+		'0' AS renjicflg,
+		'0' AS soukn1flg,
+		'0' AS kanrenflg,
+		'0' AS bunkkuflg,
+		'0' AS kesseiflg,
+		'0' AS rirekiflg,
+		'0' AS syougoflg,
+		'0' AS keisanflg,
+		'0' AS per100flg,
+		'0' AS tousekflg,
+		'0' AS kisyakflg,
+		'0' AS kouseiflg,
+		'0' AS syoungflg,
+		'0' AS soukn2flg,
+		'0' AS fukaptflg,
+		'0' AS yobiflg01,
+		'0' AS tobiflg02,
+		'0' AS yobiflg03,
+		'0' AS yobiflg04,
+		'0' AS yobiflg05,
+		' ' AS skrycda,
+		' ' AS skrycdb,
+		' ' AS skrycdc,
+		CURRENT TIMESTAMP AS ksndh,
+		CURRENT TIMESTAMP AS trkdh, 
+		' ' AS skkka
+	FROM
+		KENORDER ODR 
+	INNER JOIN KMKMST KMK 
+	   ON	ODR.KNSGRP	 = KMK.KNSGRP 
+	  AND	ODR.KMKCD	 = KMK.KMKCD
+	WHERE	ODR.UTKYMD	 = :sel_utkymd
+	  AND	ODR.IRINO	 = :sel_irino 
+	  AND	ODR.KMKCD	 = :sel_kmkcd 
+	  AND	ODR.KNSSU	 = 1
+	  AND	KMK.KAIYMD	<= :sel_utkymd 
+	  AND	KMK.HAIYMD	>= :sel_utkymd 
+	FOR READ ONLY ;
+
+	/***
+	 ***	検索
+	 ***/
+	EXEC SQL OPEN c5;
+	while( 1 ) {
+		memset ( &sqlKEKKA, '\0', sizeof ( sqlKEKKA ) ) ;
+
+		EXEC SQL FETCH c5 INTO
+			:sqlKEKKA;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precKEKKA = ( my_stKEKKA * ) realloc ( *precKEKKA, sizeof ( my_stKEKKA ) * ( rec_cnt + 1 ) ) ;
+		if ( precKEKKA == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKenorderKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precKEKKA)[rec_cnt], &sqlKEKKA, sizeof ( sqlKEKKA ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c5 ;
+
+	*precCnt = rec_cnt ;
+
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKenorderKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDER] CLM[ALL] WHERE[UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pCalc->utkymd, pCalc->irino, pCalc->kmkcd ) ;
+	return ( sqlca.sqlcode) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelKekka()							*/
+/*  機能概要　：検査結果情報検索				  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検索条件						*/
+/*　 第２引数 ：	検査結果情報 検索結果格納構造体				*/
+/*　 第３引数 ：	検索データ件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelKekka( pCalc, precKEKKA, precCnt )
+my_stCALC	 *pCalc ;
+my_stKEKKA	**precKEKKA ;
+int		 *precCnt ;
+{
+	int	rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	rec_cnt = *precCnt = 0;
+	//	検索キー
+	strcpy ( sel_utkymd, pCalc->utkymd ) ;
+	strcpy ( sel_irino,  pCalc->irino ) ;
+	strcpy ( sel_kmkcd,  pCalc->kmkcd ) ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+	EXEC SQL DECLARE c6 CURSOR FOR
+	SELECT 
+		*
+	FROM
+		KEKKA
+	WHERE	UTKYMD	=  :sel_utkymd
+	  AND	IRINO	=  :sel_irino 
+	  AND	KMKCD	=  :sel_kmkcd 
+	  AND	KKAJKCD	=  '3' 
+	FOR READ ONLY ;
+
+	/***
+	 ***	検索
+	 ***/
+	EXEC SQL OPEN c6;
+	while( 1 ) {
+		memset ( &sqlKEKKA, '\0', sizeof ( sqlKEKKA ) ) ;
+
+		EXEC SQL FETCH c6 INTO
+			:sqlKEKKA;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precKEKKA = ( my_stKEKKA * ) realloc ( *precKEKKA, sizeof ( my_stKEKKA ) * ( rec_cnt + 1 ) ) ;
+		if ( precKEKKA == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precKEKKA)[rec_cnt], &sqlKEKKA, sizeof ( sqlKEKKA ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c6 ;
+
+	*precCnt = rec_cnt ;
+
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s TBL[KEKKA] CLM[ALL] WHERE[UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pCalc->utkymd, pCalc->irino, pCalc->kmkcd ) ;
+	return ( sqlca.sqlcode) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelCalcSource()						*/
+/*  機能概要　：計算元項目 検査結果情報検索				 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	受付日							*/
+/*　 第２引数 ：	依頼書ＮＯ						*/
+/*　 第３引数 ：	計算先項目コード					*/
+/*　 第４引数 ：	計算元項目コード					*/
+/*　 第９引数 ：	計算項目種別(自サテライト計算 or 他サテライト計算)	*/
+/*  出　　力　：                                                              */
+/*　 第５引数 ：	検査結果１						*/
+/*　 第６引数 ：	結果補足コード						*/
+/*　 第７引数 ：	検査結果２区分						*/
+/*　 第８引数 ：	検査フラグ						*/
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelCalcSource( pSel_utkymd, pSel_irino, pSel_calckmkcd, pSel_kmkcd, pSel_knskka1, pSel_kkahskcd, pSel_knskka2kbn, pSel_knsflg, KekkaOtherFlg )
+char	*pSel_utkymd ;
+char	*pSel_irino ;
+char	*pSel_calckmkcd ;
+char	*pSel_kmkcd ;
+char	*pSel_knskka1 ;
+char	*pSel_kkahskcd ;
+char	*pSel_knskka2kbn ;
+char	*pSel_knsflg ;
+int	KekkaOtherFlg ;
+{
+	/* 計算元結果の材料をマスタより取得し、取得された材料の結果のみを使用して計算するように変更 */
+	/* 計算元結果の材料がマスタより取得できない場合は、材料に関係なく計算を行う。 */
+
+	//	検索キー
+	strcpy ( sel_utkymd, pSel_utkymd ) ;
+	strcpy ( sel_irino,  pSel_irino ) ;
+	strcpy ( sel_calckmkcd,  pSel_calckmkcd ) ;
+	strcpy ( sel_kmkcd,  pSel_kmkcd ) ;
+	memset ( sel_knskka1, '\0', sizeof(sel_knskka1) );
+	memset ( sel_kkahskcd, '\0', sizeof(sel_kkahskcd) );
+	memset ( sel_knskka2kbn, '\0', sizeof(sel_knskka2kbn) );
+
+	if( KekkaOtherFlg == 0 ){
+		/* 自サテライト計算項目の場合 */
+		EXEC SQL SELECT KKA.KNSKKA1 ,
+				KKA.KKAHSKCD ,
+				KKA.KNSKKA2KBN ,
+				KKA.KNSFLG
+		INTO	:sel_knskka1 ,
+			:sel_kkahskcd ,
+			:sel_knskka2kbn ,
+			:sel_knsflg
+		FROM
+			KEKKA KKA
+		LEFT JOIN CALCZAIMST ZAI
+		   ON  KKA.KMKCD     =  ZAI.MOTOKMKCD
+		  AND  ZAI.CALCKMKCD =  :sel_calckmkcd
+		  AND  ZAI.KAIYMD    <= :sel_utkymd
+		  AND  ZAI.HAIYMD    >= :sel_utkymd
+		WHERE  KKA.UTKYMD    =  :sel_utkymd
+		  AND  KKA.IRINO     =  :sel_irino 
+		  AND  KKA.KMKCD     =  :sel_kmkcd 
+		  AND  KKA.KNSFLG    in  ('X','S','E','A')
+		  AND  KKA.KKAJKCD   =  '3'
+		  AND  (ZAI.ZAICD IS NULL OR ZAI.ZAICD = KKA.ZRCD )
+		FETCH FIRST 1 ROWS ONLY
+		FOR READ ONLY ;
+	}else {
+		/* 他サテライト計算項目の場合 */
+		EXEC SQL SELECT KKA.KNSKKA1 ,
+				KKA.KKAHSKCD ,
+				KKA.KNSKKA2KBN ,
+				KKA.KNSFLG
+		INTO	:sel_knskka1 ,
+			:sel_kkahskcd ,
+			:sel_knskka2kbn ,
+			:sel_knsflg
+		FROM
+			KEKKA KKA
+		LEFT JOIN CALCZAIMST ZAI
+		   ON  KKA.KMKCD     =  ZAI.MOTOKMKCD
+		  AND  ZAI.CALCKMKCD =  :sel_calckmkcd
+		  AND  ZAI.KAIYMD    <= :sel_utkymd
+		  AND  ZAI.HAIYMD    >= :sel_utkymd
+		WHERE  KKA.UTKYMD    =  :sel_utkymd
+		  AND  KKA.IRINO     =  :sel_irino 
+		  AND  KKA.KMKCD     =  :sel_kmkcd 
+		  AND  KKA.KNSFLG    in  ('E')
+		  AND  KKA.KKAJKCD   =  '3'
+		  AND  (ZAI.ZAICD IS NULL OR ZAI.ZAICD = KKA.ZRCD )
+		FETCH FIRST 1 ROWS ONLY
+		FOR READ ONLY ;
+	}
+	if( (sqlca.sqlcode != HRC_SQL_NORMAL) && (sqlca.sqlcode != HRC_SQL_NOT_FOUND) ){ 
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcSource", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				 	"SQLCODE:%ld SQLSTATE:%5.5s TBL[KEKKA] CLM[KNSKKA1] WHERE[UTKYMD='%s' AND IRINO='%s' AND KMKCD = '%s']",
+					sqlca.sqlcode, sqlca.sqlstate, pSel_utkymd, pSel_irino, pSel_kmkcd ) ;
+		return(sqlca.sqlcode) ;
+	}
+
+	/* 自サテライトに該当の項目の結果がない場合、他サテライト計算結果を取得 */
+	if ( sqlca.sqlcode == HRC_SQL_NOT_FOUND ){
+		EXEC SQL SELECT KKA.KNSKKA1 ,
+				KKA.KKAHSKCD ,
+				KKA.KNSKKA2KBN ,
+				'E'
+		INTO	:sel_knskka1 ,
+			:sel_kkahskcd ,
+			:sel_knskka2kbn ,
+			:sel_knsflg
+		FROM
+			OTHERKKA KKA
+		LEFT JOIN CALCZAIMST ZAI
+		   ON  KKA.KMKCD     =  ZAI.MOTOKMKCD
+		  AND  ZAI.CALCKMKCD =  :sel_calckmkcd
+		  AND  ZAI.KAIYMD    <= :sel_utkymd
+		  AND  ZAI.HAIYMD    >= :sel_utkymd
+		WHERE  KKA.UTKYMD    =  :sel_utkymd
+		  AND  KKA.IRINO     =  :sel_irino 
+		  AND  KKA.KMKCD     =  :sel_kmkcd 
+		  AND  KKA.KKAJKCD   =  '3'
+		  AND  (ZAI.ZAICD IS NULL OR ZAI.ZAICD = KKA.STZRCD )
+		FETCH FIRST 1 ROWS ONLY
+		FOR READ ONLY ;
+		if( (sqlca.sqlcode != HRC_SQL_NORMAL) && (sqlca.sqlcode != HRC_SQL_NOT_FOUND) ){ 
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcSource", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+					 	"SQLCODE:%ld SQLSTATE:%5.5s TBL[OTHERKEKKA] CLM[KNSKKA1] WHERE[UTKYMD='%s' AND IRINO='%s' AND KMKCD = '%s']",
+						sqlca.sqlcode, sqlca.sqlstate, pSel_utkymd, pSel_irino, pSel_kmkcd ) ;
+			return(sqlca.sqlcode);
+		}
+		if ( sqlca.sqlcode == HRC_SQL_NOT_FOUND ){
+			return( HRC_SQL_NOT_FOUND );
+		}
+	}
+
+	strcpy ( pSel_knskka1, sel_knskka1 ) ;
+	strcpy ( pSel_kkahskcd, sel_kkahskcd ) ;
+	strcpy ( pSel_knskka2kbn, sel_knskka2kbn ) ;
+	strcpy ( pSel_knsflg, sel_knsflg ) ;
+
+	return( HRC_SQL_NORMAL );
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbInsCalcKekka()						*/
+/*  機能概要　：計算結果情報登録				  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査結果情報 検索結果格納構造体				*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbInsCalcKekka( precKEKKA , pKnsflg )
+my_stKEKKA	*precKEKKA ;
+char		*pKnsflg ;
+{
+	EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+	memset ( &sqlKEKKA, '\0', sizeof ( sqlKEKKA ) ) ;
+	memcpy ( &sqlKEKKA, precKEKKA, sizeof( sqlKEKKA ) ) ;
+
+	if ( sqlKEKKA.renjicflg == '3' || sqlKEKKA.renjicflg == '4' || pKnsflg[0] == 'A' ) {
+		sqlKEKKA.knsflg = 'A';
+	} else {
+		sqlKEKKA.knsflg = 'S';
+	}
+
+	EXEC SQL INSERT INTO KEKKA
+	VALUES ( :sqlKEKKA );
+
+	return( HRC_SQL_NORMAL );
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbInsCalcKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s TBL[KEKKA] CLM[ALL] WHERE[UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, precKEKKA->utkymd, precKEKKA->irino, precKEKKA->kmkcd ) ;
+	return ( sqlca.sqlcode) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbUpdCalcKekka()						*/
+/*  機能概要　：計算結果情報更新				  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：my_stKEKKA 検査結果情報 検索結果格納構造体			*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbUpdCalcKekka( precKEKKA , pKnsflg)
+my_stKEKKA	*precKEKKA ;
+char		*pKnsflg ;
+{
+	EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+	EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+	memset ( &sqlKEKKA, '\0', sizeof ( sqlKEKKA ) ) ;
+	memcpy ( &sqlKEKKA, precKEKKA, sizeof( my_stKEKKA ) ) ;
+
+	if ( sqlKEKKA.renjicflg == '3' || sqlKEKKA.renjicflg == '4' || pKnsflg[0] == 'A' ) {
+		sqlKEKKA.knsflg = 'A';
+	} else {
+		sqlKEKKA.knsflg = 'S';
+	}
+
+	EXEC SQL UPDATE KEKKA
+	SET
+		RAWDATA		= :sqlKEKKA.rawdata,
+		KNSKKA1		= :sqlKEKKA.knskka1,
+		KNSKKA2		= :sqlKEKKA.knskka2,
+		KNSKKA2KBN	= :sqlKEKKA.knskka2kbn,
+		KKAHSKCD	= :sqlKEKKA.kkahskcd,
+		HJKKA		= :sqlKEKKA.hjkka,
+		KKACMT1		= ' ',
+		KKACMT2		= ' ',
+		PNCRGFLG	= :sqlKEKKA.pncrgflg,
+		KNSPNCRGFLG	= :sqlKEKKA.knspncrgflg,
+		IJKBNM		= :sqlKEKKA.ijkbnm,
+		IJKBNF		= :sqlKEKKA.ijkbnf,
+		IJKBNN		= :sqlKEKKA.ijkbnn,
+		KNSFLG		= :sqlKEKKA.knsflg,
+		RENJICFLG	= :sqlKEKKA.renjicflg,
+		SKKKA		= :sqlKEKKA.skkka,
+		KSNDH		= CURRENT TIMESTAMP
+	WHERE
+		UTKYMD	= :sqlKEKKA.utkymd	AND
+		IRINO	= :sqlKEKKA.irino	AND
+		SRIYMD  = :sqlKEKKA.sriymd	AND
+		KNTNO	= :sqlKEKKA.kntno	AND
+		KNSGRP	= :sqlKEKKA.knsgrp	AND
+		KMKCD	= :sqlKEKKA.kmkcd	AND
+		KKAJKCD	= '3'
+	;
+
+	return( HRC_SQL_NORMAL );
+
+notfound:
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbUpdCalcKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"更新対象が存在しません。 [UTKYMD='%s' IRINO='%s' SRIYMD='%s' KNTNO='%s' KNSGRP='%s' KMKCD='%s']",
+			 sqlca.sqlcode, sqlca.sqlstate, sqlKEKKA.utkymd, sqlKEKKA.irino, sqlKEKKA.sriymd, sqlKEKKA.kntno, sqlKEKKA.knsgrp, sqlKEKKA.kmkcd ) ;
+	return( HRC_SQL_NOT_FOUND );
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbUpdCalcKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s [UTKYMD='%s' IRINO='%s' SRIYMD='%s' KNTNO='%s' KNSGRP='%s' KMKCD='%s']",
+			 sqlca.sqlcode, sqlca.sqlstate, sqlKEKKA.utkymd, sqlKEKKA.irino, sqlKEKKA.sriymd, sqlKEKKA.kntno, sqlKEKKA.knsgrp, sqlKEKKA.kmkcd ) ;
+
+	return ( sqlca.sqlcode) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbUpdReCalc()							*/
+/*  機能概要　：計算結果情報更新						*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：my_stCalc 検査結果情報 検索結果格納構造体			*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int                                                             */
+/******************************************************************************/
+int
+ZdbUpdRecalc( pCalc )
+my_stCALC	 *pCalc ;
+{
+	EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+	
+	strcpy ( sel_utkymd, pCalc->utkymd ) ;
+	strcpy ( sel_irino,  pCalc->irino ) ;
+	strcpy ( sel_kmkcd,  pCalc->kmkcd ) ;
+
+	EXEC SQL UPDATE HKHRIRAI
+	SET
+		HKKHRKBN	= '0',
+		KSNDH		= CURRENT TIMESTAMP
+	WHERE
+		UTKYMD	= :sel_utkymd	AND
+		IRINO	= :sel_irino	AND
+		KMKCD	= :sel_kmkcd
+	;
+
+	return ( HRC_SQL_NORMAL );
+
+notfound:
+	sFncPutLog ( TRCKIND_WARNING, __FILE__, "ZdbUpdRecalc", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"更新対象が存在しません。 [UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", pCalc->utkymd, pCalc->irino, pCalc->kmkcd ) ;
+	return ( HRC_SQL_NOT_FOUND );
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbUpdRecalc", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s [UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pCalc->utkymd, pCalc->irino, pCalc->kmkcd ) ;
+	return ( sqlca.sqlcode) ;
+}
+/******************************************************************************/
+/*  関 数 名　：ZdbInsNotCalc()							*/
+/*  機能概要　：計算元項目 コメント結果有り登録					*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：my_stCalc 検査結果情報 検索結果格納構造体			*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int                                                             */
+/******************************************************************************/
+int
+ZdbInsNotCalc( pCalc )
+my_stCALC	 *pCalc ;
+{
+	EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+	
+	strcpy ( sel_utkymd, pCalc->utkymd ) ;
+	strcpy ( sel_irino,  pCalc->irino ) ;
+	strcpy ( sel_knsgrp,  pCalc->knsgrp ) ;
+	strcpy ( sel_kmkcd,  pCalc->kmkcd ) ;
+
+	EXEC SQL UPDATE HKHRIRAI
+	SET
+		HKKHRKBN	= '4',
+		KSNDH		= CURRENT TIMESTAMP
+	WHERE
+		UTKYMD	= :sel_utkymd	AND
+		IRINO	= :sel_irino	AND
+		KMKCD	= :sel_kmkcd
+	;
+
+	return ( HRC_SQL_NORMAL );
+
+notfound:
+	EXEC SQL INSERT INTO HKHRIRAI (
+		  UTKYMD
+		, IRINO
+		, KNSGRP
+		, KMKCD
+		, HKKHRKBN
+		, HKKHRCMT
+		, KSNDH
+		, TRKDH
+	)
+	VALUES (
+		  :sel_utkymd
+		, :sel_irino
+		, :sel_knsgrp
+		, :sel_kmkcd
+		, '4'
+		, ' '
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP
+	);
+
+	return ( HRC_SQL_NORMAL );
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbInsNotCalc", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			"SQLCODE:%ld SQLSTATE:%5.5s [UTKYMD='%s' AND IRINO='%s' AND KMKCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pCalc->utkymd, pCalc->irino, pCalc->kmkcd ) ;
+	return ( sqlca.sqlcode) ;
+}
+/** End of File *********************************************************/

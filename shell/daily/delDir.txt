@@ -1,0 +1,17 @@
+aplog
+today/online
+today/file/NSWS
+today/file/kekka
+today/file/pot
+today/file/printer
+today/file/KEA00/kea00ap/kekka
+today/file/KEA00/kea00ap/order
+today/file/label
+today/file/3id
+today/file/list
+today/file/KEA00/kea00ap/ZS050/socdata
+today/file/KEA00/kea00ap/ZS050/irai_file
+today/file/KEA00/kea00ap/ZS050/kekka_onl
+today/file/KEA00/kea00ap/ZS050/kekka_file
+today/file/KEA00/kea00ap/ZS050/lane
+today/file/KEA00/kea00ap/rack

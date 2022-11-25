@@ -1,0 +1,896 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： JS112Syukei.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-03-23                    Create
+ *  1.01     2006-04-26     H.Suyama       BSKGOK→BSKLNEに変更
+ *  1.04     2006-06-17     INTEC          経過SEQは10分単位に作成
+ *  1.05     2006-07-04     INTEC          測定は結果のみで検体単位に集計
+ **********************************************************************/
+#include <stdio.h>
+
+#include "JD112Syukei.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+#define STA_POS			1					// 1.04 ADD
+#define JIKAN_LEN		15					// 1.04 ADD
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+/* 1.03 DELL
+DEL	char		jikan[3];
+*/
+	char		jikan[27];
+	char		skflg;
+	sqlint32	count;
+	char		bskkbn[5];
+	char		bskgok[7];
+
+	char		bsklne[5];
+
+	char		fromdh[27];
+	char		fromdatetime[19];
+	char		todh[27];
+	char		todatetime[19];
+	char		wkupapp[33];
+	char		knsjkflg;
+
+	sqlint32	pos;
+	sqlint32	len;
+EXEC SQL END DECLARE SECTION;
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	JD112Syukei
+
+BmlDMMInfo	JD112SyukeiArray[] = {
+	DMM_SSTRING( jikan ),
+	DMM_SCHAR( skflg ),
+	DMM_SLONG( count ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bskgok ),
+	DMM_SSTRING( bsklne ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbJD112SelectCountA()
+ *    依頼数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountA( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		SKFLG,
+		COUNT(TRKDH)
+	FROM
+		IRAI
+	WHERE
+			TRKDH >= :fromdh
+		AND TRKDH < :todh
+	GROUP BY
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c1;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c1 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c1;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountB()
+ *    患者数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountB( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL DECLARE c2 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(KNJ.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		COALESCE(IRI.SKFLG, '0'),
+		COUNT(KNJ.TRKDH)
+	FROM
+		KANJYA KNJ
+		LEFT OUTER JOIN
+			(
+				SELECT DISTINCT
+					UTKYMD,
+					IRINO,
+					SKFLG
+				FROM
+					IRAI
+			) IRI
+		ON	KNJ.UTKYMD = IRI.UTKYMD
+		AND KNJ.IRINO = IRI.IRINO
+	WHERE
+			KNJ.TRKDH >= :fromdh
+		AND KNJ.TRKDH < :todh
+	GROUP BY
+		SUBSTR(TO_CHAR(KNJ.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(KNJ.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c2;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c2 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c2;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountC()
+ *    分注数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountC( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL DECLARE c3 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(BNC.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		COALESCE(IRI.SKFLG, '0'),
+		COUNT(BNC.TRKDH)
+	FROM
+		(
+				SELECT
+					UTKYMD,
+					IRINO,
+					SRIYMD,
+					KNTNO,
+					SMPCD,
+					MAX(TRKDH) AS TRKDH
+				FROM
+					BUNCHU
+				GROUP BY
+					UTKYMD,
+					IRINO,
+					SRIYMD,
+					KNTNO,
+					SMPCD
+		) BNC
+		LEFT OUTER JOIN
+			(
+				SELECT DISTINCT
+					UTKYMD,
+					IRINO,
+					SKFLG
+				FROM
+					IRAI
+			) IRI
+		ON	BNC.UTKYMD = IRI.UTKYMD
+		AND BNC.IRINO = IRI.IRINO
+	WHERE
+			BNC.TRKDH >= :fromdh
+		AND BNC.TRKDH < :todh
+	GROUP BY
+		SUBSTR(TO_CHAR(BNC.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(BNC.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c3;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c3 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c3;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountD()
+ *    認識数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountD( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL DECLARE c4 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(NIN.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		COALESCE(IRI.SKFLG, '0'),
+		COUNT(NIN.TRKDH)
+	FROM
+		NINSIKI NIN
+		LEFT OUTER JOIN
+			(
+				SELECT DISTINCT
+					UTKYMD,
+					IRINO,
+					SKFLG
+				FROM
+					IRAI
+			) IRI
+		ON	NIN.UTKYMD = IRI.UTKYMD
+		AND NIN.IRINO = IRI.IRINO
+	WHERE
+			NIN.TRKDH >= :fromdh
+		AND NIN.TRKDH < :todh
+	GROUP BY
+		SUBSTR(TO_CHAR(NIN.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(NIN.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c4;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c4 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c4;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountE()
+ *    患者数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountE( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+	EXEC SQL DECLARE c5 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(KZK.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		COALESCE(IRI.SKFLG, '0'),
+		COUNT(KZK.TRKDH)
+	FROM
+		KENZOK KZK
+		LEFT OUTER JOIN
+			(
+				SELECT DISTINCT
+					UTKYMD,
+					IRINO,
+					SKFLG
+				FROM
+					IRAI
+			) IRI
+		ON	KZK.UTKYMD = IRI.UTKYMD
+		AND KZK.IRINO = IRI.IRINO
+	WHERE
+			KZK.TRKDH >= :fromdh
+		AND KZK.TRKDH < :todh
+	GROUP BY
+		SUBSTR(TO_CHAR(KZK.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(KZK.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c5;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c5 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c5;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountFGHIJ()
+ *    患者数集計
+ * ■引数
+ *    [I]  char* pFromDt			検索対象日時From
+ *    [I]  char* pToDt				検索対象日時To
+ *    [I]  char* pWkupApp			起動アプリ名
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountFGHIJ( char *pFromDt, char *pToDt, char *pWkupApp,
+							   JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+/* 1.04 DELL
+//	if ( ZbmlCopyToHostData( fromdatetime, pFromDt, sizeof( fromdatetime ) -1 ) == FALSE )
+//		return HRC_INVALID_VALUE;
+//	if ( ZbmlCopyToHostData( todatetime, pToDt, sizeof( todatetime ) -1 ) == FALSE )
+//		return HRC_INVALID_VALUE;
+*/
+	
+/* DELL
+	sprintf( fromdatetime,	"%.8s%.8s", pFromDt,	&pFromDt[11] );
+	sprintf( todatetime,	"%.8s%.8s", pToDt,		&pToDt[11] );
+*/
+	sprintf( fromdatetime,	"%.10s%.8s", pFromDt,	&pFromDt[11] );
+	sprintf( todatetime,	"%.10s%.8s", pToDt,		&pToDt[11] );
+
+	if ( ZbmlCopyToHostData( wkupapp, pWkupApp, sizeof( wkupapp ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+/* 1.04 DELL
+	EXEC SQL DECLARE c6 CURSOR FOR
+	SELECT
+		SUBSTR(CHAR(SYTIME), 1, 2),
+		COUNT(*)
+	FROM
+		APLLOG
+	WHERE
+			CHAR(SYDATE) || CHAR(SYTIME) >= :fromdatetime
+		AND CHAR(SYDATE) || CHAR(SYTIME) < :todatetime
+		AND TRACEKBN IN ('W', 'E', 'A')
+		AND WKUPAPP = :wkupapp
+	GROUP BY
+		SUBSTR(CHAR(SYTIME), 1, 2)
+	ORDER BY
+		SUBSTR(CHAR(SYTIME), 1, 2)
+		FOR READ ONLY;
+*/
+
+	EXEC SQL DECLARE c6 CURSOR FOR
+	SELECT
+		CHAR(SYDATE) || ' ' || SUBSTR(CHAR(SYTIME), 1, 4),
+		COUNT(*)
+	FROM
+		APLLOG
+	WHERE
+			CHAR(SYDATE) || CHAR(SYTIME) >= :fromdatetime
+		AND CHAR(SYDATE) || CHAR(SYTIME) < :todatetime
+		AND TRACEKBN IN ('W', 'E', 'A')
+		AND WKUPAPP = :wkupapp
+	GROUP BY
+		CHAR(SYDATE) || ' ' || SUBSTR(CHAR(SYTIME), 1, 4)
+	ORDER BY
+		CHAR(SYDATE) || ' ' || SUBSTR(CHAR(SYTIME), 1, 4)
+	FOR READ ONLY;
+
+	EXEC SQL OPEN c6;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c6 INTO
+			:jikan,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c6;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountKM()
+ *    投入数、測定数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [I]  char cKnsJkFlg			検査状況フラグ
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountKM( char *pFromDh, char *pToDh, char cKnsJkFlg, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	knsjkflg = cKnsJkFlg;
+
+	EXEC SQL DECLARE c7 CURSOR FOR
+	SELECT
+		SUBSTR(TO_CHAR(POS.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		COALESCE(IRI.SKFLG, '0'),
+		COUNT(POS.TRKDH)
+	FROM
+		KENPOS POS
+		LEFT OUTER JOIN
+			(
+				SELECT DISTINCT
+					UTKYMD,
+					IRINO,
+					SKFLG
+				FROM
+					IRAI
+			) IRI
+		ON	POS.UTKYMD = IRI.UTKYMD
+		AND POS.IRINO = IRI.IRINO
+	WHERE
+			POS.TRKDH >= :fromdh
+		AND POS.TRKDH < :todh
+		AND POS.RAKITJHO = :knsjkflg
+	GROUP BY
+		SUBSTR(TO_CHAR(POS.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+	ORDER BY
+		SUBSTR(TO_CHAR(POS.TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+		IRI.SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c7;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c7 INTO
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c7;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbJD112SelectCountL()
+ *    依頼数集計
+ * ■引数
+ *    [I]  char* pFromDh			検索対象日時From
+ *    [I]  char* pToDh				検索対象日時To
+ *    [O]  JD112Syukei** arrayOut	取得レコード配列格納領域
+ *    [O]  int* numOut				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbJD112SelectCountL( char *pFromDh, char *pToDh, JD112Syukei** arrayOut, int* numOut )
+{
+	JD112Syukei	*array = NULL;
+	int			num = 0;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	if ( ZbmlCopyToHostData( fromdh, pFromDh, sizeof( fromdh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+	if ( ZbmlCopyToHostData( todh, pToDh, sizeof( todh ) -1 ) == FALSE )
+		return HRC_INVALID_VALUE;
+
+/* 1.05 DELL STA ===========================================================
+	EXEC SQL DECLARE c8 CURSOR FOR
+
+	SELECT
+		BSKKBN,
+		BSKLNE,
+		JIKAN,
+		SKFLG,
+		SUM(CNT)
+	FROM
+		(
+			SELECT
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) AS JIKAN,
+				SKFLG,
+				COUNT(TRKDH) AS CNT
+			FROM
+				KEKKA
+			WHERE
+					TRKDH >= :fromdh
+				AND TRKDH < :todh
+			GROUP BY
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15),
+				SKFLG
+			UNION ALL
+			SELECT
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(KSNDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) AS JIKAN,
+				'0' AS SKFLG,
+				COUNT(KSNDH) AS CNT 
+			FROM
+				CTRLKKA
+			WHERE
+					KSNDH >= :fromdh
+				AND KSNDH < :todh
+			GROUP BY
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(KSNDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15)
+			UNION ALL
+			SELECT
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(KSNDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) AS JIKAN,
+				'0' AS SKFLG,
+				COUNT(KSNDH) AS CNT 
+			FROM
+				STANDARD
+			WHERE
+					KSNDH >= :fromdh
+				AND KSNDH < :todh
+			GROUP BY
+				BSKKBN,
+				BSKLNE,
+				SUBSTR(TO_CHAR(KSNDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15)
+		) AS TEMP
+	GROUP BY
+		BSKKBN,
+		BSKLNE,
+		JIKAN,
+		SKFLG
+	ORDER BY
+		BSKKBN,
+		BSKLNE,
+		JIKAN,
+		SKFLG
+		FOR READ ONLY;
+ 1.05 DELL END ==================================================*/
+	// 1.05 初回結果のみを対象として検体NO単位に集計する
+	// 1.06 結果の集検フラグは空白も存在するためcase文でまとめる
+	EXEC SQL DECLARE c8 CURSOR FOR
+
+	SELECT
+		BSKKBN,
+		BSKLNE,
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) AS JIKAN,
+		SKFLG,
+--		( case SKFLG when ' ' then '0' else  SKFLG end ) as SKFLG,
+		COUNT(DISTINCT KNTNO)
+	FROM
+		(
+		SELECT
+			BSKKBN,
+			BSKLNE,
+--			SKFLG,									-- 1.06 
+			( case SKFLG when '1' then '1' else '0' end ) as SKFLG,
+			KNTNO,
+			TRKDH
+		FROM
+			KEKKA
+		WHERE
+			TRKDH >= :fromdh
+			AND TRKDH < :todh
+			AND KNSSU=1
+		
+	) AS TEMP
+	GROUP BY
+		BSKKBN,
+		BSKLNE,
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) ,
+		SKFLG
+	ORDER BY
+		BSKKBN,
+		BSKLNE,
+		SUBSTR(TO_CHAR(TRKDH, 'YYYY-MM-DD HH24:MI:SS'), 1, 15) ,
+		SKFLG
+		FOR READ ONLY;
+
+	EXEC SQL OPEN c8;
+
+	while( 1 ) {
+		JD112Syukei* rec;
+
+		EXEC SQL FETCH c8 INTO
+			:bskkbn,
+			:bsklne,
+			:jikan,
+			:skflg,
+			:count;
+
+		if( SQLCODE == 100 )
+			break;
+
+		if( num % ALLOC_UNIT == 0 ) {
+			array = (JD112Syukei *)ZbmlRealloc( array,
+												sizeof( JD112Syukei ) * ( num + ALLOC_UNIT ) );
+			memset( array + num, 0, sizeof( JD112Syukei ) * ALLOC_UNIT );
+		}
+
+		rec = array + num++;
+		ZbmlMapHostToStruct( (char*)rec, JD112SyukeiArray );
+	}
+
+	EXEC SQL CLOSE c8;
+
+	*arrayOut = array;
+	*numOut   = num;
+
+	return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

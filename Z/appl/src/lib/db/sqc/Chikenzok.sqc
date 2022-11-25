@@ -1,0 +1,575 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Chikenzok.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Chikenzok.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    prtclno[12];
+	char    kosstcd[8];
+	char    tytme[5];
+	char    tyryo[6];
+	char    tyryotni[4];
+	char    yzfktme[5];
+	char    ikasflg;
+	short   kntsu;
+	short   kmksu;
+	char    sspit[3];
+	char    zrcd01[6];
+	char    zrcd02[6];
+	char    zrcd03[6];
+	char    zrcd04[6];
+	char    zrcd05[6];
+	char    zrcd06[6];
+	char    zrkg01[3];
+	char    zrkg02[3];
+	char    zrkg03[3];
+	char    zrkg04[3];
+	char    zrkg05[3];
+	char    zrkg06[3];
+	char    hrseq[5];
+	char    kntksflg;
+	char    gcpflg;
+	char    prtclnm[41];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Chikenzok
+
+BmlDMMInfo	ChikenzokArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( prtclno ),
+	DMM_SSTRING( kosstcd ),
+	DMM_SSTRING( tytme ),
+	DMM_SSTRING( tyryo ),
+	DMM_SSTRING( tyryotni ),
+	DMM_SSTRING( yzfktme ),
+	DMM_SCHAR( ikasflg ),
+	DMM_SSHORT( kntsu ),
+	DMM_SSHORT( kmksu ),
+	DMM_SSTRING( sspit ),
+	DMM_SSTRING( zrcd01 ),
+	DMM_SSTRING( zrcd02 ),
+	DMM_SSTRING( zrcd03 ),
+	DMM_SSTRING( zrcd04 ),
+	DMM_SSTRING( zrcd05 ),
+	DMM_SSTRING( zrcd06 ),
+	DMM_SSTRING( zrkg01 ),
+	DMM_SSTRING( zrkg02 ),
+	DMM_SSTRING( zrkg03 ),
+	DMM_SSTRING( zrkg04 ),
+	DMM_SSTRING( zrkg05 ),
+	DMM_SSTRING( zrkg06 ),
+	DMM_SSTRING( hrseq ),
+	DMM_SCHAR( kntksflg ),
+	DMM_SCHAR( gcpflg ),
+	DMM_SSTRING( prtclnm ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbChikenzokSelectAll()
+ *    CHIKENZOK レコード全件取得
+ * ■引数
+ *    [O]  Chikenzok** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChikenzokSelectAll( Chikenzok** arrayOut, int* numOut )
+{
+    Chikenzok*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		PRTCLNO,
+		KOSSTCD,
+		TYTME,
+		TYRYO,
+		TYRYOTNI,
+		YZFKTME,
+		IKASFLG,
+		KNTSU,
+		KMKSU,
+		SSPIT,
+		ZRCD01,
+		ZRCD02,
+		ZRCD03,
+		ZRCD04,
+		ZRCD05,
+		ZRCD06,
+		ZRKG01,
+		ZRKG02,
+		ZRKG03,
+		ZRKG04,
+		ZRKG05,
+		ZRKG06,
+		HRSEQ,
+		KNTKSFLG,
+		GCPFLG,
+		PRTCLNM,
+		KSNDH
+    FROM
+        CHIKENZOK FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Chikenzok* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:prtclno,
+			:kosstcd,
+			:tytme,
+			:tyryo,
+			:tyryotni,
+			:yzfktme,
+			:ikasflg,
+			:kntsu,
+			:kmksu,
+			:sspit,
+			:zrcd01,
+			:zrcd02,
+			:zrcd03,
+			:zrcd04,
+			:zrcd05,
+			:zrcd06,
+			:zrkg01,
+			:zrkg02,
+			:zrkg03,
+			:zrkg04,
+			:zrkg05,
+			:zrkg06,
+			:hrseq,
+			:kntksflg,
+			:gcpflg,
+			:prtclnm,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Chikenzok*)ZbmlRealloc( array,
+                                    sizeof( Chikenzok ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Chikenzok ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ChikenzokArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbChikenzokSelectKey()
+ *    CHIKENZOK レコードKey条件取得
+ * ■引数
+ *    [I]  Chikenzok* pKey      取得するレコードのキー
+ *    [O]  Chikenzok** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChikenzokSelectKey( Chikenzok* pKey, Chikenzok** arrayOut, int* numOut )
+{
+    Chikenzok*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, ChikenzokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		PRTCLNO,
+		KOSSTCD,
+		TYTME,
+		TYRYO,
+		TYRYOTNI,
+		YZFKTME,
+		IKASFLG,
+		KNTSU,
+		KMKSU,
+		SSPIT,
+		ZRCD01,
+		ZRCD02,
+		ZRCD03,
+		ZRCD04,
+		ZRCD05,
+		ZRCD06,
+		ZRKG01,
+		ZRKG02,
+		ZRKG03,
+		ZRKG04,
+		ZRKG05,
+		ZRKG06,
+		HRSEQ,
+		KNTKSFLG,
+		GCPFLG,
+		PRTCLNM,
+		KSNDH
+    FROM
+        CHIKENZOK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Chikenzok* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:prtclno,
+			:kosstcd,
+			:tytme,
+			:tyryo,
+			:tyryotni,
+			:yzfktme,
+			:ikasflg,
+			:kntsu,
+			:kmksu,
+			:sspit,
+			:zrcd01,
+			:zrcd02,
+			:zrcd03,
+			:zrcd04,
+			:zrcd05,
+			:zrcd06,
+			:zrkg01,
+			:zrkg02,
+			:zrkg03,
+			:zrkg04,
+			:zrkg05,
+			:zrkg06,
+			:hrseq,
+			:kntksflg,
+			:gcpflg,
+			:prtclnm,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Chikenzok*)ZbmlRealloc( array,
+                                    sizeof( Chikenzok ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Chikenzok ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ChikenzokArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChikenzokInsert()
+ *    CHIKENZOK レコードを挿入する
+ * ■引数
+ *    [I]  Chikenzok* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChikenzokInsert( Chikenzok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChikenzokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO CHIKENZOK
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		PRTCLNO,
+		KOSSTCD,
+		TYTME,
+		TYRYO,
+		TYRYOTNI,
+		YZFKTME,
+		IKASFLG,
+		KNTSU,
+		KMKSU,
+		SSPIT,
+		ZRCD01,
+		ZRCD02,
+		ZRCD03,
+		ZRCD04,
+		ZRCD05,
+		ZRCD06,
+		ZRKG01,
+		ZRKG02,
+		ZRKG03,
+		ZRKG04,
+		ZRKG05,
+		ZRKG06,
+		HRSEQ,
+		KNTKSFLG,
+		GCPFLG,
+		PRTCLNM,
+		KSNDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:prtclno,
+		:kosstcd,
+		:tytme,
+		:tyryo,
+		:tyryotni,
+		:yzfktme,
+		:ikasflg,
+		:kntsu,
+		:kmksu,
+		:sspit,
+		:zrcd01,
+		:zrcd02,
+		:zrcd03,
+		:zrcd04,
+		:zrcd05,
+		:zrcd06,
+		:zrkg01,
+		:zrkg02,
+		:zrkg03,
+		:zrkg04,
+		:zrkg05,
+		:zrkg06,
+		:hrseq,
+		:kntksflg,
+		:gcpflg,
+		:prtclnm,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChikenzokUpdate()
+ *    CHIKENZOK レコードを更新する
+ * ■引数
+ *    [I]  Chikenzok* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChikenzokUpdate( Chikenzok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChikenzokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE CHIKENZOK
+    SET (
+		IRIKETFLG,
+		PRTCLNO,
+		KOSSTCD,
+		TYTME,
+		TYRYO,
+		TYRYOTNI,
+		YZFKTME,
+		IKASFLG,
+		KNTSU,
+		KMKSU,
+		SSPIT,
+		ZRCD01,
+		ZRCD02,
+		ZRCD03,
+		ZRCD04,
+		ZRCD05,
+		ZRCD06,
+		ZRKG01,
+		ZRKG02,
+		ZRKG03,
+		ZRKG04,
+		ZRKG05,
+		ZRKG06,
+		HRSEQ,
+		KNTKSFLG,
+		GCPFLG,
+		PRTCLNM,
+		KSNDH
+    ) = (
+		:iriketflg,
+		:prtclno,
+		:kosstcd,
+		:tytme,
+		:tyryo,
+		:tyryotni,
+		:yzfktme,
+		:ikasflg,
+		:kntsu,
+		:kmksu,
+		:sspit,
+		:zrcd01,
+		:zrcd02,
+		:zrcd03,
+		:zrcd04,
+		:zrcd05,
+		:zrcd06,
+		:zrkg01,
+		:zrkg02,
+		:zrkg03,
+		:zrkg04,
+		:zrkg05,
+		:zrkg06,
+		:hrseq,
+		:kntksflg,
+		:gcpflg,
+		:prtclnm,
+		:ksndh
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChikenzokDelete()
+ *    CHIKENZOK レコードを削除する
+ * ■引数
+ *    [I]  Chikenzok* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChikenzokDelete( Chikenzok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChikenzokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM CHIKENZOK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

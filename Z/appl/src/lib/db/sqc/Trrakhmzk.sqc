@@ -1,0 +1,343 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Trrakhmzk.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Trrakhmzk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    bnctrid[11];
+	short   bnctrpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    jhstksk;
+	char    knsstflg;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Trrakhmzk
+
+BmlDMMInfo	TrrakhmzkArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( bnctrid ),
+	DMM_SSHORT( bnctrpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SCHAR( jhstksk ),
+	DMM_SCHAR( knsstflg ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbTrrakhmzkSelectAll()
+ *    TRRAKHMZK レコード全件取得
+ * ■引数
+ *    [O]  Trrakhmzk** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrrakhmzkSelectAll( Trrakhmzk** arrayOut, int* numOut )
+{
+    Trrakhmzk*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		BNCTRID,
+		BNCTRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		JHSTKSK,
+		KNSSTFLG,
+		KSNDH
+    FROM
+        TRRAKHMZK FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Trrakhmzk* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:bnctrid,
+			:bnctrpos,
+			:asyrckid,
+			:asyrckpos,
+			:jhstksk,
+			:knsstflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Trrakhmzk*)ZbmlRealloc( array,
+                                    sizeof( Trrakhmzk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Trrakhmzk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, TrrakhmzkArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbTrrakhmzkSelectKey()
+ *    TRRAKHMZK レコードKey条件取得
+ * ■引数
+ *    [I]  Trrakhmzk* pKey      取得するレコードのキー
+ *    [O]  Trrakhmzk** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrrakhmzkSelectKey( Trrakhmzk* pKey, Trrakhmzk** arrayOut, int* numOut )
+{
+    Trrakhmzk*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, TrrakhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		BNCTRID,
+		BNCTRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		JHSTKSK,
+		KNSSTFLG,
+		KSNDH
+    FROM
+        TRRAKHMZK
+    WHERE
+		KNSKISYMD = :knskisymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Trrakhmzk* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:bnctrid,
+			:bnctrpos,
+			:asyrckid,
+			:asyrckpos,
+			:jhstksk,
+			:knsstflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Trrakhmzk*)ZbmlRealloc( array,
+                                    sizeof( Trrakhmzk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Trrakhmzk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, TrrakhmzkArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrrakhmzkInsert()
+ *    TRRAKHMZK レコードを挿入する
+ * ■引数
+ *    [I]  Trrakhmzk* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrrakhmzkInsert( Trrakhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrrakhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO TRRAKHMZK
+    (
+		KNSKISYMD,
+		BNCTRID,
+		BNCTRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		JHSTKSK,
+		KNSSTFLG,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:bnctrid,
+		:bnctrpos,
+		:asyrckid,
+		:asyrckpos,
+		:jhstksk,
+		:knsstflg,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrrakhmzkUpdate()
+ *    TRRAKHMZK レコードを更新する
+ * ■引数
+ *    [I]  Trrakhmzk* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrrakhmzkUpdate( Trrakhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrrakhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE TRRAKHMZK
+    SET (
+		BNCTRID,
+		BNCTRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		JHSTKSK,
+		KNSSTFLG,
+		KSNDH
+    ) = (
+		:bnctrid,
+		:bnctrpos,
+		:asyrckid,
+		:asyrckpos,
+		:jhstksk,
+		:knsstflg,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrrakhmzkDelete()
+ *    TRRAKHMZK レコードを削除する
+ * ■引数
+ *    [I]  Trrakhmzk* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrrakhmzkDelete( Trrakhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrrakhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM TRRAKHMZK
+    WHERE
+		KNSKISYMD = :knskisymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

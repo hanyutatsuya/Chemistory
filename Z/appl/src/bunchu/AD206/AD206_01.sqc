@@ -1,0 +1,291 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：BD302_01. sqc                                                */
+/* 　概　　　要：ストッカー【回収】                                           */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/01/15     芳賀弘幸       新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "AD206.h"
+/*
+char	sel_knskisymd[11];
+char	sel_trid[11];
+short	from;
+short	to;
+char	sel_asyrckid[11];
+short	sel_asyrckpos;
+
+char	upd_trid[11];
+char	upd_asyrckid[11];
+short	rIdx;
+char	trid[11] ;
+char	rakitjhossi[7] ;
+char	upd_instkno[11] ;
+*/
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+//EXEC SQL INCLUDE 'kinkmmst.h';
+EXEC SQL BEGIN DECLARE SECTION;
+EXEC SQL INCLUDE 'tagDB.h';
+
+char  	sel_utkymd[12];
+char    sel_irino[12];
+char    sel_smpcd[8];
+
+sqlint32 nRecCnt;
+
+char 	sel_kmkcd[9];
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：selectIRAI()     	      									  */
+/*  機能概要　：依頼情報取得	   							  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	受付日													  */
+/*　 第２引数 ：	依頼書No												  */
+/*　 第２引数 ：	サンプリングコード										  */
+/*　 第２引数 ：	項目コード												  */
+/*  出　　力　：                                                              */
+/*　 第２引数 ：	緊急依頼ロットNo										  */
+/*　 第２引数 ：	取得件数												  */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+//int selectIRAI(char *utkymd, char *irino,char *smpcd,int *pRecCnt)
+//int selectIRAI(char *utkymd,char *irino,char *smpcd,struct S_IRAI ** pRecv,int *pRecCnt)
+int selectIRAI(char *utkymd, char *irino, char *smpcd, char *kmkcd, int *nLotno, int *pRecCnt)
+{
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    /***
+     ***    変数初期化
+     ***/
+	int irecCnt = 0;
+    //  検索キー
+    nRecCnt = 0;
+	strcpy ( sel_utkymd, utkymd);
+    strcpy ( sel_irino, irino);
+	strcpy ( sel_smpcd, smpcd);
+	strcpy ( sel_kmkcd, kmkcd);		// ADD
+
+    //  設定値
+//    strcpy ( trid, pTrid ) ;
+//    strcpy ( rakitjhossi, pRakitjhossi ) ;
+//    rIdx = prIdx ;
+
+
+    /***
+     ***    カーソル定義
+     ***/
+    EXEC SQL DECLARE c11 CURSOR FOR
+    SELECT KKIRILOTNO 
+      FROM   IRAI 
+      WHERE  UTKYMD =:sel_utkymd
+        AND IRINO  =:sel_irino
+        AND SMPCD  =:sel_smpcd
+        AND KMKCD  =:sel_kmkcd			-- ADD
+        AND IRIKBN ='K'
+		;
+     //FOR READ ONLY ;
+
+    /***
+     ***    依頼情報
+     ***/
+    EXEC SQL OPEN c11 ;
+    while( 1 ) {	
+		memset(&irai,0,sizeof(irai));
+        EXEC SQL FETCH c11 INTO :irai.kkirilotno;
+        if ( SQLCODE == 100 ) {
+            break;
+        }
+		*nLotno=irai.kkirilotno;
+/* 緊急依頼ロットNoだけを返す
+		*pRecv = ( struct S_IRAI* )
+                    realloc ( *pRecv, sizeof ( struct S_IRAI)*( irecCnt + 1 ) ) ;
+    	if ( pRecv == NULL ) {
+            return ( -1 ) ;
+        }
+    	memcpy ( &(*pRecv)[irecCnt], &irai, sizeof (irai) ) ;
+*/
+        irecCnt ++ ;
+	}
+
+
+    EXEC SQL CLOSE c11;
+    *pRecCnt = irecCnt ;
+
+    return ( 0 ) ;
+
+
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    sFncPutLog ( TRCKIND_ERROR, __FILE__, "selectIRAI",
+		 __LINE__, EXEFLG_INS, MYAPP_LOG_ERRCODE_NON,
+		"SQLCODE:%ld SQLSTATE:%5.5s",sqlca.sqlcode, sqlca.sqlstate);
+    return ( sqlca.sqlcode ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：selectKANJYA()	                                              */
+/*  機能概要　：患者情報取得    		                                      */
+/*  入　　力　：                                                              */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int                                                           */
+/*                   0  正常                                                  */
+/*                  -1  異常                                                  */
+/******************************************************************************/
+int selectKANJYA(char *utkymd, char *irino,struct S_KANJYA *pRecv,int *pRecCnt)
+{
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    /***
+     ***    変数初期化
+     ***/
+	int irecCnt =0;
+    //  検索キー
+	strcpy ( sel_utkymd, utkymd);
+	strcpy ( sel_irino, irino);
+    //  設定値
+//    strcpy ( trid, pTrid ) ;
+//    strcpy ( rakitjhossi, pRakitjhossi ) ;
+//    rIdx = prIdx ;
+
+	//printf("sql<%s><%s>\n",sel_utkymd,sel_irino);
+    /***
+     ***    カーソル定義
+     ***/
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT   *
+      FROM   KANJYA
+	  WHERE  UTKYMD	=:sel_utkymd
+		AND IRINO =:sel_irino 
+		ORDER BY ZSSDINO DESC
+		FETCH FIRST 1 ROWS ONLY;	 
+     //FOR READ ONLY ;
+
+    /***
+     ***    患者情報
+     ***/
+    EXEC SQL OPEN c2 ;
+    while( 1 ) {
+		memset(&kanjya,0,sizeof(kanjya));
+
+        EXEC SQL FETCH c2 INTO :kanjya;
+        if ( SQLCODE == 100 ) {
+            break;
+        }
+		//*pRecv = ( struct S_KANJYA * )
+        //            realloc ( *pRecv, sizeof ( struct S_KANJYA )*( irecCnt + 1 ) ) ;
+		//*pRecv = ( struct S_KANJYA * )
+        //            realloc ( *pRecv,size); 
+        if ( pRecv == NULL ) {
+            return ( -1 ) ;
+        }
+        memcpy ( (pRecv), &kanjya, sizeof ( kanjya) ) ;
+        irecCnt ++ ;
+    }
+
+    EXEC SQL CLOSE c2;
+	*pRecCnt = irecCnt ;
+
+    return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+//    sFncPutLog ( TRCKIND_ERROR, __FILE__, "selectKANJYA",
+//                 __LINE__, EXEFLG_INS, MYAPP_LOG_ERRCODE_NON,
+//                 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENPOS] CLM[RAKITJHOSSI=%s SELECT FROM KE
+//NORDER KNSKISYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pRakitjhossi, pSel_k
+//nskisymd, pSel_asyrckid ) ;
+    return ( sqlca.sqlcode ) ;
+}
+
+
+/******************************************************************************
+ * ZdbKinkmmstSelectKey()
+ *    KINKMMST レコードKey条件取得
+ * ■引数
+ *    [I]  Kinkmmst* pKey       取得するレコードのキー
+ *    [O]  Kinkmmst** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long KinkmmstSelectKey(char *pKmkcd ,struct S_KINKMMST **pRecv, int* numOut )
+{
+    int         num = 0;
+
+
+	memset(sel_kmkcd,0,sizeof(sel_kmkcd));
+	memcpy(sel_kmkcd,pKmkcd,7);
+
+	//printf("kmkcd:%s\n",sel_kmkcd);
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c3 CURSOR FOR
+    SELECT
+    	SMPCD
+	FROM
+        KINKMMST
+    WHERE
+        KMKCD = :sel_kmkcd 
+        FOR READ ONLY;
+
+    EXEC SQL OPEN c3;
+
+
+    while( 1 ) {
+        //Kinkmmst* rec;
+	memset(&kinkmmst,0,sizeof(kinkmmst));
+        EXEC SQL FETCH c3 INTO
+            :kinkmmst.smpcd;
+
+        if( SQLCODE == 100 )
+            break;
+
+		*pRecv = ( struct S_KINKMMST * )
+                    realloc ( *pRecv, sizeof(struct S_KINKMMST)*( num+ 1 ) ) ;
+
+		if ( pRecv == NULL ) {
+            return ( -1 ) ;
+        }
+    	memcpy ( &(*pRecv)[num], &kinkmmst, sizeof (kinkmmst ) ) ;
+        num++;
+	}
+    EXEC SQL CLOSE c3;
+
+    *numOut   = num;
+	return (0);
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

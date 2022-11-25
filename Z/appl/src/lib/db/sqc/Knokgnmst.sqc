@@ -1,0 +1,385 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Knokgnmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Knokgnmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    userid[9];
+	char    systemid[11];
+	char    sykiokflg;
+	char    nrykokflg;
+	char    sysiokflg;
+	char    sntnokflg;
+	char    knjaokflg;
+	char    generalflg[101];
+	char    staymd[11];
+	char    endymd[11];
+	char    trkymd[11];
+	char    hnkymd[11];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Knokgnmst
+
+BmlDMMInfo	KnokgnmstArray[] = {
+	DMM_SSTRING( userid ),
+	DMM_SSTRING( systemid ),
+	DMM_SCHAR( sykiokflg ),
+	DMM_SCHAR( nrykokflg ),
+	DMM_SCHAR( sysiokflg ),
+	DMM_SCHAR( sntnokflg ),
+	DMM_SCHAR( knjaokflg ),
+	DMM_SSTRING( generalflg ),
+	DMM_SDATE( staymd ),
+	DMM_SDATE( endymd ),
+	DMM_SDATE( trkymd ),
+	DMM_SDATE( hnkymd ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKnokgnmstSelectAll()
+ *    KNOKGNMST レコード全件取得
+ * ■引数
+ *    [O]  Knokgnmst** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnokgnmstSelectAll( Knokgnmst** arrayOut, int* numOut )
+{
+    Knokgnmst*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		USERID,
+		SYSTEMID,
+		SYKIOKFLG,
+		NRYKOKFLG,
+		SYSIOKFLG,
+		SNTNOKFLG,
+		KNJAOKFLG,
+		GENERALFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    FROM
+        KNOKGNMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Knokgnmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:userid,
+			:systemid,
+			:sykiokflg,
+			:nrykokflg,
+			:sysiokflg,
+			:sntnokflg,
+			:knjaokflg,
+			:generalflg,
+			:staymd,
+			:endymd,
+			:trkymd,
+			:hnkymd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knokgnmst*)ZbmlRealloc( array,
+                                    sizeof( Knokgnmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knokgnmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnokgnmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKnokgnmstSelectKey()
+ *    KNOKGNMST レコードKey条件取得
+ * ■引数
+ *    [I]  Knokgnmst* pKey      取得するレコードのキー
+ *    [O]  Knokgnmst** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnokgnmstSelectKey( Knokgnmst* pKey, Knokgnmst** arrayOut, int* numOut )
+{
+    Knokgnmst*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KnokgnmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		USERID,
+		SYSTEMID,
+		SYKIOKFLG,
+		NRYKOKFLG,
+		SYSIOKFLG,
+		SNTNOKFLG,
+		KNJAOKFLG,
+		GENERALFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    FROM
+        KNOKGNMST
+    WHERE
+		USERID = :userid AND
+		SYSTEMID = :systemid AND
+		STAYMD <= :staymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Knokgnmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:userid,
+			:systemid,
+			:sykiokflg,
+			:nrykokflg,
+			:sysiokflg,
+			:sntnokflg,
+			:knjaokflg,
+			:generalflg,
+			:staymd,
+			:endymd,
+			:trkymd,
+			:hnkymd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knokgnmst*)ZbmlRealloc( array,
+                                    sizeof( Knokgnmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knokgnmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnokgnmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnokgnmstInsert()
+ *    KNOKGNMST レコードを挿入する
+ * ■引数
+ *    [I]  Knokgnmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnokgnmstInsert( Knokgnmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnokgnmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KNOKGNMST
+    (
+		USERID,
+		SYSTEMID,
+		SYKIOKFLG,
+		NRYKOKFLG,
+		SYSIOKFLG,
+		SNTNOKFLG,
+		KNJAOKFLG,
+		GENERALFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    ) VALUES (
+		:userid,
+		:systemid,
+		:sykiokflg,
+		:nrykokflg,
+		:sysiokflg,
+		:sntnokflg,
+		:knjaokflg,
+		:generalflg,
+		:staymd,
+		:endymd,
+		:trkymd,
+		:hnkymd
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnokgnmstUpdate()
+ *    KNOKGNMST レコードを更新する
+ * ■引数
+ *    [I]  Knokgnmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnokgnmstUpdate( Knokgnmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnokgnmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KNOKGNMST
+    SET (
+		SYKIOKFLG,
+		NRYKOKFLG,
+		SYSIOKFLG,
+		SNTNOKFLG,
+		KNJAOKFLG,
+		GENERALFLG,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    ) = (
+		:sykiokflg,
+		:nrykokflg,
+		:sysiokflg,
+		:sntnokflg,
+		:knjaokflg,
+		:generalflg,
+		:endymd,
+		:trkymd,
+		:hnkymd
+    ) WHERE
+		USERID = :userid AND
+		SYSTEMID = :systemid AND
+		STAYMD = :staymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnokgnmstDelete()
+ *    KNOKGNMST レコードを削除する
+ * ■引数
+ *    [I]  Knokgnmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnokgnmstDelete( Knokgnmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnokgnmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KNOKGNMST
+    WHERE
+		USERID = :userid AND
+		SYSTEMID = :systemid AND
+		STAYMD = :staymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

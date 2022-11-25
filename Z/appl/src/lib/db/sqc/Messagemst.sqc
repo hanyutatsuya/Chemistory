@@ -1,0 +1,333 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Messagemst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Messagemst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    msgcd[9];
+	char    status;
+	char    msgniyo[101];
+	sqlint32  msgbtn;
+	sqlint32  msgico;
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Messagemst
+
+BmlDMMInfo	MessagemstArray[] = {
+	DMM_SSTRING( msgcd ),
+	DMM_SCHAR( status ),
+	DMM_SSTRING( msgniyo ),
+	DMM_SLONG( msgbtn ),
+	DMM_SLONG( msgico ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbMessagemstSelectAll()
+ *    MESSAGEMST レコード全件取得
+ * ■引数
+ *    [O]  Messagemst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbMessagemstSelectAll( Messagemst** arrayOut, int* numOut )
+{
+    Messagemst* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		MSGCD,
+		STATUS,
+		MSGNIYO,
+		MSGBTN,
+		MSGICO,
+		HNKTNTID,
+		KSNDH
+    FROM
+        MESSAGEMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Messagemst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:msgcd,
+			:status,
+			:msgniyo,
+			:msgbtn,
+			:msgico,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Messagemst*)ZbmlRealloc( array,
+                                    sizeof( Messagemst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Messagemst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, MessagemstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbMessagemstSelectKey()
+ *    MESSAGEMST レコードKey条件取得
+ * ■引数
+ *    [I]  Messagemst* pKey     取得するレコードのキー
+ *    [O]  Messagemst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbMessagemstSelectKey( Messagemst* pKey, Messagemst** arrayOut, int* numOut )
+{
+    Messagemst* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, MessagemstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		MSGCD,
+		STATUS,
+		MSGNIYO,
+		MSGBTN,
+		MSGICO,
+		HNKTNTID,
+		KSNDH
+    FROM
+        MESSAGEMST
+    WHERE
+		MSGCD = :msgcd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Messagemst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:msgcd,
+			:status,
+			:msgniyo,
+			:msgbtn,
+			:msgico,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Messagemst*)ZbmlRealloc( array,
+                                    sizeof( Messagemst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Messagemst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, MessagemstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbMessagemstInsert()
+ *    MESSAGEMST レコードを挿入する
+ * ■引数
+ *    [I]  Messagemst* rec      挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbMessagemstInsert( Messagemst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, MessagemstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO MESSAGEMST
+    (
+		MSGCD,
+		STATUS,
+		MSGNIYO,
+		MSGBTN,
+		MSGICO,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:msgcd,
+		:status,
+		:msgniyo,
+		:msgbtn,
+		:msgico,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbMessagemstUpdate()
+ *    MESSAGEMST レコードを更新する
+ * ■引数
+ *    [I]  Messagemst* rec      更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbMessagemstUpdate( Messagemst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, MessagemstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE MESSAGEMST
+    SET (
+		STATUS,
+		MSGNIYO,
+		MSGBTN,
+		MSGICO,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:status,
+		:msgniyo,
+		:msgbtn,
+		:msgico,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		MSGCD = :msgcd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbMessagemstDelete()
+ *    MESSAGEMST レコードを削除する
+ * ■引数
+ *    [I]  Messagemst* rec      削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbMessagemstDelete( Messagemst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, MessagemstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM MESSAGEMST
+    WHERE
+		MSGCD = :msgcd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

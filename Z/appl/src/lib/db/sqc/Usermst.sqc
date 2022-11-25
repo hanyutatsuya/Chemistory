@@ -1,0 +1,424 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Usermst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Usermst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    userid[9];
+	char    cardid[31];
+	char    pswd[11];
+	char    usernm[21];
+	char    oldpswd[111];
+	char    pswdykkgn[11];
+	char    logindh[27];
+	char    loginykkgn[11];
+	char    seccd[3];
+	char    sykiskbn;
+	char    sykindh[27];
+	char    rnrdelflg;
+	char    staymd[11];
+	char    endymd[11];
+	char    trkymd[11];
+	char    hnkymd[11];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Usermst
+
+BmlDMMInfo	UsermstArray[] = {
+	DMM_SSTRING( userid ),
+	DMM_SSTRING( cardid ),
+	DMM_SSTRING( pswd ),
+	DMM_SSTRING( usernm ),
+	DMM_SSTRING( oldpswd ),
+	DMM_SDATE( pswdykkgn ),
+	DMM_STIMESTAMP( logindh ),
+	DMM_SDATE( loginykkgn ),
+	DMM_SSTRING( seccd ),
+	DMM_SCHAR( sykiskbn ),
+	DMM_STIMESTAMP( sykindh ),
+	DMM_SCHAR( rnrdelflg ),
+	DMM_SDATE( staymd ),
+	DMM_SDATE( endymd ),
+	DMM_SDATE( trkymd ),
+	DMM_SDATE( hnkymd ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbUsermstSelectAll()
+ *    USERMST レコード全件取得
+ * ■引数
+ *    [O]  Usermst** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbUsermstSelectAll( Usermst** arrayOut, int* numOut )
+{
+    Usermst*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		USERID,
+		CARDID,
+		PSWD,
+		USERNM,
+		OLDPSWD,
+		PSWDYKKGN,
+		LOGINDH,
+		LOGINYKKGN,
+		SECCD,
+		SYKISKBN,
+		SYKINDH,
+		RNRDELFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    FROM
+        USERMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Usermst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:userid,
+			:cardid,
+			:pswd,
+			:usernm,
+			:oldpswd,
+			:pswdykkgn,
+			:logindh,
+			:loginykkgn,
+			:seccd,
+			:sykiskbn,
+			:sykindh,
+			:rnrdelflg,
+			:staymd,
+			:endymd,
+			:trkymd,
+			:hnkymd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Usermst*)ZbmlRealloc( array,
+                                    sizeof( Usermst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Usermst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, UsermstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbUsermstSelectKey()
+ *    USERMST レコードKey条件取得
+ * ■引数
+ *    [I]  Usermst* pKey       取得するレコードのキー
+ *    [O]  Usermst** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbUsermstSelectKey( Usermst* pKey, Usermst** arrayOut, int* numOut )
+{
+    Usermst*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, UsermstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		USERID,
+		CARDID,
+		PSWD,
+		USERNM,
+		OLDPSWD,
+		PSWDYKKGN,
+		LOGINDH,
+		LOGINYKKGN,
+		SECCD,
+		SYKISKBN,
+		SYKINDH,
+		RNRDELFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    FROM
+        USERMST
+    WHERE
+		USERID = :userid AND
+		STAYMD <= :staymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Usermst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:userid,
+			:cardid,
+			:pswd,
+			:usernm,
+			:oldpswd,
+			:pswdykkgn,
+			:logindh,
+			:loginykkgn,
+			:seccd,
+			:sykiskbn,
+			:sykindh,
+			:rnrdelflg,
+			:staymd,
+			:endymd,
+			:trkymd,
+			:hnkymd;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Usermst*)ZbmlRealloc( array,
+                                    sizeof( Usermst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Usermst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, UsermstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbUsermstInsert()
+ *    USERMST レコードを挿入する
+ * ■引数
+ *    [I]  Usermst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbUsermstInsert( Usermst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, UsermstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO USERMST
+    (
+		USERID,
+		CARDID,
+		PSWD,
+		USERNM,
+		OLDPSWD,
+		PSWDYKKGN,
+		LOGINDH,
+		LOGINYKKGN,
+		SECCD,
+		SYKISKBN,
+		SYKINDH,
+		RNRDELFLG,
+		STAYMD,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    ) VALUES (
+		:userid,
+		:cardid,
+		:pswd,
+		:usernm,
+		:oldpswd,
+		:pswdykkgn,
+		:logindh,
+		:loginykkgn,
+		:seccd,
+		:sykiskbn,
+		:sykindh,
+		:rnrdelflg,
+		:staymd,
+		:endymd,
+		:trkymd,
+		:hnkymd
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbUsermstUpdate()
+ *    USERMST レコードを更新する
+ * ■引数
+ *    [I]  Usermst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbUsermstUpdate( Usermst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, UsermstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE USERMST
+    SET (
+		CARDID,
+		PSWD,
+		USERNM,
+		OLDPSWD,
+		PSWDYKKGN,
+		LOGINDH,
+		LOGINYKKGN,
+		SECCD,
+		SYKISKBN,
+		SYKINDH,
+		RNRDELFLG,
+		ENDYMD,
+		TRKYMD,
+		HNKYMD
+    ) = (
+		:cardid,
+		:pswd,
+		:usernm,
+		:oldpswd,
+		:pswdykkgn,
+		:logindh,
+		:loginykkgn,
+		:seccd,
+		:sykiskbn,
+		:sykindh,
+		:rnrdelflg,
+		:endymd,
+		:trkymd,
+		:hnkymd
+    ) WHERE
+		USERID = :userid AND
+		STAYMD = :staymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbUsermstDelete()
+ *    USERMST レコードを削除する
+ * ■引数
+ *    [I]  Usermst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbUsermstDelete( Usermst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, UsermstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM USERMST
+    WHERE
+		USERID = :userid AND
+		STAYMD = :staymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

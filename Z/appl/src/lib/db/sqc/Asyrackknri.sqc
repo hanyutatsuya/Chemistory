@@ -1,0 +1,424 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Asyrackknri.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Asyrackknri.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    asyrckid[11];
+	char    knskbn[3];
+	char    rakbri[3];
+	char    bskkbn[5];
+	char    bsklne[5];
+	char    bskgok[7];
+	char    knsgrp[17];
+	short   bthno;
+	sqlint32  bthrckjbn;
+	char    id2[11];
+	char    id3[11];
+	char    lnetndh[27];
+	char    lnehsdh[27];
+	char    rakjtflg;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Asyrackknri
+
+BmlDMMInfo	AsyrackknriArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSTRING( knskbn ),
+	DMM_SSTRING( rakbri ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bsklne ),
+	DMM_SSTRING( bskgok ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSHORT( bthno ),
+	DMM_SLONG( bthrckjbn ),
+	DMM_SSTRING( id2 ),
+	DMM_SSTRING( id3 ),
+	DMM_STIMESTAMP( lnetndh ),
+	DMM_STIMESTAMP( lnehsdh ),
+	DMM_SCHAR( rakjtflg ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbAsyrackknriSelectAll()
+ *    ASYRACKKNRI レコード全件取得
+ * ■引数
+ *    [O]  Asyrackknri** arrayO 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyrackknriSelectAll( Asyrackknri** arrayOut, int* numOut )
+{
+    Asyrackknri* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		ASYRCKID,
+		KNSKBN,
+		RAKBRI,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		KNSGRP,
+		BTHNO,
+		BTHRCKJBN,
+		ID2,
+		ID3,
+		LNETNDH,
+		LNEHSDH,
+		RAKJTFLG,
+		KSNDH
+    FROM
+        ASYRACKKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Asyrackknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:asyrckid,
+			:knskbn,
+			:rakbri,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:knsgrp,
+			:bthno,
+			:bthrckjbn,
+			:id2,
+			:id3,
+			:lnetndh,
+			:lnehsdh,
+			:rakjtflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Asyrackknri*)ZbmlRealloc( array,
+                                    sizeof( Asyrackknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Asyrackknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, AsyrackknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbAsyrackknriSelectKey()
+ *    ASYRACKKNRI レコードKey条件取得
+ * ■引数
+ *    [I]  Asyrackknri* pKey    取得するレコードのキー
+ *    [O]  Asyrackknri** arrayO 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyrackknriSelectKey( Asyrackknri* pKey, Asyrackknri** arrayOut, int* numOut )
+{
+    Asyrackknri* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, AsyrackknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		ASYRCKID,
+		KNSKBN,
+		RAKBRI,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		KNSGRP,
+		BTHNO,
+		BTHRCKJBN,
+		ID2,
+		ID3,
+		LNETNDH,
+		LNEHSDH,
+		RAKJTFLG,
+		KSNDH
+    FROM
+        ASYRACKKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		ASYRCKID = :asyrckid FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Asyrackknri* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:asyrckid,
+			:knskbn,
+			:rakbri,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:knsgrp,
+			:bthno,
+			:bthrckjbn,
+			:id2,
+			:id3,
+			:lnetndh,
+			:lnehsdh,
+			:rakjtflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Asyrackknri*)ZbmlRealloc( array,
+                                    sizeof( Asyrackknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Asyrackknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, AsyrackknriArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyrackknriInsert()
+ *    ASYRACKKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Asyrackknri* rec     挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyrackknriInsert( Asyrackknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyrackknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO ASYRACKKNRI
+    (
+		KNSKISYMD,
+		ASYRCKID,
+		KNSKBN,
+		RAKBRI,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		KNSGRP,
+		BTHNO,
+		BTHRCKJBN,
+		ID2,
+		ID3,
+		LNETNDH,
+		LNEHSDH,
+		RAKJTFLG,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:asyrckid,
+		:knskbn,
+		:rakbri,
+		:bskkbn,
+		:bsklne,
+		:bskgok,
+		:knsgrp,
+		:bthno,
+		:bthrckjbn,
+		:id2,
+		:id3,
+		:lnetndh,
+		:lnehsdh,
+		:rakjtflg,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyrackknriUpdate()
+ *    ASYRACKKNRI レコードを更新する
+ * ■引数
+ *    [I]  Asyrackknri* rec     更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyrackknriUpdate( Asyrackknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyrackknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE ASYRACKKNRI
+    SET (
+		KNSKBN,
+		RAKBRI,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		KNSGRP,
+		BTHNO,
+		BTHRCKJBN,
+		ID2,
+		ID3,
+		LNETNDH,
+		LNEHSDH,
+		RAKJTFLG,
+		KSNDH
+    ) = (
+		:knskbn,
+		:rakbri,
+		:bskkbn,
+		:bsklne,
+		:bskgok,
+		:knsgrp,
+		:bthno,
+		:bthrckjbn,
+		:id2,
+		:id3,
+		:lnetndh,
+		:lnehsdh,
+		:rakjtflg,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		ASYRCKID = :asyrckid;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyrackknriDelete()
+ *    ASYRACKKNRI レコードを削除する
+ * ■引数
+ *    [I]  Asyrackknri* rec     削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyrackknriDelete( Asyrackknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyrackknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM ASYRACKKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		ASYRCKID = :asyrckid;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

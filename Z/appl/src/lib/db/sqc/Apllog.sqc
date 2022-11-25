@@ -1,0 +1,397 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Apllog.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Apllog.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    sydate[11];
+	char    sytime[9];
+	char    tracekbn;
+	char    pcname[33];
+	sqlint32  proccessid;
+	char    loginid[9];
+	char    wkupapp[33];
+	char    srcname[33];
+	char    funcname[33];
+	sqlint32  getline1;
+	char    procflg[3];
+	char    errcode[9];
+	char    message[1025];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Apllog
+
+BmlDMMInfo	ApllogArray[] = {
+	DMM_SDATE( sydate ),
+	DMM_STIME( sytime ),
+	DMM_SCHAR( tracekbn ),
+	DMM_SSTRING( pcname ),
+	DMM_SLONG( proccessid ),
+	DMM_SSTRING( loginid ),
+	DMM_SSTRING( wkupapp ),
+	DMM_SSTRING( srcname ),
+	DMM_SSTRING( funcname ),
+	DMM_SLONG( getline1 ),
+	DMM_SSTRING( procflg ),
+	DMM_SSTRING( errcode ),
+	DMM_SSTRING( message ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbApllogSelectAll()
+ *    APLLOG レコード全件取得
+ * ■引数
+ *    [O]  Apllog** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbApllogSelectAll( Apllog** arrayOut, int* numOut )
+{
+    Apllog*     array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		SYDATE,
+		SYTIME,
+		TRACEKBN,
+		PCNAME,
+		PROCCESSID,
+		LOGINID,
+		WKUPAPP,
+		SRCNAME,
+		FUNCNAME,
+		GETLINE,
+		PROCFLG,
+		ERRCODE,
+		MESSAGE
+    FROM
+        APLLOG FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Apllog* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:sydate,
+			:sytime,
+			:tracekbn,
+			:pcname,
+			:proccessid,
+			:loginid,
+			:wkupapp,
+			:srcname,
+			:funcname,
+			:getline1,
+			:procflg,
+			:errcode,
+			:message;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Apllog*)ZbmlRealloc( array,
+                                    sizeof( Apllog ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Apllog ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ApllogArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbApllogSelectKey()
+ *    APLLOG レコードKey条件取得
+ * ■引数
+ *    [I]  Apllog* pKey       取得するレコードのキー
+ *    [O]  Apllog** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbApllogSelectKey( Apllog* pKey, Apllog** arrayOut, int* numOut )
+{
+    Apllog*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, ApllogArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		SYDATE,
+		SYTIME,
+		TRACEKBN,
+		PCNAME,
+		PROCCESSID,
+		LOGINID,
+		WKUPAPP,
+		SRCNAME,
+		FUNCNAME,
+		GETLINE,
+		PROCFLG,
+		ERRCODE,
+		MESSAGE
+    FROM
+        APLLOG
+    WHERE
+		SYDATE = :sydate AND
+		SYTIME = :sytime AND
+		TRACEKBN = :tracekbn AND
+		PCNAME = :pcname AND
+		PROCCESSID = :proccessid FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Apllog* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:sydate,
+			:sytime,
+			:tracekbn,
+			:pcname,
+			:proccessid,
+			:loginid,
+			:wkupapp,
+			:srcname,
+			:funcname,
+			:getline1,
+			:procflg,
+			:errcode,
+			:message;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Apllog*)ZbmlRealloc( array,
+                                    sizeof( Apllog ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Apllog ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ApllogArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbApllogInsert()
+ *    APLLOG レコードを挿入する
+ * ■引数
+ *    [I]  Apllog* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbApllogInsert( Apllog* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ApllogArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO APLLOG
+    (
+		SYDATE,
+		SYTIME,
+		TRACEKBN,
+		PCNAME,
+		PROCCESSID,
+		LOGINID,
+		WKUPAPP,
+		SRCNAME,
+		FUNCNAME,
+		GETLINE,
+		PROCFLG,
+		ERRCODE,
+		MESSAGE
+    ) VALUES (
+		:sydate,
+		:sytime,
+		:tracekbn,
+		:pcname,
+		:proccessid,
+		:loginid,
+		:wkupapp,
+		:srcname,
+		:funcname,
+		:getline1,
+		:procflg,
+		:errcode,
+		:message
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbApllogUpdate()
+ *    APLLOG レコードを更新する
+ * ■引数
+ *    [I]  Apllog* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbApllogUpdate( Apllog* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ApllogArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE APLLOG
+    SET (
+		LOGINID,
+		WKUPAPP,
+		SRCNAME,
+		FUNCNAME,
+		GETLINE,
+		PROCFLG,
+		ERRCODE,
+		MESSAGE
+    ) = (
+		:loginid,
+		:wkupapp,
+		:srcname,
+		:funcname,
+		:getline1,
+		:procflg,
+		:errcode,
+		:message
+    ) WHERE
+		SYDATE = :sydate AND
+		SYTIME = :sytime AND
+		TRACEKBN = :tracekbn AND
+		PCNAME = :pcname AND
+		PROCCESSID = :proccessid;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbApllogDelete()
+ *    APLLOG レコードを削除する
+ * ■引数
+ *    [I]  Apllog* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbApllogDelete( Apllog* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ApllogArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM APLLOG
+    WHERE
+		SYDATE = :sydate AND
+		SYTIME = :sytime AND
+		TRACEKBN = :tracekbn AND
+		PCNAME = :pcname AND
+		PROCCESSID = :proccessid;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

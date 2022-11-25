@@ -1,0 +1,1470 @@
+/******************************************************************************/
+/*   ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/*   システム名：次世代システム                                               */
+/*   ファイル名：jidoKousei.sqc                                               */
+/*   概      要：ＤＢアクセス                                                 */
+/*   OS        ：SUSE LINUX Enterprise Server 9 (s390x)                       */
+/*                 - Kernel 2.6.5-7.139-s390x (2).                            */
+/*   言語      ：DB2/C                                                        */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2007/04/08     INTEC.INC      CREATE                             */
+/* -------------------------------------------------------------------------- */
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  2.00     2008/10/09     K.Ameno        自動校正対応初版                   */
+/*  2.01     2009-03-04     R.Mizu         速度改善                  　　　　 */
+/*  2.01     2009-03-04     R.Mizu         タイミングにより自動校正チェック結果が変わってしまうことへの対応 */
+/*  2.01     2009-03-12     K.Moriya       校正対象後ヒストグラム作成を画面(DS551)に合わせた */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include    <stdio.h>
+#include    <stdlib.h>
+#include    <string.h>
+#include    <sqlca.h>
+#include    "FD103.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+struct _stKTRAW {
+    char   knskisymd[11];         /* 検査開始日 */
+    char   bskkbn[5];             /* 分析機区分 */
+    char   bsklne[5];             /* 分析機ライン */
+    char   bskgok[7];             /* 分析機号機 */
+    short  ctrlno;                /* コントロール番号 */
+    char   nbkmkcd[8];            /* 内部項目コード */
+    char   ctrlsbt[21];           /* コントロール種別 */
+    char   sktti[25];             /* 測定値 */
+    char   ctrlx[13];             /* 平均値 */
+    short  sstnksu;               /* 小数点桁数 */
+    char   facterjd1[13];         /* ファクター自動１ */
+    char   facterjd2[13];         /* ファクター自動２ */
+    char   basejd1[13];           /* ベース自動１ */
+    char   basejd2[13];           /* ベース自動２ */
+    sqlint32 nonecnt;             /* コントロール精度判定（０以外は本数未達） */
+    sqlint32 ngcnt;               /* コントロール精度判定（０以外は精度異常） */
+	double shrnglwhf;             /* 最頻レンジ下限値補正前 */
+	double shrnghihf;             /* 最頻レンジ上限値補正前 */
+	double shrnglwhb;             /* 最頻レンジ下限値補正後 */
+	double shrnghihb;             /* 最頻レンジ上限値補正後 */
+	double hstkjntn;              /* ヒスト作成基準点 */
+	double hstkzmhb;              /* ヒスト刻み幅 */
+	sqlint32 hstkaikyu;           /* ヒスト階級数 */
+	sqlint32 ksikjnspsu;          /* 校正基準サンプル数 */
+} ktraw;
+struct _stATRAW {
+    sqlint32 seq;
+    char   knskisymd[11];
+    char   bskkbn[5];
+    char   bsklne[5];
+    char   bskgok[7];
+    char   nbkmkcd[8];
+	sqlint32 sstnksu;
+    sqlint32 ctrlnoFrom;
+    sqlint32 ctrlnoTo;
+    char   facter[13];
+    char   base[13];
+    char   autokosiflg[2];
+    char   kosizmflg[2];
+    char   causecd[9];
+    char   kosierrcd[9];
+    sqlint32 kensu;
+    char   yobi1[11];
+    char   yobi2[11];
+    char   yobi3[11];
+    char   termid[16];
+    char   kosidh[22];
+    char   sksdh[22];
+    char   ksndh[22];
+} atraw;
+	sqlint32 maxSeq;
+	sqlint32 datCnt;
+    sqlint32 pCtrlno;             /* 前コントロール番号 */
+	double hFacter;
+	double hBase;
+	double sRange;
+	double eRange;
+	double kRange;
+	char   stSql[1024];
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/*  関 数 名  ：Commit                                                        */
+/*  機能概要  ：DB確定                                                        */
+/*  入    力  ：                                                              */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：                                                              */
+/******************************************************************************/
+void Commit()
+{
+    struct  sqlca   sqlca;
+	EXEC SQL COMMIT;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：Rollback                                                      */
+/*  機能概要  ：DB更新内容破棄                                                */
+/*  入    力  ：                                                              */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：                                                              */
+/******************************************************************************/
+void Rollback()
+{
+    struct  sqlca   sqlca;
+	EXEC SQL ROLLBACK;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：BAlloc                                                        */
+/*  機能概要  ：ブロック単位領域確保                                          */
+/*  入    力  ：                                                              */
+/*   第１引数 ：void**	buff	: 確保先アドレス                              */
+/*   第２引数 ：long	size	: データ件数                                  */
+/*   第３引数 ：int		cnt		: カウンタ（件数）                            */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/*            : RTN_ZERO     データ無し                                       */
+/******************************************************************************/
+static int BAlloc(
+	void** buff,	/* buff:バッファアドレス */
+	long   size,	/* size:1レコードサイズ */
+	int    cnt)		/* cnt :カウンタ（登録レコードポジション） */
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+	int   ret = ERROR_CODE_NORMAL;
+	void* wkBuff;
+
+    /* 初期処理 */
+    strcpy( func_nm, "BAlloc" );
+    LogOut( LT_DBG, LX_NON, LE_NON, "START", func_nm, __FILE__, __LINE__ );
+
+	wkBuff = NULL;
+
+	if (*buff == NULL) {
+
+		/* 初回領域確保 */
+		*buff = malloc(size * ALLOC_INIT);
+
+		if (*buff != NULL) {
+			/* 領域確保成功 */
+			ret = ERROR_CODE_NORMAL;
+			/* 確保領域クリア */
+			memset(*buff, 0, size * ALLOC_INIT);
+		} else {
+			/* 領域確保エラー（初回） */
+			ret = ERROR_MEMORY_ERROR;
+		}
+	} else {
+
+		if (cnt < ALLOC_INIT) {
+			/* 初回分の範囲内 */
+			ret = ERROR_CODE_NORMAL;
+		} else
+
+		/* カウンタがちょうど確保領域を超えた場合 */
+		if (((cnt - ALLOC_INIT) % ALLOC_ADD) == 0) {
+
+			/* 増分領域確保 */
+			wkBuff = realloc(*buff, size * (cnt + ALLOC_ADD));
+
+			if ( wkBuff != NULL) {
+				/* 増分確保成功 */
+				*buff = wkBuff;
+				ret = ERROR_CODE_NORMAL;
+				/* 確保領域クリア */
+				memset(*buff + (cnt * size), 0, size * ALLOC_ADD);
+    	
+				sprintf(G_msg, "増分確保成功");
+				LogOut(LT_DBG, LX_NON, LE_NON, G_msg, func_nm, __FILE__, __LINE__);
+			} else {
+				/* 領域確保エラー（増分） */
+				ret = ERROR_MEMORY_ERROR;
+			}
+		}
+	}
+
+	sprintf(G_msg, "END(%d)", ret);
+    LogOut( LT_DBG, LX_NON, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+	return ret;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：selectKouseiTaisho                                            */
+/*  機能概要  ：自動校正対象検索                                              */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST * kt		: 校正対象リスト                              */
+/*   第２引数 ：int    * kensu	: データ件数                                  */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/*            : RTN_ZERO     データ無し                                       */
+/******************************************************************************/
+int selectKouseiTaisho(
+KTLIST** allKt,
+int*     kensu)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+	KTLIST* kt;
+    int     cnt = 0;
+    int     ret = RTN_OK;
+    struct  sqlca   sqlca;
+
+    /* 初期処理 */
+    strcpy( func_nm, "selectKouseiTaisho" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	sqlca.sqlcode = 0;
+
+    EXEC SQL DECLARE kt_cur CURSOR FOR
+		select
+		        ctrl.knskisymd
+		        , ctrl.bskkbn
+		        , ctrl.bsklne
+		        , ctrl.bskgok
+		        , ctrl.ctrlno
+		        , ctrl.nbkmkcd
+		        , ctrl.ctrlsbt
+		        , ctrl.SKTTI
+		        , ctrm.CTRLX
+		        , ctrm.SSTNKSU
+		        , ctrm.facterjd1
+		        , ctrm.facterjd2
+		        , ctrm.basejd1
+		        , ctrm.basejd2
+		        , coalesce(chk.nonecnt, 0) nonecnt
+		        , coalesce(chk.ngcnt, 0) ngcnt
+			, double(lpad(ltrim(ctrm.shrnglwhf), 12 ,0))
+			, double(lpad(ltrim(ctrm.shrnghihf), 12 ,0))
+			, double(lpad(ltrim(ctrm.shrnglwhb), 12 ,0))
+			, double(lpad(ltrim(ctrm.shrnghihb), 12 ,0))
+			, double(ctrm.hstkjntn)
+			, double(ctrm.hstkzmhb)
+			, ctrm.hstkaikyu
+			, ctrm.ksikjnspsu
+		from (select distinct SKTTI
+		                ,KNSKISYMD
+		                ,CTRLNo
+		                ,BSKGOK
+		                ,NBKMKCD
+		                ,BSKKBN
+		                ,BSKLNE
+		                ,CTRLSBT
+		        from    CTRLKKA
+		        where
+			  /* 2009-03-04 Mizu UPD Start --- 速度改善（NBKMKCDのみの方がORがないので速い） */
+		      /* (( BSKKBN='LABO' and NBKMKCD in ('87','88','89')) */
+		      /* OR  ( BSKKBN='BIOM' and NBKMKCD in ('087','088','089') ) */
+		      /* ) */
+			  NBKMKCD in ('087','088','089','87','88','89')
+			  /* 2009-03-04 Mizu UPD End */
+		        except
+		        select   ck.SKTTI
+		                ,ck.KNSKISYMD
+		                ,ck.CTRLNo
+		                ,ck.BSKGOK
+		                ,ck.NBKMKCD
+		                ,ck.BSKKBN
+		                ,ck.BSKLNE
+		                ,ck.CTRLSBT
+		        from    CTRLKKA ck, AUTOKOSICTRL ak, 
+						(select  KNSKISYMD
+								,BSKKBN
+								,BSKLNE
+								,BSKGOK
+								,NBKMKCD
+								,max(CTRLNOTO) CTRLMAX
+						 from 	AUTOKOSICTRL
+						 group by KNSKISYMD
+                                 ,BSKKBN
+                                 ,BSKLNE
+                                 ,BSKGOK
+                                 ,NBKMKCD) maxAk
+				where   ck.KNSKISYMD = ak.KNSKISYMD
+		        and     ck.BSKKBN    = ak.BSKKBN
+		        and     ck.BSKLNE    = ak.BSKLNE
+		        and     ck.BSKGOK    = ak.BSKGOK
+		        and     ck.NBKMKCD   = ak.NBKMKCD
+		        and     ck.CTRLNo    = ak.CTRLNOTO
+				and     ck.KNSKISYMD = maxAk.KNSKISYMD
+		        and     ck.BSKKBN    = maxAk.BSKKBN
+		        and     ck.BSKLNE    = maxAk.BSKLNE
+		        and     ck.BSKGOK    = maxAk.BSKGOK
+		        and     ck.NBKMKCD   = maxAk.NBKMKCD
+		        and     ck.CTRLNo   <> maxAk.CTRLMAX
+				and     ak.KNSKISYMD = maxAk.KNSKISYMD
+		        and     ak.BSKKBN    = maxAk.BSKKBN
+		        and     ak.BSKLNE    = maxAk.BSKLNE
+		        and     ak.BSKGOK    = maxAk.BSKGOK
+		        and     ak.NBKMKCD   = maxAk.NBKMKCD
+		        and     ak.CTRLNOTO <> maxAk.CTRLMAX
+		)  ctrl
+		/* 2009-03-04 Mizu UPD Start --- タイミングにより自動校正チェック結果が変わってしまうことへの対応 */
+		/* left outer join VCTRLCHK_F as CHK */
+		inner join 
+            (select VCTRLCHK_F.*  from VCTRLCHK_F
+             inner join (
+                select knskisymd,bskkbn,bsklne,MAX(CTRLNO) as MAXCTRL from ctrlkka
+                 where knskisymd = ( select KJNSRIYMD from sysknrmst ) 
+                 and  NBKMKCD not in ('087','088','089','87','88','89')
+                 group by knskisymd,bskkbn,bsklne ) as ctrlmax
+                 on VCTRLCHK_F.KNSKISYMD  = ctrlmax.KNSKISYMD
+                 and     VCTRLCHK_F.BSKKBN     = ctrlmax.BSKKBN
+                 and     VCTRLCHK_F.BSKLNE     = ctrlmax.BSKLNE
+                 and     VCTRLCHK_F.CTRLNO     < ctrlmax.MAXCTRL 
+                ) as CHK
+		/* 2009-03-04 Mizu UPD End */
+		        on      ctrl.KNSKISYMD  = chk.KNSKISYMD
+		        and     ctrl.BSKKBN     = chk.BSKKBN
+		        and     ctrl.BSKLNE     = chk.BSKLNE
+		        and     ctrl.CTRLNO     = chk.CTRLNO
+		, ( select *
+		        from CTRLMST
+		        where
+		        /* 2009-03-04 Mizu UPD Start --- 速度改善（NBKMKCDのみの方がORがないので速い） */
+		        /* (( BSKKBN='LABO' and NBKMKCD in ('87','88','89')) */
+		        /* OR  ( BSKKBN='BIOM' and NBKMKCD in ('087','088','089')) */
+		        /* ) */
+		   		NBKMKCD in ('087','088','089','87','88','89')
+		   		/* 2009-03-04 Mizu UPD End */
+		        AND KAIYMD <= ( select KJNSRIYMD from sysknrmst )
+		        AND HAIYMD >= ( select KJNSRIYMD from sysknrmst )
+		) ctrm
+		where ctrl.KNSKISYMD = ( select KJNSRIYMD from sysknrmst )
+		and     ctrl.NBKMKCD = ctrm.NBKMKCD
+		and     ctrl.BSKKBN  = ctrm.BSKKBN
+		and     ctrl.CTRLSBT = ctrm.CTRLSBT
+		order by ctrl.BSKKBN, ctrl.BSKLNE, ctrl.BSKGOK,ctrl.CTRLNo,ctrl.nbkmkcd,ctrl.CTRLSBT desc
+		for read only
+		;
+
+	if(sqlca.sqlcode != 0){
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+    	return(ret);
+	}
+
+    EXEC SQL OPEN kt_cur;
+
+	if(sqlca.sqlcode != 0){
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+    	return(ret);
+	}
+	
+	cnt = 0;
+	kt  = NULL;
+
+	while (1) {
+		memset(&ktraw, 0, sizeof(ktraw));
+
+		EXEC SQL FETCH kt_cur
+			INTO    :ktraw.knskisymd,
+					:ktraw.bskkbn,
+					:ktraw.bsklne,
+					:ktraw.bskgok,
+					:ktraw.ctrlno,
+					:ktraw.nbkmkcd,
+					:ktraw.ctrlsbt,
+					:ktraw.sktti,
+					:ktraw.ctrlx,
+					:ktraw.sstnksu,
+					:ktraw.facterjd1,
+					:ktraw.facterjd2,
+					:ktraw.basejd1,
+					:ktraw.basejd2,
+					:ktraw.nonecnt,
+					:ktraw.ngcnt,
+                    :ktraw.shrnglwhf,
+                    :ktraw.shrnghihf,
+                    :ktraw.shrnglwhb,
+                    :ktraw.shrnghihb,
+                    :ktraw.hstkjntn,
+                    :ktraw.hstkzmhb,
+                    :ktraw.hstkaikyu,
+                    :ktraw.ksikjnspsu;
+
+		if(sqlca.sqlcode == 0){
+			ret = RTN_OK;
+
+			if (BAlloc((void**)&kt, (long)(sizeof(KTLIST)), cnt) == ERROR_CODE_NORMAL) {
+				strcpy((kt+cnt)->knskisymd, ktraw.knskisymd);
+				strcpy((kt+cnt)->bskkbn,ktraw.bskkbn);
+				strcpy((kt+cnt)->bsklne,ktraw.bsklne);
+				strcpy((kt+cnt)->bskgok,ktraw.bskgok);
+				strcpy((kt+cnt)->nbkmkcd,ktraw.nbkmkcd);
+				strcpy((kt+cnt)->ctrlsbt,ktraw.ctrlsbt);
+				strcpy((kt+cnt)->sktti,ktraw.sktti);
+				strcpy((kt+cnt)->ctrlx,ktraw.ctrlx);
+				strcpy((kt+cnt)->facterjd1,ktraw.facterjd1);
+				strcpy((kt+cnt)->facterjd2,ktraw.facterjd2);
+				strcpy((kt+cnt)->basejd1,ktraw.basejd1);
+				strcpy((kt+cnt)->basejd2,ktraw.basejd2);
+				(kt+cnt)->ctrlno    = ktraw.ctrlno;
+				(kt+cnt)->sstnksu   = ktraw.sstnksu;
+				(kt+cnt)->ngcnt     = ktraw.ngcnt;
+                (kt+cnt)->shrnglwhf = ktraw.shrnglwhf,
+                (kt+cnt)->shrnghihf = ktraw.shrnghihf,
+                (kt+cnt)->shrnglwhb = ktraw.shrnglwhb,
+                (kt+cnt)->shrnghihb = ktraw.shrnghihb,
+                (kt+cnt)->hstkjntn  = ktraw.hstkjntn,
+                (kt+cnt)->hstkzmhb  = ktraw.hstkzmhb,
+                (kt+cnt)->hstkaikyu = ktraw.hstkaikyu;
+                (kt+cnt)->ksikjnspsu= ktraw.ksikjnspsu;
+				cnt++;
+			}
+		} else {
+			if(sqlca.sqlcode == 100){
+				if (cnt == 0)
+					ret = RTN_ZERO;
+			} else{
+				ret=RTN_DBERR;
+				sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+								 sqlca.sqlcode, sqlca.sqlstate );
+				LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			}
+
+			/* データが無いか、エラーの場合はカーソルを閉じる */
+			EXEC SQL CLOSE kt_cur;
+			break;
+		}
+	}
+
+	sprintf( G_msg, "kensu[%d]", cnt );
+	LogOut( LT_DBG, LX_NON, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+	*allKt = kt;
+	*kensu = cnt;
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+    return(ret);
+}
+
+/******************************************************************************/
+/*  関 数 名  ：checkATKSTS                                                   */
+/*  機能概要  ：自動校正対象コントロールテーブル存在チェック                  */
+/*  入    力  ：                                                              */
+/*   第１引数 ：ATKSTS* at		: 自動校正対象コントロール情報                */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：0以外        正常終了                                         */
+/*            : 0            データ無し                                       */
+/*            : <0           エラー                                           */
+/******************************************************************************/
+int checkATKSTS(ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    struct  sqlca   sqlca;
+	int ret;
+
+    /* 初期処理 */
+    strcpy( func_nm, "checkATKSTS" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	datCnt = 0;
+	memset(&atraw, 0, sizeof(struct _stATRAW));
+    strcpy(atraw.knskisymd,	at->knskisymd);
+    strcpy(atraw.bskkbn,	at->bskkbn);
+    strcpy(atraw.bsklne,	at->bsklne);
+    strcpy(atraw.bskgok,	at->bskgok);
+    strcpy(atraw.nbkmkcd,	at->nbkmkcd);
+    atraw.ctrlnoTo        = at->ctrlnoTo;
+	
+	EXEC SQL SELECT count(*)
+		INTO  :datCnt
+		FROM  AUTOKOSICTRL
+		WHERE KNSKISYMD = :atraw.knskisymd
+		AND   BSKKBN    = :atraw.bskkbn
+		AND   BSKLNE    = :atraw.bsklne
+		AND   BSKGOK    = :atraw.bskgok
+		AND   NBKMKCD   = :atraw.nbkmkcd
+		AND   CTRLNOTO  = :atraw.ctrlnoTo;
+
+	if(sqlca.sqlcode == 0){
+		ret = datCnt;
+	} else {
+		ret = -1;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+    LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return ret;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：UpdateATKSTS                                                  */
+/*  機能概要  ：自動校正対象コントロールテーブル更新処理                      */
+/*  入    力  ：                                                              */
+/*   第１引数 ：ATKSTS* at		: 自動校正対象コントロール情報                */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            : RTN_DBERR    異常終了                                         */
+/******************************************************************************/
+int UpdateATKSTS(ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    struct  sqlca   sqlca;
+	int ret = RTN_OK;
+
+    /* 初期処理 */
+    strcpy( func_nm, "UpdateATKSTS" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* キー設定 */
+	memset(&atraw, 0, sizeof(struct _stATRAW));
+    strcpy(atraw.knskisymd,	at->knskisymd);
+    strcpy(atraw.bskkbn,	at->bskkbn);
+    strcpy(atraw.bsklne,	at->bsklne);
+    strcpy(atraw.bskgok,	at->bskgok);
+    strcpy(atraw.causecd,	at->causecd);
+    atraw.ctrlnoTo   = at->ctrlnoTo;
+
+	EXEC SQL UPDATE AUTOKOSICTRL SET CAUSECD = :atraw.causecd
+	WHERE KNSKISYMD = :atraw.knskisymd
+	AND   BSKKBN    = :atraw.bskkbn
+	AND   BSKLNE    = :atraw.bsklne
+	AND   BSKGOK    = :atraw.bskgok
+	AND   CTRLNOTO  = :atraw.ctrlnoTo
+	AND   CAUSECD   = '0'
+	;
+
+	if(sqlca.sqlcode == 0 || sqlca.sqlcode == 100){
+		ret = RTN_OK;
+		sprintf(G_msg, "UPDATE knskisymd[%s] bskkbn[%s] bsklne[%s] bskgok[%s] nbkmkcd[%s] ctrlnoTo[%d] : causecd[%s] sqlca.sqlcode[%d]",
+				at->knskisymd, at->bskkbn, at->bsklne, at->bskgok, at->nbkmkcd, at->ctrlnoTo, at->causecd, sqlca.sqlcode);
+    	LogOut(LT_DBG, LX_NON, LE_NON, G_msg, func_nm, __FILE__, __LINE__);
+	} else {
+		ret = RTN_DBERR;
+		sprintf(G_msg, "DBエラーが発生しました。 knskisymd[%s] bskkbn[%s] bsklne[%s] bskgok[%s] nbkmkcd[%s] ctrlnoTo[%d] : causecd[%s] sqlca.sqlcode[%d] sqlca.sqlstate[%d]",
+				at->knskisymd, at->bskkbn, at->bsklne, at->bskgok, at->nbkmkcd, at->ctrlnoTo, at->causecd, sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return ret;
+}
+	
+/******************************************************************************/
+/*  関 数 名  ：InsertATKSTS                                                  */
+/*  機能概要  ：自動校正対象コントロールテーブルインサート処理                */
+/*  入    力  ：                                                              */
+/*   第１引数 ：ATKSTS* at		: 自動校正対象コントロール情報                */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            : RTN_DBERR    異常終了                                         */
+/******************************************************************************/
+int InsertATKSTS(ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    struct  sqlca   sqlca;
+	int ret = RTN_OK;
+
+    /* 初期処理 */
+    strcpy( func_nm, "InsertATKSTS" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	ret = checkATKSTS(at);
+	if (ret > 0) {
+    	LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+		return ret;
+	} else
+	if (ret < 0) {
+		Rollback();
+
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+	ret = RTN_OK;
+
+	EXEC SQL SELECT COALESCE(max(seq), 0) into :maxSeq FROM AUTOKOSICTRL;
+	if(sqlca.sqlcode == 0){
+		at->seq = maxSeq + 1;
+	} else {
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		return ret;
+	}
+
+	memset(&atraw, 0, sizeof(struct _stATRAW));
+	/* ATRAWとATKSTSは同じ形式なので代入可能ではあるが */
+	/* 構造体名が異なるため、各要素毎に代入している */
+    strcpy(atraw.knskisymd,		at->knskisymd);
+    strcpy(atraw.bskkbn,		at->bskkbn);
+    strcpy(atraw.bsklne,		at->bsklne);
+    strcpy(atraw.bskgok,		at->bskgok);
+    strcpy(atraw.nbkmkcd,		at->nbkmkcd);
+    strcpy(atraw.autokosiflg,	at->autokosiflg);
+    strcpy(atraw.kosizmflg,		at->kosizmflg);
+    strcpy(atraw.causecd,		at->causecd);
+    strcpy(atraw.kosierrcd,		at->kosierrcd);
+    strcpy(atraw.yobi1,			at->yobi1);
+    strcpy(atraw.yobi2,			at->yobi2);
+    strcpy(atraw.yobi3,			at->yobi3);
+    strcpy(atraw.termid,		at->termid);
+    strcpy(atraw.kosidh,		at->kosidh);
+    strcpy(atraw.sksdh,			at->sksdh);
+    strcpy(atraw.ksndh,			at->ksndh);
+	atraw.seq        = at->seq;
+    atraw.ctrlnoFrom = at->ctrlnoFrom;
+    atraw.ctrlnoTo   = at->ctrlnoTo;
+    atraw.sstnksu    = at->sstnksu;
+    atraw.kensu      = at->kensu;
+    sprintf(atraw.facter, "%-.*f", 2, at->facter);
+    sprintf(atraw.base,   "%-.*f", at->sstnksu, at->base);
+
+	/* DEBUG WRITE */
+	{
+		char tmp[1024];
+		sprintf(tmp, "INSERT INTO AUTOKOSICTRL (SEQ,KNSKISYMD,BSKKBN,BSKLNE,BSKGOK,NBKMKCD,SSTNKSU,CTRLNOFROM,CTRLNOTO,FACTER,BASE,AUTOKOSIFLG,KOSIZMFLG,CAUSECD,KOSIERRCD,KENSU,YOBI1,YOBI2,YOBI3,TERMID,KOSIDH,SKSDH,KSNDH)VALUES (\n");
+		strcpy(G_msg, tmp);
+		sprintf(tmp, "%d,", at->seq);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->knskisymd);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->bskkbn);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->bsklne);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->bskgok);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->nbkmkcd);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%d,", at->sstnksu);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%d,", at->ctrlnoFrom);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%d,", at->ctrlnoTo);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%f,", at->facter);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%f,", at->base);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->autokosiflg);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->kosizmflg);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->causecd);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->kosierrcd);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%d,", at->kensu);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->yobi1);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->yobi2);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->yobi3);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->termid);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->kosidh);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s,", at->sksdh);
+		strcat(G_msg, tmp);
+		sprintf(tmp, "%s)", at->ksndh);
+		strcat(G_msg, tmp);
+    	LogOut(LT_DBG, LX_NON, LE_NON, G_msg, func_nm, __FILE__, __LINE__);
+	}
+
+	EXEC SQL INSERT INTO AUTOKOSICTRL (
+			SEQ,
+			KNSKISYMD,
+			BSKKBN,
+			BSKLNE,
+			BSKGOK,
+			NBKMKCD,
+			SSTNKSU,
+			CTRLNOFROM,
+			CTRLNOTO,
+			FACTER,
+			BASE,
+			AUTOKOSIFLG,
+			KOSIZMFLG,
+			CAUSECD,
+			KOSIERRCD,
+			KENSU,
+			YOBI1,
+			YOBI2,
+			YOBI3,
+			TERMID,
+			KOSIDH,
+			SKSDH,
+			KSNDH)
+		VALUES (
+			:atraw.seq,
+			:atraw.knskisymd,
+			:atraw.bskkbn,
+			:atraw.bsklne,
+			:atraw.bskgok,
+			:atraw.nbkmkcd,
+			:atraw.sstnksu,
+			:atraw.ctrlnoFrom,
+			:atraw.ctrlnoTo,
+			:atraw.facter,
+			:atraw.base,
+			:atraw.autokosiflg,
+			:atraw.kosizmflg,
+			:atraw.causecd,
+			:atraw.kosierrcd,
+			:atraw.kensu,
+			:atraw.yobi1,
+			:atraw.yobi2,
+			:atraw.yobi3,
+			:atraw.termid,
+			'0001-01-01-00.00.01.000000',
+			current timestamp,
+			current timestamp);
+
+	if(sqlca.sqlcode == 0){
+		ret = RTN_OK;
+	} else {
+		Rollback();
+
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return ret;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：ConvKTLIST2ATKSTS                                             */
+/*  機能概要  ：校正対象リスト自動校正対象コントロール変換                    */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* kt		: 校正対象リスト                              */
+/*   第２引数 ：ATKSTS* at		: 変換後自動校正対象コントロール情報          */
+/*  出    力  ：                                                              */
+/******************************************************************************/
+void ConvKTLIST2ATKSTS(
+	KTLIST* kt, 
+	ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    /* 初期処理 */
+    strcpy( func_nm, "ConvKTLIST2ATKSTS" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+    at->seq = 0; /* INSERT時に付番（max(seq)+1） */
+    strcpy(at->knskisymd,	kt->knskisymd);
+    strcpy(at->bskkbn,		kt->bskkbn);
+    strcpy(at->bsklne,		kt->bsklne);
+    strcpy(at->bskgok,		kt->bskgok);
+    strcpy(at->nbkmkcd,		kt->nbkmkcd);
+    strcpy(at->autokosiflg,	"1");  /* 初期値は全て校正対象とする */
+    strcpy(at->kosizmflg,   "0");
+    strcpy(at->causecd,     "");
+    strcpy(at->kosierrcd,   "");
+    strcpy(at->yobi1,       "");
+    strcpy(at->yobi2,       "");
+    strcpy(at->yobi3,       "");
+    strcpy(at->termid,      "");
+    strcpy(at->kosidh,      "");
+    strcpy(at->sksdh,       "");
+    strcpy(at->ksndh,       "");
+	at->ctrlnoFrom      = (kt->ctrlno==0?0:kt->ctrlno-1);
+    at->ctrlnoTo        = kt->ctrlno;
+    at->sstnksu         = kt->sstnksu;
+    at->facter          = 1;	/* 初期化の値を0から1へ変更(0にしておくと、誤って校正が走るとマズイため) */
+    at->base            = 0;
+    at->kensu           = 0;
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+}
+
+/******************************************************************************/
+/*  関 数 名  ：ConvKTLIST2ATKSTS                                             */
+/*  機能概要  ：校正対象リスト自動校正対象コントロール変換                    */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* kt		: 校正対象リスト                              */
+/*   第２引数 ：ATKSTS* at		: 変換後自動校正対象コントロール情報          */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：KSTS_OK           正常終了                                    */
+/*            : KSTS_CTRLNO       異常終了                                    */
+/******************************************************************************/
+int SetCtrlERROR(
+	KTLIST* kt,
+	ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+	int  ret = KSTS_OK;
+	
+    /* 初期処理 */
+    strcpy( func_nm, "SetCtrlERROR" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	if (kt->ngcnt != 0) {
+		strcpy(at->autokosiflg, "0");
+		sprintf(at->causecd, "%d", KSTS_CTRLNO);
+		ret = KSTS_CTRLNO;
+	}
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return ret;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SetNoneCount                                                  */
+/*  機能概要  ：本数未達状態設定                                              */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* kt		: 校正対象リスト                              */
+/*   第２引数 ：ATKSTS* at		: 設定用自動校正対象コントロール情報          */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：KSTS_OK           正常終了                                    */
+/*            : KSTS_CTRLNONE     異常終了                                    */
+/******************************************************************************/
+int SetNoneCount(
+	KTLIST* kt,
+	ATKSTS* at)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+	int  ret = KSTS_OK;
+	
+    /* 初期処理 */
+    strcpy( func_nm, "SetNoneCount" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	if (kt->nonecnt != 0) {
+		strcpy(at->autokosiflg, "0");
+		sprintf(at->causecd, "%d", KSTS_CTRLNONE);
+		ret = KSTS_CTRLNONE;
+	}
+	
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return ret;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SearchTopControlPosition                                      */
+/*  機能概要  ：コントロールの先頭検索                                        */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* allKt	: 全校正対象リスト                            */
+/*   第２引数 ：int     pos	    : 検索元校正対象コントロール位置              */
+/*   第３引数 ：int     woCh	: チャネルを含まない動作とするかのフラグ      */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：                  先頭位置                                    */
+/******************************************************************************/
+int SearchTopControlPosition(KTLIST* allKt, int pos, int woCh)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    int top;
+
+    /* 初期処理 */
+    strcpy( func_nm, "SearchTopControlPosition" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+    KTLIST kt = *(allKt+pos);
+
+    /* 直前から先頭まで（現在位置以降には前のコントロールは存在しない） */
+    for (top = pos-1; top >= 0; top--) {
+        int stat;
+		if (woCh == 0)
+        	stat = channelComp(allKt+top, &kt);
+		else
+        	stat = keyComp(allKt+top, &kt);
+
+        /* 直近の前コントロールの最後尾発見 */
+        if (stat != 0)
+            break;
+    }
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+    return top+1;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SearchPrevControlPosition                                     */
+/*  機能概要  ：前コントロールの最後尾検索                                    */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* allKt	: 全校正対象リスト                            */
+/*   第２引数 ：int     pos	    : 検索元校正対象コントロール位置              */
+/*   第３引数 ：int     woCh	: チャネルを含まない動作とするかのフラグ      */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：                  前コントロール位置                          */
+/******************************************************************************/
+int SearchPrevControlPosition(KTLIST* allKt, int pos, int woCh)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    int prev;
+
+    /* 初期処理 */
+    strcpy( func_nm, "SearchPrevControlPosition" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+    KTLIST kt = *(allKt+pos);
+    kt.ctrlno--; // 前のコントロール番号を設定
+
+    /* 直前から先頭まで（現在位置以降には前のコントロールは存在しない） */
+    for (prev = pos; prev >= 0; prev--) {
+        int stat;
+		if (woCh == 0)
+        	stat = channelComp(allKt+prev, &kt);
+		else
+        	stat = keyComp(allKt+prev, &kt);
+
+        /* 直近の前コントロール発見 */
+        if (stat == 0)
+            break;
+    }
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+    return prev;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SearchNextControlPosition                                     */
+/*  機能概要  ：次コントロールの先頭検索                                      */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* allKt	: 全校正対象リスト                            */
+/*   第２引数 ：int     pos	    : 検索元校正対象コントロール位置              */
+/*   第３引数 ：int     kensu	: 校正対象リスト件数                          */
+/*   第４引数 ：int     woCh	: チャネルを含まない動作とするかのフラグ      */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：                  次コントロールの先頭位置                    */
+/******************************************************************************/
+int SearchNextControlPosition(KTLIST* allKt, int pos, int kensu, int woCh)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    int next;
+
+    /* 初期処理 */
+    strcpy( func_nm, "SearchNextControlPosition" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+    KTLIST kt = *(allKt+pos);
+
+    /* 直後から終端まで（現在位置以前には次のコントロールは存在しない） */
+    for (next = pos+1; next < kensu; next++) {
+        int stat;
+		if (woCh == 0)
+        	stat = channelComp(allKt+next, &kt);
+		else
+        	stat = keyComp(allKt+next, &kt);
+
+        /* 直近の次コントロール発見 */
+        if (stat > 0)
+            break;
+    }
+
+    /* nextがkensuを超えていてもそのまま返す */
+    /* nextはループの終端として使うため、next位置のデータにアクセスすることはない */
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+    return next;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：MakeHistgramBefore                                            */
+/*  機能概要  ：校正対象前ヒストグラム作成                                    */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* kt		: 校正対象リスト                              */
+/*   第２引数 ：KTLIST* prev	: 校正対象リスト・前コントロール              */
+/*   第３引数 ：int**   hist	: 校正対象前ヒストグラム格納先                */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK            正常終了                                    */
+/*            : RTN_MEMERR        異常終了・領域確保失敗                      */
+/*            : RTN_DBERR         異常終了・ＤＢエラー                        */
+/******************************************************************************/
+int MakeHistgramBefore(KTLIST* kt, KTLIST* prev, int** hist)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    struct sqlca sqlca;
+	char sql[1024];
+	int* wkHist;
+	int  ret;
+	int  i;
+
+    /* 初期処理 */
+    strcpy( func_nm, "MakeHistgramBefore" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	*hist  = NULL;
+	wkHist = NULL;
+	wkHist = malloc(kt->hstkaikyu * sizeof(int));
+
+	if (wkHist == NULL) {
+		EXEC SQL ROLLBACK;
+		ret = RTN_MEMERR;
+		sprintf( G_msg, "ヒストグラム作成に必要な領域が確保できませんでした。");
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+	memset(wkHist, 0, kt->hstkaikyu * sizeof(int));
+	memset(&ktraw, 0, sizeof(struct _stKTRAW));
+
+	/* 検索キーの設定 */
+    strcpy(ktraw.knskisymd,	kt->knskisymd);
+    strcpy(ktraw.bskkbn,	kt->bskkbn);
+    strcpy(ktraw.bskgok,	kt->bskgok);
+    strcpy(ktraw.nbkmkcd,	kt->nbkmkcd);
+    strcpy(ktraw.ctrlsbt,	kt->ctrlsbt);
+    ktraw.ctrlno =			kt->ctrlno;
+    pCtrlno      =			prev->ctrlno;
+	/* 2009-03-13     H.Sekiya */
+	/* 手動校正画面と条件が違うので画面に合わせる */
+	/* sRange       =           kt->hstkjntn; */
+	sRange       =			kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+	ktraw.sstnksu=          kt->sstnksu;
+
+	/* 下限未満のデータ数取得 */
+	datCnt = 0;
+	EXEC SQL SELECT count(*) into :datCnt
+		FROM CTRLMST cm,
+			 KMKMST  km,
+			 (select double(RAWDATA) ans,
+					 knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+					 kmkcd, knsgrp
+			  from kekka
+			  where knskisymd = :ktraw.knskisymd
+			  and   bskgok    = :ktraw.bskgok
+			  and   bskkbn    = :ktraw.bskkbn
+			  and   nbkmkcd   = :ktraw.nbkmkcd
+			  and   tnyrkflg  = ' '
+			  and   rawdata  != ''
+			  and   kisyakflg<> '2'
+			  and   knsflg not in ('E','M','H')
+			  and   ctrlno   <= :ktraw.ctrlno
+			  and   ctrlno    > :pCtrlno) hk
+		WHERE cm.BSKKBN     = :ktraw.bskkbn
+		AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+		AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+		AND   cm.BSKKBN     =  hk.BSKKBN
+		AND   cm.NBKMKCD    =  hk.NBKMKCD
+		AND   km.HSIUMFLG   = '1'	
+		AND   hk.KNSKISYMD >= km.KAIYMD 
+		AND   hk.KNSKISYMD <= km.HAIYMD
+		AND   hk.KMKCD      = km.KMKCD	
+		AND   hk.KNSGRP     = km.KNSGRP	
+		/* 2009-03-13     H.Sekiya */
+		/* 手動校正画面と条件が違うので画面に合わせる */
+		/* AND   dec(hk.ans,10,3) < dec(:sRange,10,3); */
+		AND   dec(hk.ans,10,3) <= dec(:sRange,10,3);
+
+	if(sqlca.sqlcode == 0){
+		wkHist[0] = datCnt;
+	} else {
+		EXEC SQL ROLLBACK;
+		free(wkHist);
+		wkHist = NULL;
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+    /* 2009-03-13     H.Sekiya */
+    /* 手動校正画面と条件が違うので画面に合わせる */
+	/* sRange = kt->hstkjntn; */
+    /* eRange = kt->hstkjntn; */
+	sRange = kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+	eRange = kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+	for (i = 0; i < kt->hstkaikyu; i++) {
+		/* ヒストのレンジ先頭 */
+		sRange = eRange;
+		/* ヒストのレンジ終端 */
+		eRange = sRange + kt->hstkzmhb;
+
+		/* レンジ内のデータ数取得 */
+		datCnt = 0;
+		EXEC SQL SELECT count(*) into :datCnt
+			FROM CTRLMST cm,
+	             KMKMST  km,
+	             (select double(RAWDATA) ans,
+	                     knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+	                     kmkcd, knsgrp
+	              from kekka
+	              where knskisymd = :ktraw.knskisymd
+	              and   bskgok    = :ktraw.bskgok
+	              and   bskkbn    = :ktraw.bskkbn
+	              and   nbkmkcd   = :ktraw.nbkmkcd
+	              and   tnyrkflg  = ' '
+	              and   rawdata  != ''
+	              and   kisyakflg<> '2'
+	              and   knsflg not in ('E','M','H')
+	              and   ctrlno   <= :ktraw.ctrlno
+	              and   ctrlno    > :pCtrlno) hk
+	        WHERE cm.BSKKBN     = :ktraw.bskkbn
+	        AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+	        AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+	        AND   cm.BSKKBN     =  hk.BSKKBN
+	        AND   cm.NBKMKCD    =  hk.NBKMKCD
+	        AND   km.HSIUMFLG   = '1'
+	        AND   hk.KNSKISYMD >= km.KAIYMD
+	        AND   hk.KNSKISYMD <= km.HAIYMD
+	        AND   hk.KMKCD      = km.KMKCD
+	        AND   hk.KNSGRP     = km.KNSGRP
+			/* 2009-03-13     H.Sekiya */
+			/* 手動校正画面と条件が違うので画面に合わせる */
+			/* AND   dec(hk.ans,10,3) >= dec(:sRange,10,3) */
+			/* AND   dec(hk.ans,10,3) <  dec(:eRange,10,3); */
+			AND   dec(hk.ans,10,3) >  dec(:sRange,10,3) 
+			AND   dec(hk.ans,10,3) <= dec(:eRange,10,3);
+
+		if(sqlca.sqlcode == 0){
+			wkHist[i] += datCnt;
+		} else {
+			EXEC SQL ROLLBACK;
+			free(wkHist);
+			wkHist = NULL;
+			ret=RTN_DBERR;
+			sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+							 sqlca.sqlcode, sqlca.sqlstate );
+			LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			return ret;
+		}
+	}
+
+	/* 上限超過のデータ数取得 */
+	datCnt = 0;
+	EXEC SQL SELECT count(*) into :datCnt
+		FROM CTRLMST cm,
+             KMKMST  km,
+             (select double(RAWDATA) ans,
+                     knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+                     kmkcd, knsgrp
+              from kekka
+              where knskisymd = :ktraw.knskisymd
+              and   bskgok    = :ktraw.bskgok
+              and   bskkbn    = :ktraw.bskkbn
+              and   nbkmkcd   = :ktraw.nbkmkcd
+              and   tnyrkflg  = ' '
+              and   rawdata  != ''
+              and   kisyakflg<> '2'
+              and   knsflg not in ('E','M','H')
+              and   ctrlno   <= :ktraw.ctrlno
+              and   ctrlno    > :pCtrlno) hk
+        WHERE cm.BSKKBN     = :ktraw.bskkbn
+        AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+        AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+        AND   cm.BSKKBN     =  hk.BSKKBN
+        AND   cm.NBKMKCD    =  hk.NBKMKCD
+        AND   km.HSIUMFLG   = '1'
+        AND   hk.KNSKISYMD >= km.KAIYMD
+        AND   hk.KNSKISYMD <= km.HAIYMD
+        AND   hk.KMKCD      = km.KMKCD
+        AND   hk.KNSGRP     = km.KNSGRP
+		/* 2009-03-13     H.Sekiya */
+		/* 手動校正画面と条件が違うので画面に合わせる */
+		/* AND   dec(hk.ans,10,3) >= dec(:eRange,10,3); */
+		AND   dec(hk.ans,10,3) > dec(:eRange,10,3);
+
+	if(sqlca.sqlcode == 0){
+		wkHist[kt->hstkaikyu-1] += datCnt;
+	} else {
+		EXEC SQL ROLLBACK;
+		free(wkHist);
+		wkHist = NULL;
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+	*hist = wkHist;
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return RTN_OK;
+}
+
+/******************************************************************************/
+/*  関 数 名  ：MakeHistgramAfter                                             */
+/*  機能概要  ：校正対象後ヒストグラム作成                                    */
+/*  入    力  ：                                                              */
+/*   第１引数 ：KTLIST* kt		: 校正対象リスト                              */
+/*   第２引数 ：KTLIST* prev	: 校正対象リスト・前コントロール              */
+/*   第３引数 ：int**   hist	: 校正対象後ヒストグラム格納先                */
+/*   第４引数 ：double  facter	: 校正係数・ファクター                        */
+/*   第５引数 ：double  base	: 校正係数・ベース                            */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK            正常終了                                    */
+/*            : RTN_MEMERR        異常終了・領域確保失敗                      */
+/*            : RTN_DBERR         異常終了・ＤＢエラー                        */
+/******************************************************************************/
+int MakeHistgramAfter(KTLIST* kt, KTLIST* prev, int** hist, double facter, double base)
+{
+	char func_nm[MYAPP_LEN_FNCNM+1];
+    struct sqlca sqlca;
+	int* wkHist;
+	int  ret;
+	int  i;
+
+    /* 初期処理 */
+    strcpy( func_nm, "MakeHistgramAfter" );
+    LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	*hist  = NULL;
+	wkHist = NULL;
+	wkHist = malloc(kt->hstkaikyu * sizeof(int));
+
+	if (wkHist == NULL) {
+		EXEC SQL ROLLBACK;
+		ret = RTN_MEMERR;
+		sprintf( G_msg, "ヒストグラム作成に必要な領域が確保できませんでした。");
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+	memset(wkHist, 0, kt->hstkaikyu * sizeof(int));
+	memset(&ktraw, 0, sizeof(struct _stKTRAW));
+
+	/* 検索キーの設定 */
+    strcpy(ktraw.knskisymd,	kt->knskisymd);
+    strcpy(ktraw.bskkbn,	kt->bskkbn);
+    strcpy(ktraw.bskgok,	kt->bskgok);
+    strcpy(ktraw.nbkmkcd,	kt->nbkmkcd);
+    strcpy(ktraw.ctrlsbt,	kt->ctrlsbt);
+    ktraw.ctrlno =			kt->ctrlno;
+    pCtrlno      =			prev->ctrlno;
+	hFacter      =			facter;
+	hBase        =			base;
+	/* 2009-03-12     K.Moriya */
+	/* 手動校正画面と条件が違うので画面に合わせる */
+	/* 2009-03-13     H.Sekiya 追加 */
+	/* 小数点桁数をもってくるように変更 */
+	/* sRange       =			kt->hstkjntn; */
+	sRange       =			kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tktraw.knskisymd = [%s]\n", G_msg, ktraw.knskisymd);
+sprintf( G_msg, "%s\tktraw.bskkbn    = [%s]\n", G_msg, ktraw.bskkbn);
+sprintf( G_msg, "%s\tktraw.bskgok    = [%s]\n", G_msg, ktraw.bskgok);
+sprintf( G_msg, "%s\tktraw.nbkmkcd   = [%s]\n", G_msg, ktraw.nbkmkcd);
+sprintf( G_msg, "%s\tktraw.ctrlsbt   = [%s]\n", G_msg, ktraw.ctrlsbt);
+sprintf( G_msg, "%s\tktraw.ctrlno    = [%d]\n", G_msg, ktraw.ctrlno);
+sprintf( G_msg, "%s\tpCtrlno         = [%d]\n", G_msg, pCtrlno);
+sprintf( G_msg, "%s\thFacter         = [%f]\n", G_msg, hFacter);
+sprintf( G_msg, "%s\thBase           = [%f]\n", G_msg, hBase);
+sprintf( G_msg, "%s\thsstnksu        = [%f]\n", G_msg, ( 1 / pow(10, (double)kt->sstnksu)));
+sprintf( G_msg, "%s\tsRange          = [%f]\n\n", G_msg, sRange);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+	/* 下限未満のデータ数取得 */
+	datCnt = 0;
+	EXEC SQL SELECT count(*) into :datCnt
+		FROM CTRLMST cm,
+             KMKMST  km,
+             (select double(rawdata)*:hFacter+:hBase ans,
+                     knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+                     kmkcd, knsgrp
+              from kekka
+              where knskisymd = :ktraw.knskisymd
+              and   bskgok    = :ktraw.bskgok
+              and   bskkbn    = :ktraw.bskkbn
+              and   nbkmkcd   = :ktraw.nbkmkcd
+              and   tnyrkflg  = ' '
+              and   rawdata  != ''
+              and   kisyakflg<> '2'
+              and   knsflg not in ('E','M','H')
+              and   ctrlno   <= :ktraw.ctrlno
+              and   ctrlno    > :pCtrlno) hk
+        WHERE cm.BSKKBN     = :ktraw.bskkbn
+        AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+        AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+        AND   cm.BSKKBN     =  hk.BSKKBN
+        AND   cm.NBKMKCD    =  hk.NBKMKCD
+        AND   km.HSIUMFLG   = '1'
+        AND   hk.KNSKISYMD >= km.KAIYMD
+        AND   hk.KNSKISYMD <= km.HAIYMD
+        AND   hk.KMKCD      = km.KMKCD
+        AND   hk.KNSGRP     = km.KNSGRP
+        /* 2009-03-12     K.Moriya */
+		/* AND   dec(hk.ans,10,3) < dec(:sRange,10,3); */
+		AND   dec(hk.ans,10,3) <= dec(:sRange,10,3);
+
+	if(sqlca.sqlcode == 0){
+		wkHist[0] = datCnt;
+	} else {
+		EXEC SQL ROLLBACK;
+		free(wkHist);
+		wkHist = NULL;
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tdatCnt          = [%d]\n\n", G_msg, datCnt);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+    /* 2009-03-12     K.Moriya */
+    /* 手動校正画面と条件が違うので画面に合わせる */
+	/* 2009-03-13     H.Sekiya 追加 */
+	/* 小数点桁数をもってくるように変更 */
+	/* sRange = kt->hstkjntn; */
+    /* eRange = kt->hstkjntn; */
+	sRange = kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+    eRange = kt->hstkjntn - ( 1 / pow(10, (double)kt->sstnksu));
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tsRange          = [%f]\n", G_msg, sRange);
+sprintf( G_msg, "%s\teRange          = [%f]\n", G_msg, eRange);
+sprintf( G_msg, "%s\tkt->hstkaikyu   = [%d]\n\n", G_msg, kt->hstkaikyu);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+	for (i = 0; i < kt->hstkaikyu; i++) {
+		/* ヒストのレンジ先頭 */
+		sRange = eRange;
+		/* ヒストのレンジ終端 */
+		eRange = sRange + kt->hstkzmhb;
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tktraw.knskisymd = [%s]\n", G_msg, ktraw.knskisymd);
+sprintf( G_msg, "%s\tktraw.bskkbn    = [%s]\n", G_msg, ktraw.bskkbn);
+sprintf( G_msg, "%s\tktraw.bskgok    = [%s]\n", G_msg, ktraw.bskgok);
+sprintf( G_msg, "%s\tktraw.nbkmkcd   = [%s]\n", G_msg, ktraw.nbkmkcd);
+sprintf( G_msg, "%s\tktraw.ctrlsbt   = [%s]\n", G_msg, ktraw.ctrlsbt);
+sprintf( G_msg, "%s\tktraw.ctrlno    = [%d]\n", G_msg, ktraw.ctrlno);
+sprintf( G_msg, "%s\tpCtrlno         = [%d]\n", G_msg, pCtrlno);
+sprintf( G_msg, "%s\thFacter         = [%f]\n", G_msg, hFacter);
+sprintf( G_msg, "%s\thBase           = [%f]\n", G_msg, hBase);
+sprintf( G_msg, "%s\tsRange          = [%f]\n", G_msg, sRange);
+sprintf( G_msg, "%s\tkt->hstkzmhb    = [%f]\n", G_msg, kt->hstkzmhb);
+sprintf( G_msg, "%s\teRange          = [%f]\n", G_msg, eRange);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+		/* レンジ内のデータ数取得 */
+		datCnt = 0;
+		EXEC SQL SELECT count(*) into :datCnt
+			FROM CTRLMST cm,
+                 KMKMST  km,
+				 (select double(rawdata)*:hFacter+:hBase ans,
+                         knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+                         kmkcd, knsgrp
+                  from kekka
+                  where knskisymd = :ktraw.knskisymd
+                  and   bskgok    = :ktraw.bskgok
+                  and   bskkbn    = :ktraw.bskkbn
+                  and   nbkmkcd   = :ktraw.nbkmkcd
+                  and   tnyrkflg  = ' '
+                  and   rawdata  != ''
+                  and   kisyakflg<> '2'
+                  and   knsflg not in ('E','M','H')
+                  and   ctrlno   <= :ktraw.ctrlno
+                  and   ctrlno    > :pCtrlno) hk
+            WHERE cm.BSKKBN     = :ktraw.bskkbn
+            AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+            AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+            AND   cm.BSKKBN     =  hk.BSKKBN
+            AND   cm.NBKMKCD    =  hk.NBKMKCD
+            AND   km.HSIUMFLG   = '1'
+            AND   hk.KNSKISYMD >= km.KAIYMD
+            AND   hk.KNSKISYMD <= km.HAIYMD
+            AND   hk.KMKCD      = km.KMKCD
+            AND   hk.KNSGRP     = km.KNSGRP
+	        /* 2009-03-12     K.Moriya */
+	        /* 手動校正画面と条件が違うので画面に合わせる */
+            /* AND   dec(hk.ans,10,3) >= dec(:sRange,10,3) */
+            /* AND   dec(hk.ans,10,3) <  dec(:eRange,10,3); */
+            AND   dec(hk.ans,10,3) >  dec(:sRange,10,3)
+            AND   dec(hk.ans,10,3) <= dec(:eRange,10,3);
+
+		if(sqlca.sqlcode == 0){
+			wkHist[i] += datCnt;
+		} else {
+			EXEC SQL ROLLBACK;
+			free(wkHist);
+			wkHist = NULL;
+			ret=RTN_DBERR;
+			sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+							 sqlca.sqlcode, sqlca.sqlstate );
+			LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			return ret;
+		}
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tdatCnt          = [%d]\n\n", G_msg, datCnt);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+
+	}
+
+	/* 上限超過のデータ数取得 */
+	datCnt = 0;
+	EXEC SQL SELECT count(*) into :datCnt
+		FROM CTRLMST cm,
+             KMKMST  km,
+			 (select double(rawdata)*:hFacter+:hBase ans,
+                     knskisymd, bskkbn, bskgok, nbkmkcd, ctrlno,
+                     kmkcd, knsgrp
+              from kekka
+              where knskisymd = :ktraw.knskisymd
+              and   bskgok    = :ktraw.bskgok
+              and   bskkbn    = :ktraw.bskkbn
+              and   nbkmkcd   = :ktraw.nbkmkcd
+              and   tnyrkflg  = ' '
+              and   rawdata  != ''
+              and   kisyakflg<> '2'
+              and   knsflg not in ('E','M','H')
+              and   ctrlno   <= :ktraw.ctrlno
+              and   ctrlno    > :pCtrlno) hk
+        WHERE cm.BSKKBN     = :ktraw.bskkbn
+        AND   cm.NBKMKCD    = :ktraw.nbkmkcd
+        AND   cm.CTRLSBT    = :ktraw.ctrlsbt
+        AND   cm.BSKKBN     =  hk.BSKKBN
+        AND   cm.NBKMKCD    =  hk.NBKMKCD
+        AND   km.HSIUMFLG   = '1'
+        AND   hk.KNSKISYMD >= km.KAIYMD
+        AND   hk.KNSKISYMD <= km.HAIYMD
+        AND   hk.KMKCD      = km.KMKCD
+        AND   hk.KNSGRP     = km.KNSGRP
+        /* 2009-03-12     K.Moriya */
+        /* 手動校正画面と条件が違うので画面に合わせる */
+		/* AND   dec(hk.ans,10,3) >= dec(:eRange,10,3); */
+		AND   dec(hk.ans,10,3) > dec(:eRange,10,3);
+
+	if(sqlca.sqlcode == 0){
+		wkHist[kt->hstkaikyu-1] += datCnt;
+	} else {
+		EXEC SQL ROLLBACK;
+		free(wkHist);
+		wkHist = NULL;
+		ret=RTN_DBERR;
+		sprintf( G_msg, "DBエラーが発生しました。sqlcd[%d] sqlsta[%d]",
+						 sqlca.sqlcode, sqlca.sqlstate );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return ret;
+	}
+
+/* 2009-03-12     K.Moriya */
+memset(G_msg, 0, sizeof(G_msg));
+sprintf( G_msg, "%s\n", G_msg);
+sprintf( G_msg, "%s\tdatCnt          = [%d]\n\n", G_msg, datCnt);
+LogOut( LT_DBG, LX_SEL, LE_NON, G_msg, func_nm, __FILE__, __LINE__ );
+	
+	*hist = wkHist;
+
+    LogOut(LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__);
+	return RTN_OK;
+}
+

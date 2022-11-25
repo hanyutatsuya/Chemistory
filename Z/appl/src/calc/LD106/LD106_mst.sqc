@@ -1,0 +1,645 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：LD106_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "bml_misc.h"
+#include "bml_DBCom.h"
+#include "bml_dbrc.h"
+#include "LD106.h"
+#include "LD106_db.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+EXEC SQL INCLUDE 'LD106_db.h';
+// <<   情報      >>
+struct {
+        char    kjnsriymd[10+1];	// 1 基準処理日
+        char    iriendflg[1+1];		// 2 依頼ＥＮＤフラグ
+        char    bchendflg[1+1];		// 3 分注ＥＮＤフラグ
+        char    unyflg[1+1];		// 4 運用フラグ
+} sqlSYSKNR;
+
+// <<   情報      >>
+struct {
+	char	knsgrp[16+1];
+	char	kmkcd[7+1];
+	char	sstcd[7+1];
+	char	zaicd[4+1];
+	char	hkkbn[1+1];
+	char	ksnsk[128+1];
+	char	kaiymd[10+1];
+	char	haiymd[10+1];
+	char	hnktntid[8+1];
+	char	ksndh[26+1];
+} sqlCALCSYSMST;
+
+struct {
+	char	hnikbn;
+	char	knsgrp[16+1];
+	char	kmkcd[7+1];
+	char	zaicd[4+1];
+	char	sstcd[7+1];
+	char	sbt;
+	char	ssa;
+	char	zen_kyoyou;
+	char	hrng[20+1];
+	char	lrng[20+1];
+	char	kaiymd[10+1];
+	char	haiymd[10+1];
+	char	hnktntid[8+1];
+	char	ksndh[26+1];
+} tmpsqlRNGCHKMST;
+//} sqlRNGCHKMST;
+my_stRNGCHKMST	sqlRNGCHKMST;
+struct {
+	char	knsgrp[16+1];
+	char	kmkcd[7+1];
+	char	fltkka[24+1];
+	char	minval[12+1];
+	char	maxval[12+1];
+	char	knskka1[12+1];
+	char	knskka2[24+1];
+	char	knskka2kbn[2+1];
+	char	kkahskcd[3+1];
+	char	hjkka[24+1];
+	char	kaiymd[10+1];
+	char	haiymd[10+1];
+	char	hnktntid[8+1];
+	char	ksndh[26+1];
+	char	sstcd[7+1];
+	char	tkykbn[1+1];
+} tmpsqlKKAFLTMST;
+//} sqlKKAFLTMST;
+my_stKKAFLTMST	sqlKKAFLTMST;
+
+struct {
+	char	kmkcd[7+1];
+	char	kjno[3+1];
+	char	kjsdino[2+1];
+	char	zrcd[4+1];
+	char	agerngkbn[2+1];
+	char	etckbn[3+1];
+	char	nichilw[5+1];
+	char	nichihi[5+1];
+	char	kjnmlw[8+1];
+	char	kjnmhi[8+1];
+	char	kjnflw[8+1];
+	char	kjnfhi[8+1];
+	char	kjnelw[8+1];
+	char	kjnehi[8+1];
+	char	genmlw[8+1];
+	char	genmhi[8+1];
+	char	genflw[8+1];
+	char	genfhi[8+1];
+	char	genelw[8+1];
+	char	genehi[8+1];
+	short	kjsstnksu;
+	char	kjnmhkn[24+1];
+	char	kjnmhkj[24+1];
+	char	kjnfhkn[24+1];
+	char	kjnfhkj[24+1];
+	char	kjnohkn[24+1];
+	char	kjnohkj[24+1];
+	char	lwm1[8+1];
+	char	lwm2[8+1];
+	char	kjm1[8+1];
+	char	kjm2[8+1];
+	char	him1[8+1];
+	char	him2[8+1];
+	char	lwf1[8+1];
+	char	lwf2[8+1];
+	char	kjnnaf1[8+1];
+	char	kjnnaf2[8+1];
+	char	hif1[8+1];
+	char	hif2[8+1];
+	char	lwe1[8+1];
+	char	lwe2[8+1];
+	char	kje1[8+1];
+	char	kje2[8+1];
+	char	hie1[8+1];
+	char	hie2[8+1];
+	char	tankn[16+1];
+	char	tankj[16+1];
+	char	stjyken[60+1];
+	char	kymstjn;
+	char	kaiymd[10+1];
+	char	haiymd[10+1];
+	char	hnktntid[8+1];
+	char	ksndh[26+1];
+} tmpsqlKJNMST;
+//} sqlKJNMST;
+my_stKJNMST	sqlKJNMST;
+
+sqlint32	rec_cnt ;
+char		sel_knskisymd[10+1];
+char		sel_hnikbn;
+char		sel_knsgrp[16+1];
+char		sel_kmkcd[7+1];
+char		sel_zaicd[4+1];
+char		sel_sstcd[7+1];
+char		sel_sbt;
+char		sel_ksnsk[128+1];
+char		sel_kjno[3+1];
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelSysKnr()							*/
+/*  機能概要　：システム管理マスタ情報検索					*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日						*/
+/*　 第２引数 ：	属性チェック情報検索結果格納構造体			*/
+/*　 第３引数 ：	検索データ件数						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelSysKnr ( precSYSKNR )
+my_stSYSKNR	*precSYSKNR ;
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT  
+		kjnsriymd
+		, iriendflg
+		, bchendflg
+		, unyflg
+	FROM    sysknrmst
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c1 ;
+
+	memset ( &sqlSYSKNR, '\0', sizeof ( sqlSYSKNR ) ) ;
+	EXEC SQL FETCH c1 INTO
+			:sqlSYSKNR ;
+
+	if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+		return ( HRC_SQL_NOT_FOUND ) ;
+	}
+
+	memcpy ( precSYSKNR, &sqlSYSKNR, sizeof ( sqlSYSKNR ) ) ;
+
+	EXEC SQL CLOSE c1;
+
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelSysKnr", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+	return ( sqlca.sqlcode ) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbSelCalcsysmst()						*/
+/*  機能概要　：他サテライト計算マスタ情報検索			  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：検査開始日							*/
+/*  出　　力　：                                                              */
+/*　 第２引数 ：検索結果							*/
+/*　 第３引数 ：対象件数							*/
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbSelCalcsysmst( pSel_knskisymd, precCALCSYSMST, precCnt ) 
+char		 *pSel_knskisymd;
+my_stCALCSYSMST	**precCALCSYSMST;
+int		 *precCnt ;
+{
+	int	 rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = *precCnt = 0 ;
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c3 CURSOR FOR
+	SELECT
+		*
+	FROM
+		CALCSYSMST
+	WHERE
+		KAIYMD <= :sel_knskisymd AND
+		HAIYMD >= :sel_knskisymd
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c3 ;
+	while( 1 ) {
+
+		memset ( &sqlCALCSYSMST, '\0', sizeof ( sqlCALCSYSMST ) ) ;
+		EXEC SQL FETCH c3 INTO
+				:sqlCALCSYSMST ;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precCALCSYSMST = ( my_stCALCSYSMST * ) realloc ( *precCALCSYSMST, sizeof ( my_stCALCSYSMST ) * ( rec_cnt + 1 ) ) ;
+		if ( precCALCSYSMST == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcsysmst", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precCALCSYSMST)[rec_cnt], &sqlCALCSYSMST, sizeof ( sqlCALCSYSMST ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c3;
+
+	*precCnt = rec_cnt ;
+
+	return ( HRC_SQL_NORMAL ) ;
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelCalcsysmst", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[KNSKISYMD='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd ) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************
+ * ZdbRngchkmstSelectHnikbn()
+ *    RNGCHKMST レコードKey条件取得
+ * ■引数
+ *    [I]  mst_stRNGCHKMST*  pKey		取得するレコードのキー
+ *    [O]  mst_stRNGCHKMST** precRNGCHKMST	取得レコード配列格納領域
+ *    [O]  int* precCnt				取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+int
+ZdbRngchkmstSelectHnikbn( pSel_knskisymd, pKey, precRNGCHKMST, precCnt )
+char 		 *pSel_knskisymd;
+my_stRNGCHKMST	 *pKey;
+my_stRNGCHKMST	**precRNGCHKMST;
+int 		 *precCnt;
+{
+
+	int	 rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+
+	/*	変数初期化	*/
+	rec_cnt = *precCnt = 0 ;
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	sel_hnikbn = pKey->hnikbn ;
+	strcpy ( sel_knsgrp,  pKey->knsgrp );
+	strcpy ( sel_kmkcd,  pKey->kmkcd );
+	strcpy ( sel_zaicd,  pKey->zaicd );
+	strcpy ( sel_sstcd,  pKey->sstcd );
+	sel_sbt = pKey->sbt ;
+
+	EXEC SQL DECLARE c4 CURSOR FOR
+	SELECT
+		HNIKBN,
+		KNSGRP,
+		KMKCD,
+		ZAICD,
+		SSTCD,
+		SBT,
+		SSA,
+		ZEN_KYOYOU,
+		HRNG,
+		LRNG,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+	FROM
+		RNGCHKMST
+	WHERE
+		HNIKBN = :sel_hnikbn AND
+		KNSGRP = :sel_knsgrp AND
+		KMKCD = :sel_kmkcd AND
+		ZAICD = :sel_zaicd AND
+		SSTCD = :sel_sstcd AND
+		SBT = :sel_sbt AND
+		KAIYMD <= :sel_knskisymd AND 
+		HAIYMD >= :sel_knskisymd
+	FOR READ ONLY;
+
+	EXEC SQL OPEN c4;
+
+	while( 1 ) {
+		memset ( &sqlRNGCHKMST, '\0', sizeof ( my_stRNGCHKMST ) ) ;
+		EXEC SQL FETCH c4 INTO
+				:sqlRNGCHKMST ;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precRNGCHKMST = ( my_stRNGCHKMST * ) realloc ( *precRNGCHKMST, sizeof ( my_stRNGCHKMST ) * ( rec_cnt + 1 ) ) ;
+		if ( precRNGCHKMST == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbRngchkmstSelectHnikbn", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precRNGCHKMST)[rec_cnt], &sqlRNGCHKMST, sizeof ( my_stRNGCHKMST ) ) ;
+		rec_cnt++;
+
+	}
+
+	EXEC SQL CLOSE c4;
+
+	*precCnt = rec_cnt ;
+	if(rec_cnt == 0){
+		return ( HRC_SQL_NOT_FOUND );
+	}
+	else {
+		return ( HRC_SQL_NORMAL );
+	}
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbRngchkmstSelectHnikbn", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		     "SQLCODE:%ld SQLSTATE:%5.5s WHERE[KNSKISYMD='%s' HNIKBN='%c' KNSGRP='%s' KMKCD='%s' ZAICD='%s' SSTCD='%s' SBT='%c']", 
+		     sqlca.sqlcode, sqlca.sqlstate, sel_knskisymd, sel_hnikbn, sel_knsgrp, sel_kmkcd, sel_zaicd, sel_sstcd, sel_sbt ) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbKkafltmstSelectGRPKMKKey()					*/
+/*  機能概要　：結果フィルタマスタ情報検索			  	 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：検索条件							*/
+/*  出　　力　：                                                              */
+/*　 第２引数 ：検索結果							*/
+/*　 第３引数 ：対象件数							*/
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbKkafltmstSelectGRPKMKKey(pSel_knskisymd, pKey, precKKAFLTMST, precCnt)
+char 		 *pSel_knskisymd;
+my_stKKAFLTMST	 *pKey;
+my_stKKAFLTMST	**precKKAFLTMST;
+int		 *precCnt;
+{
+	int	 rec_cnt ;
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = *precCnt = 0 ;
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_knsgrp,  pKey->knsgrp );
+	strcpy ( sel_kmkcd,  pKey->kmkcd );
+	strcpy ( sel_sstcd,  pKey->sstcd );
+
+	EXEC SQL DECLARE c5 CURSOR FOR
+	SELECT
+		KNSGRP,
+		KMKCD,
+		FLTKKA,
+		MINVAL,
+		MAXVAL,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		HJKKA,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH,
+		SSTCD,
+		TKYKBN
+	FROM
+		KKAFLTMST
+	WHERE
+		KNSGRP =  :sel_knsgrp AND
+		KMKCD  =  :sel_kmkcd AND
+		KAIYMD <= :sel_knskisymd AND
+		HAIYMD >= :sel_knskisymd AND
+		(SSTCD =  '0000000' OR
+		 SSTCD =  :sel_sstcd)
+	ORDER BY SSTCD DESC
+	FOR READ ONLY;
+
+	EXEC SQL OPEN c5;
+
+	while( 1 ) {
+
+		memset ( &sqlKKAFLTMST, '\0', sizeof ( sqlKKAFLTMST ) ) ;
+		EXEC SQL FETCH c5 INTO
+				:sqlKKAFLTMST ;
+
+		if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+			break;
+		}
+		*precKKAFLTMST = ( my_stKKAFLTMST * ) realloc ( *precKKAFLTMST, sizeof ( my_stKKAFLTMST ) * ( rec_cnt + 1 ) ) ;
+		if ( precKKAFLTMST == NULL ) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbKkafltmstSelectGRPKMKKey", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+							      "メモリ領域の確保に失敗しました。cnt[%d]", rec_cnt );
+			return ( RET_STOP ) ;
+		}
+		memcpy ( &(*precKKAFLTMST)[rec_cnt], &sqlKKAFLTMST, sizeof ( sqlKKAFLTMST ) ) ;
+		rec_cnt ++ ;
+	}
+
+	EXEC SQL CLOSE c5;
+
+	*precCnt = rec_cnt ;
+	if(rec_cnt == 0){
+		return ( HRC_SQL_NOT_FOUND );
+	}
+	else {
+		return ( HRC_SQL_NORMAL );
+	}
+
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbKkafltmstSelectGRPKMKKey", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[KNSGRP='%s' KMKCD='%s' SSTCD='%s']", sqlca.sqlcode, sqlca.sqlstate, pKey->knsgrp, pKey->kmkcd, pKey->sstcd) ;
+	return ( sqlca.sqlcode) ; 
+}
+
+/******************************************************************************/
+/*  関 数 名　：ZdbGetKsnsk()							*/
+/*  機能概要　：計算項目 計算式取得					 	*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	受付日							*/
+/*　 第２引数 ：	依頼書ＮＯ						*/
+/*　 第３引数 ：	項目コード						*/
+/*  出　　力　：                                                              */
+/*　 第４引数 ：	検査結果１						*/
+/*  復帰情報　：int								*/
+/******************************************************************************/
+int
+ZdbGetKsnsk( pKekka, pKsnsk, KekkaOtherFlg )
+my_stKEKKA	*pKekka ;
+char		*pKsnsk ;
+int		*KekkaOtherFlg ;
+{
+	//	検索キー
+	*KekkaOtherFlg = 0 ;
+	strcpy ( sel_knskisymd, pKekka->knskisymd );
+	strcpy ( sel_knsgrp, pKekka->knsgrp ) ;
+	strcpy ( sel_kmkcd,  pKekka->kmkcd ) ;
+	strcpy ( sel_sstcd,  pKekka->sstcd ) ;
+	trim( sel_zaicd,  pKekka->zrcd ) ;
+	if ( (strcmp( sel_zaicd, "001" ) != 0) && strcmp( sel_zaicd, "002" ) != 0 ){
+		strcpy ( sel_zaicd,  "000") ;
+	}
+
+	EXEC SQL SELECT KSNSK
+	INTO :sel_ksnsk
+	FROM
+		CALCKMKMST
+	WHERE	KNSGRP	= :sel_knsgrp
+	  AND	KMKCD	= :sel_kmkcd 
+	  AND	ZAICD	= :sel_zaicd
+	  AND (
+		SSTCD	= '0000000' 
+	  OR	SSTCD	= :sel_sstcd
+	  )
+	  AND	KAIYMD <= :sel_knskisymd
+	  AND	HAIYMD >= :sel_knskisymd
+	ORDER BY SSTCD DESC
+	FETCH FIRST 1 ROWS ONLY
+	FOR READ ONLY ;
+
+	if( (sqlca.sqlcode != HRC_SQL_NORMAL) && (sqlca.sqlcode != HRC_SQL_NOT_FOUND) ){ 
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbGetKsnsk", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				 	"SQLCODE:%ld SQLSTATE:%5.5s TBL[CALCKMKMST] CLM[KSNSK] WHERE[KNSGRP = '%s' KMKCD = '%s' SSTCD = '%s' ZAICD = '%s']",
+					sqlca.sqlcode, sqlca.sqlstate, pKekka->knsgrp, pKekka->kmkcd, pKekka->sstcd, sel_zaicd ) ;
+		return( sqlca.sqlcode) ;
+	}
+
+	if ( sqlca.sqlcode == HRC_SQL_NOT_FOUND ){
+		EXEC SQL SELECT KSNSK
+		INTO :sel_ksnsk
+		FROM
+			CALCSYSMST
+		WHERE	KNSGRP	= :sel_knsgrp
+		  AND	KMKCD	= :sel_kmkcd 
+		  AND	ZAICD	= :sel_zaicd
+		  AND (
+			SSTCD	= '0000000' 
+		  OR	SSTCD	= :sel_sstcd
+		  )
+		  AND	KAIYMD <= :sel_knskisymd
+		  AND	HAIYMD >= :sel_knskisymd
+		ORDER BY SSTCD DESC
+		FETCH FIRST 1 ROWS ONLY
+		FOR READ ONLY ;
+
+		if( (sqlca.sqlcode != HRC_SQL_NORMAL) && (sqlca.sqlcode != HRC_SQL_NOT_FOUND) ){ 
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbGetKsnsk", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+					 	"SQLCODE:%ld SQLSTATE:%5.5s TBL[CALCSYSMST] CLM[KSNSK] WHERE[KNSGRP = '%s' KMKCD = '%s' SSTCD = '%s' ZAICD = '%s']",
+						sqlca.sqlcode, sqlca.sqlstate, pKekka->knsgrp, pKekka->kmkcd, pKekka->sstcd, sel_zaicd ) ;
+			return(sqlca.sqlcode);
+		}
+		if ( sqlca.sqlcode == HRC_SQL_NOT_FOUND ){
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbGetKsnsk2", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		 				"KSNSK NOT FOUND TBL[CALCKMKMST,CALCSYSMST] CLM[KSNSK] WHERE[KNSGRP = '%s' KMKCD = '%s' SSTCD = '%s' ZAICD = '%s']",
+						pKekka->knsgrp, pKekka->kmkcd, pKekka->sstcd, sel_zaicd ) ;
+			return( HRC_SQL_NOT_FOUND );
+		}
+		/* 他サテライト計算項目の場合、フラグを立てる */
+		*KekkaOtherFlg = 1 ;
+	}
+
+	strcpy ( pKsnsk, sel_ksnsk) ;
+
+	return( HRC_SQL_NORMAL );
+
+}
+
+/******************************************************************************
+ * ZdbSelKjnmst()
+ *    KJNMST レコード取得
+ * ■引数
+ *    [I]  Kjnmst* pKey       取得するレコードのキー
+ *    [O]  Kjnmst** arrayOut    取得レコード配列格納領域
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+int ZdbSelKjnmst( my_stKEKKA* pKey, my_stKJNMST* precKJNMST  )
+{
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	strcpy ( sel_knskisymd, pKey->knskisymd ) ;
+	strcpy ( sel_kmkcd,  pKey->kmkcd ) ;
+	strcpy ( sel_kjno,  pKey->kjno ) ;
+
+	/*	カーソル定義 */
+	EXEC SQL DECLARE c6 CURSOR FOR
+	SELECT  
+		*
+	FROM
+		KJNMST
+	WHERE
+		KMKCD = :sel_kmkcd AND
+		KJNO = :sel_kjno AND
+		KAIYMD <= :sel_knskisymd AND
+		HAIYMD >= :sel_knskisymd
+	FETCH FIRST 1 ROWS ONLY
+        FOR READ ONLY
+        ;
+
+	/*	検索 */
+	EXEC SQL OPEN c6 ;
+
+	memset ( &sqlKJNMST, '\0', sizeof ( sqlKJNMST ) ) ;
+	EXEC SQL FETCH c6 INTO
+			:sqlKJNMST ;
+
+	if ( SQLCODE == HRC_SQL_NOT_FOUND ) {
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKjnmst", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+					    "KJNMST NOT FOUND WHERE[KMKCD='%s' KJNO='%s']", pKey->kmkcd, pKey->kjno) ;
+		return ( HRC_SQL_NOT_FOUND ) ;
+	}
+
+	memcpy ( precKJNMST, &sqlKJNMST, sizeof ( sqlKJNMST ) ) ;
+
+	EXEC SQL CLOSE c6;
+
+	return( HRC_SQL_NORMAL );
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "ZdbSelKjnmst", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s WHERE[KMKCD='%s' KJNO='%s']", sqlca.sqlcode, sqlca.sqlstate, pKey->kmkcd, pKey->kjno) ;
+	return( sqlca.sqlcode );
+}
+
+/** End of File *********************************************************/

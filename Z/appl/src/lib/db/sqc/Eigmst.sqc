@@ -1,0 +1,416 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Eigmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Eigmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    ecd[4];
+	char    shcdfr[3];
+	char    shcdto[3];
+	char    skecd[4];
+	char    skshcd[3];
+	char    skcsnm[21];
+	char    eigkn[21];
+	char    eigkj[21];
+	char    eitelno[13];
+	char    eifaxno[13];
+	char    yjhkkbn;
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Eigmst
+
+BmlDMMInfo	EigmstArray[] = {
+	DMM_SSTRING( ecd ),
+	DMM_SSTRING( shcdfr ),
+	DMM_SSTRING( shcdto ),
+	DMM_SSTRING( skecd ),
+	DMM_SSTRING( skshcd ),
+	DMM_SSTRING( skcsnm ),
+	DMM_SSTRING( eigkn ),
+	DMM_SSTRING( eigkj ),
+	DMM_SSTRING( eitelno ),
+	DMM_SSTRING( eifaxno ),
+	DMM_SCHAR( yjhkkbn ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbEigmstSelectAll()
+ *    EIGMST レコード全件取得
+ * ■引数
+ *    [O]  Eigmst** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbEigmstSelectAll( Eigmst** arrayOut, int* numOut )
+{
+    Eigmst*     array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		ECD,
+		SHCDFR,
+		SHCDTO,
+		SKECD,
+		SKSHCD,
+		SKCSNM,
+		EIGKN,
+		EIGKJ,
+		EITELNO,
+		EIFAXNO,
+		YJHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        EIGMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Eigmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:ecd,
+			:shcdfr,
+			:shcdto,
+			:skecd,
+			:skshcd,
+			:skcsnm,
+			:eigkn,
+			:eigkj,
+			:eitelno,
+			:eifaxno,
+			:yjhkkbn,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Eigmst*)ZbmlRealloc( array,
+                                    sizeof( Eigmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Eigmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, EigmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbEigmstSelectKey()
+ *    EIGMST レコードKey条件取得
+ * ■引数
+ *    [I]  Eigmst* pKey       取得するレコードのキー
+ *    [O]  Eigmst** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbEigmstSelectKey( Eigmst* pKey, Eigmst** arrayOut, int* numOut )
+{
+    Eigmst*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, EigmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		ECD,
+		SHCDFR,
+		SHCDTO,
+		SKECD,
+		SKSHCD,
+		SKCSNM,
+		EIGKN,
+		EIGKJ,
+		EITELNO,
+		EIFAXNO,
+		YJHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        EIGMST
+    WHERE
+		ECD = :ecd AND
+		SHCDFR = :shcdfr AND
+		SHCDTO = :shcdto AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Eigmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:ecd,
+			:shcdfr,
+			:shcdto,
+			:skecd,
+			:skshcd,
+			:skcsnm,
+			:eigkn,
+			:eigkj,
+			:eitelno,
+			:eifaxno,
+			:yjhkkbn,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Eigmst*)ZbmlRealloc( array,
+                                    sizeof( Eigmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Eigmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, EigmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbEigmstInsert()
+ *    EIGMST レコードを挿入する
+ * ■引数
+ *    [I]  Eigmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbEigmstInsert( Eigmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, EigmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO EIGMST
+    (
+		ECD,
+		SHCDFR,
+		SHCDTO,
+		SKECD,
+		SKSHCD,
+		SKCSNM,
+		EIGKN,
+		EIGKJ,
+		EITELNO,
+		EIFAXNO,
+		YJHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:ecd,
+		:shcdfr,
+		:shcdto,
+		:skecd,
+		:skshcd,
+		:skcsnm,
+		:eigkn,
+		:eigkj,
+		:eitelno,
+		:eifaxno,
+		:yjhkkbn,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbEigmstUpdate()
+ *    EIGMST レコードを更新する
+ * ■引数
+ *    [I]  Eigmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbEigmstUpdate( Eigmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, EigmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE EIGMST
+    SET (
+		SKECD,
+		SKSHCD,
+		SKCSNM,
+		EIGKN,
+		EIGKJ,
+		EITELNO,
+		EIFAXNO,
+		YJHKKBN,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:skecd,
+		:skshcd,
+		:skcsnm,
+		:eigkn,
+		:eigkj,
+		:eitelno,
+		:eifaxno,
+		:yjhkkbn,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		ECD = :ecd AND
+		SHCDFR = :shcdfr AND
+		SHCDTO = :shcdto AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbEigmstDelete()
+ *    EIGMST レコードを削除する
+ * ■引数
+ *    [I]  Eigmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbEigmstDelete( Eigmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, EigmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM EIGMST
+    WHERE
+		ECD = :ecd AND
+		SHCDFR = :shcdfr AND
+		SHCDTO = :shcdto AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

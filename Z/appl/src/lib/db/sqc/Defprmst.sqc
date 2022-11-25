@@ -1,0 +1,323 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Defprmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Defprmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    compnm[21];
+	char    tyhyoid[21];
+	char    prntrnm[21];
+	char    cstno;
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Defprmst
+
+BmlDMMInfo	DefprmstArray[] = {
+	DMM_SSTRING( compnm ),
+	DMM_SSTRING( tyhyoid ),
+	DMM_SSTRING( prntrnm ),
+	DMM_SCHAR( cstno ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbDefprmstSelectAll()
+ *    DEFPRMST レコード全件取得
+ * ■引数
+ *    [O]  Defprmst** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbDefprmstSelectAll( Defprmst** arrayOut, int* numOut )
+{
+    Defprmst*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		COMPNM,
+		TYHYOID,
+		PRNTRNM,
+		CSTNO,
+		HNKTNTID,
+		KSNDH
+    FROM
+        DEFPRMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Defprmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:compnm,
+			:tyhyoid,
+			:prntrnm,
+			:cstno,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Defprmst*)ZbmlRealloc( array,
+                                    sizeof( Defprmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Defprmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, DefprmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbDefprmstSelectKey()
+ *    DEFPRMST レコードKey条件取得
+ * ■引数
+ *    [I]  Defprmst* pKey       取得するレコードのキー
+ *    [O]  Defprmst** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbDefprmstSelectKey( Defprmst* pKey, Defprmst** arrayOut, int* numOut )
+{
+    Defprmst*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, DefprmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		COMPNM,
+		TYHYOID,
+		PRNTRNM,
+		CSTNO,
+		HNKTNTID,
+		KSNDH
+    FROM
+        DEFPRMST
+    WHERE
+		COMPNM = :compnm FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Defprmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:compnm,
+			:tyhyoid,
+			:prntrnm,
+			:cstno,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Defprmst*)ZbmlRealloc( array,
+                                    sizeof( Defprmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Defprmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, DefprmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbDefprmstInsert()
+ *    DEFPRMST レコードを挿入する
+ * ■引数
+ *    [I]  Defprmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbDefprmstInsert( Defprmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, DefprmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO DEFPRMST
+    (
+		COMPNM,
+		TYHYOID,
+		PRNTRNM,
+		CSTNO,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:compnm,
+		:tyhyoid,
+		:prntrnm,
+		:cstno,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbDefprmstUpdate()
+ *    DEFPRMST レコードを更新する
+ * ■引数
+ *    [I]  Defprmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbDefprmstUpdate( Defprmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, DefprmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE DEFPRMST
+    SET (
+		TYHYOID,
+		PRNTRNM,
+		CSTNO,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:tyhyoid,
+		:prntrnm,
+		:cstno,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		COMPNM = :compnm;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbDefprmstDelete()
+ *    DEFPRMST レコードを削除する
+ * ■引数
+ *    [I]  Defprmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbDefprmstDelete( Defprmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, DefprmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM DEFPRMST
+    WHERE
+		COMPNM = :compnm;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

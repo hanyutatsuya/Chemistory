@@ -1,0 +1,374 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Trayknri.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Trayknri.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    trid[11];
+	char    uktrdh[27];
+	char    uktrtts[9];
+	char    instkdh[27];
+	char    instkno[11];
+	short   instksu;
+	char    outstkdh[27];
+	char    outstkno[11];
+	short   outsksu;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Trayknri
+
+BmlDMMInfo	TrayknriArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( trid ),
+	DMM_STIMESTAMP( uktrdh ),
+	DMM_SSTRING( uktrtts ),
+	DMM_STIMESTAMP( instkdh ),
+	DMM_SSTRING( instkno ),
+	DMM_SSHORT( instksu ),
+	DMM_STIMESTAMP( outstkdh ),
+	DMM_SSTRING( outstkno ),
+	DMM_SSHORT( outsksu ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbTrayknriSelectAll()
+ *    TRAYKNRI レコード全件取得
+ * ■引数
+ *    [O]  Trayknri** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrayknriSelectAll( Trayknri** arrayOut, int* numOut )
+{
+    Trayknri*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		TRID,
+		UKTRDH,
+		UKTRTTS,
+		INSTKDH,
+		INSTKNO,
+		INSTKSU,
+		OUTSTKDH,
+		OUTSTKNO,
+		OUTSKSU,
+		KSNDH
+    FROM
+        TRAYKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Trayknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:trid,
+			:uktrdh,
+			:uktrtts,
+			:instkdh,
+			:instkno,
+			:instksu,
+			:outstkdh,
+			:outstkno,
+			:outsksu,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Trayknri*)ZbmlRealloc( array,
+                                    sizeof( Trayknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Trayknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, TrayknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbTrayknriSelectKey()
+ *    TRAYKNRI レコードKey条件取得
+ * ■引数
+ *    [I]  Trayknri* pKey       取得するレコードのキー
+ *    [O]  Trayknri** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrayknriSelectKey( Trayknri* pKey, Trayknri** arrayOut, int* numOut )
+{
+    Trayknri*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, TrayknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		TRID,
+		UKTRDH,
+		UKTRTTS,
+		INSTKDH,
+		INSTKNO,
+		INSTKSU,
+		OUTSTKDH,
+		OUTSTKNO,
+		OUTSKSU,
+		KSNDH
+    FROM
+        TRAYKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		TRID = :trid FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Trayknri* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:trid,
+			:uktrdh,
+			:uktrtts,
+			:instkdh,
+			:instkno,
+			:instksu,
+			:outstkdh,
+			:outstkno,
+			:outsksu,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Trayknri*)ZbmlRealloc( array,
+                                    sizeof( Trayknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Trayknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, TrayknriArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrayknriInsert()
+ *    TRAYKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Trayknri* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrayknriInsert( Trayknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrayknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO TRAYKNRI
+    (
+		KNSKISYMD,
+		TRID,
+		UKTRDH,
+		UKTRTTS,
+		INSTKDH,
+		INSTKNO,
+		INSTKSU,
+		OUTSTKDH,
+		OUTSTKNO,
+		OUTSKSU,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:trid,
+		:uktrdh,
+		:uktrtts,
+		:instkdh,
+		:instkno,
+		:instksu,
+		:outstkdh,
+		:outstkno,
+		:outsksu,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrayknriUpdate()
+ *    TRAYKNRI レコードを更新する
+ * ■引数
+ *    [I]  Trayknri* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrayknriUpdate( Trayknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrayknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE TRAYKNRI
+    SET (
+		UKTRDH,
+		UKTRTTS,
+		INSTKDH,
+		INSTKNO,
+		INSTKSU,
+		OUTSTKDH,
+		OUTSTKNO,
+		OUTSKSU,
+		KSNDH
+    ) = (
+		:uktrdh,
+		:uktrtts,
+		:instkdh,
+		:instkno,
+		:instksu,
+		:outstkdh,
+		:outstkno,
+		:outsksu,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		TRID = :trid;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbTrayknriDelete()
+ *    TRAYKNRI レコードを削除する
+ * ■引数
+ *    [I]  Trayknri* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbTrayknriDelete( Trayknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, TrayknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM TRAYKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		TRID = :trid;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

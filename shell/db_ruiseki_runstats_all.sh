@@ -1,0 +1,131 @@
+#!/bin/bash -
+
+db2 connect to kea00db user db2inst1 using db2inst1
+if [ $? -gt 0 ]; then
+    exit 1
+fi
+
+date
+echo " "
+echo "RUISEKI DB RUNSTATS START"
+echo " "
+echo "RIREKI"
+db2 RUNSTATS ON TABLE DB2INST1.RIREKI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_APLLOG"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_APLLOG WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_ASYRACKKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_ASYRACKKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_BATCHKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_BATCHKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_BSSIKKA"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_BSSIKKA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_BSSIZOK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_BSSIZOK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_BUNCHU"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_BUNCHU WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_CHIKENZOK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_CHIKENZOK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_CTRLKKA"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_CTRLKKA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_CTRLKNR"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_CTRLKNR WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_HKKKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_HKKKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_HYJKMK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_HYJKMK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_IJYOSYA"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_IJYOSYA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_IRAI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_IRAI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KANJYA"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KANJYA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KEKKA"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KEKKA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KEKKAFREE"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KEKKAFREE WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KENORDER"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KENORDER WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KENPOS"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KENPOS WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KENZOK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KENZOK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KMKBTUTEST"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KMKBTUTEST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KNKMHMZK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KNKMHMZK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KNKYULOT"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KNKYULOT WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KNSSEQKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KNSSEQKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KNSSNKJYK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KNSSNKJYK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_KNTIDUNKNOWN"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_KNTIDUNKNOWN WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_NINSIKI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_NINSIKI WITH DISTRIBUTION and detailed indexes all;
+# echo " "
+# echo "RUI_REALCHK"
+# db2 RUNSTATS ON TABLE DB2INST1.RUI_REALCHK WITH DISTRIBUTION and detailed indexes all;
+# echo " "
+# echo "RUI_RIREKI"
+# db2 RUNSTATS ON TABLE DB2INST1.RUI_RIREKI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_SLIDE"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_SLIDE WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_SOUKAN"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_SOUKAN WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_STANDARD"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_STANDARD WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_TRAYKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_TRAYKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_TRRAKHMZK"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_TRRAKHMZK WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_WSSEQKNRI"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_WSSEQKNRI WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_XBARM"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_XBARM WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUI_XEBSKFLG"
+db2 RUNSTATS ON TABLE DB2INST1.RUI_XEBSKFLG WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SHU_KEKKA"
+db2 RUNSTATS ON TABLE DB2INST1.SHU_KEKKA WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RUISEKI DB RUNSTATS END"
+echo " "
+date
+echo " "
+
+db2 terminate;

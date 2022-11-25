@@ -1,0 +1,545 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Bssizok.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Bssizok.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   bssino;
+	char    ecd[4];
+	char    sstcd[8];
+	char    srknm[31];
+	char    knjnmn[61];
+	char    ngkbn;
+	char    krtno[41];
+	char    knjid[16];
+	char    btnm[31];
+	char    knjnmkey[61];
+	char    ttinm[41];
+	char    sbtkbn;
+	char    birthday[9];
+	char    birthdaykbn;
+	char    age[4];
+	char    agekbn;
+	char    zrcd[5];
+	char    sstme[9];
+	char    ssymd[11];
+	char    tntme[5];
+	char    tntni;
+	char    tnryo[6];
+	char    tnryotni;
+	char    bshdh[27];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Bssizok
+
+BmlDMMInfo	BssizokArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( bssino ),
+	DMM_SSTRING( ecd ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( srknm ),
+	DMM_SSTRING( knjnmn ),
+	DMM_SCHAR( ngkbn ),
+	DMM_SSTRING( krtno ),
+	DMM_SSTRING( knjid ),
+	DMM_SSTRING( btnm ),
+	DMM_SSTRING( knjnmkey ),
+	DMM_SSTRING( ttinm ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( birthday ),
+	DMM_SCHAR( birthdaykbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_SSTRING( zrcd ),
+	DMM_STIME( sstme ),
+	DMM_SDATE( ssymd ),
+	DMM_SSTRING( tntme ),
+	DMM_SCHAR( tntni ),
+	DMM_SSTRING( tnryo ),
+	DMM_SCHAR( tnryotni ),
+	DMM_STIMESTAMP( bshdh ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbBssizokSelectAll()
+ *    BSSIZOK レコード全件取得
+ * ■引数
+ *    [O]  Bssizok** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBssizokSelectAll( Bssizok** arrayOut, int* numOut )
+{
+    Bssizok*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		BSSINO,
+		ECD,
+		SSTCD,
+		SRKNM,
+		KNJNMN,
+		NGKBN,
+		KRTNO,
+		KNJID,
+		BTNM,
+		KNJNMKEY,
+		TTINM,
+		SBTKBN,
+		BIRTHDAY,
+		BIRTHDAYKBN,
+		AGE,
+		AGEKBN,
+		ZRCD,
+		SSTME,
+		SSYMD,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		BSHDH,
+		KSNDH
+    FROM
+        BSSIZOK FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Bssizok* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:bssino,
+			:ecd,
+			:sstcd,
+			:srknm,
+			:knjnmn,
+			:ngkbn,
+			:krtno,
+			:knjid,
+			:btnm,
+			:knjnmkey,
+			:ttinm,
+			:sbtkbn,
+			:birthday,
+			:birthdaykbn,
+			:age,
+			:agekbn,
+			:zrcd,
+			:sstme,
+			:ssymd,
+			:tntme,
+			:tntni,
+			:tnryo,
+			:tnryotni,
+			:bshdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Bssizok*)ZbmlRealloc( array,
+                                    sizeof( Bssizok ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Bssizok ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BssizokArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbBssizokSelectKey()
+ *    BSSIZOK レコードKey条件取得
+ * ■引数
+ *    [I]  Bssizok* pKey       取得するレコードのキー
+ *    [O]  Bssizok** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBssizokSelectKey( Bssizok* pKey, Bssizok** arrayOut, int* numOut )
+{
+    Bssizok*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, BssizokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		BSSINO,
+		ECD,
+		SSTCD,
+		SRKNM,
+		KNJNMN,
+		NGKBN,
+		KRTNO,
+		KNJID,
+		BTNM,
+		KNJNMKEY,
+		TTINM,
+		SBTKBN,
+		BIRTHDAY,
+		BIRTHDAYKBN,
+		AGE,
+		AGEKBN,
+		ZRCD,
+		SSTME,
+		SSYMD,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		BSHDH,
+		KSNDH
+    FROM
+        BSSIZOK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		BSSINO = :bssino FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Bssizok* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:bssino,
+			:ecd,
+			:sstcd,
+			:srknm,
+			:knjnmn,
+			:ngkbn,
+			:krtno,
+			:knjid,
+			:btnm,
+			:knjnmkey,
+			:ttinm,
+			:sbtkbn,
+			:birthday,
+			:birthdaykbn,
+			:age,
+			:agekbn,
+			:zrcd,
+			:sstme,
+			:ssymd,
+			:tntme,
+			:tntni,
+			:tnryo,
+			:tnryotni,
+			:bshdh,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Bssizok*)ZbmlRealloc( array,
+                                    sizeof( Bssizok ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Bssizok ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BssizokArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBssizokInsert()
+ *    BSSIZOK レコードを挿入する
+ * ■引数
+ *    [I]  Bssizok* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBssizokInsert( Bssizok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BssizokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO BSSIZOK
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		BSSINO,
+		ECD,
+		SSTCD,
+		SRKNM,
+		KNJNMN,
+		NGKBN,
+		KRTNO,
+		KNJID,
+		BTNM,
+		KNJNMKEY,
+		TTINM,
+		SBTKBN,
+		BIRTHDAY,
+		BIRTHDAYKBN,
+		AGE,
+		AGEKBN,
+		ZRCD,
+		SSTME,
+		SSYMD,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		BSHDH,
+		KSNDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:bssino,
+		:ecd,
+		:sstcd,
+		:srknm,
+		:knjnmn,
+		:ngkbn,
+		:krtno,
+		:knjid,
+		:btnm,
+		:knjnmkey,
+		:ttinm,
+		:sbtkbn,
+		:birthday,
+		:birthdaykbn,
+		:age,
+		:agekbn,
+		:zrcd,
+		:sstme,
+		:ssymd,
+		:tntme,
+		:tntni,
+		:tnryo,
+		:tnryotni,
+		:bshdh,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBssizokUpdate()
+ *    BSSIZOK レコードを更新する
+ * ■引数
+ *    [I]  Bssizok* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBssizokUpdate( Bssizok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BssizokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE BSSIZOK
+    SET (
+		IRIKETFLG,
+		ECD,
+		SSTCD,
+		SRKNM,
+		KNJNMN,
+		NGKBN,
+		KRTNO,
+		KNJID,
+		BTNM,
+		KNJNMKEY,
+		TTINM,
+		SBTKBN,
+		BIRTHDAY,
+		BIRTHDAYKBN,
+		AGE,
+		AGEKBN,
+		ZRCD,
+		SSTME,
+		SSYMD,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		BSHDH,
+		KSNDH
+    ) = (
+		:iriketflg,
+		:ecd,
+		:sstcd,
+		:srknm,
+		:knjnmn,
+		:ngkbn,
+		:krtno,
+		:knjid,
+		:btnm,
+		:knjnmkey,
+		:ttinm,
+		:sbtkbn,
+		:birthday,
+		:birthdaykbn,
+		:age,
+		:agekbn,
+		:zrcd,
+		:sstme,
+		:ssymd,
+		:tntme,
+		:tntni,
+		:tnryo,
+		:tnryotni,
+		:bshdh,
+		:ksndh
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		BSSINO = :bssino;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBssizokDelete()
+ *    BSSIZOK レコードを削除する
+ * ■引数
+ *    [I]  Bssizok* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBssizokDelete( Bssizok* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BssizokArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM BSSIZOK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		BSSINO = :bssino;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

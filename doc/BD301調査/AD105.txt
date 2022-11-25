@@ -1,0 +1,25 @@
+
+lib_loging.c
+過去使っていたが、現在は未使用（コメントアウトされている）
+BD301_LOG.ini が存在しない→BD301のログがない
+
+
+インターフェイスファイルパス
+/apdata/today/file/NSWS/Send/RkInfo/	分注ＯＫ分
+/apdata/today/file/NSWS/Send/TrInfo/	ＷＳ作成分
+
+/apdata/today/file/NSWS/Recv/*
+
+
+トレー管理マスタ　トレーＩＤ毎
+TRMST.FILSKDIR ファイル作成ディレクトリ
+ Multi,Single,Single2 
+
+ラック管理マスタ　WSコード毎
+RKMST.FILSKDIR 
+
+PC側アプリ
+SolutionをFILSKDIR,TRMST,RKMSTで検索
+CS202
+
+

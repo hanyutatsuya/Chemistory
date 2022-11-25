@@ -1,0 +1,170 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Rngchkmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "A105rngchk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    hnikbn;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    zaicd[5];
+	char    sstcd[8];
+	char    sbt;
+	char    ssa;
+	char    zen_kyoyou;
+	char    hrng[21];
+	char    lrng[21];
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Rngchkmst
+
+BmlDMMInfo	RngchkmstArray1[] = {
+	DMM_SCHAR( hnikbn ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( zaicd ),
+	DMM_SSTRING( sstcd ),
+	DMM_SCHAR( sbt ),
+	DMM_SCHAR( ssa ),
+	DMM_SCHAR( zen_kyoyou ),
+	DMM_SSTRING( hrng ),
+	DMM_SSTRING( lrng ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * A105rngchkSelKey()
+ *    RNGCHKMST レコードKey条件取得
+ * ■引数
+ *    [I]  Rngchkmst* pKey      取得するレコードのキー
+ *    [O]  Rngchkmst** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long A105rngchkSelKey( Rngchkmst* pKey, Rngchkmst** arrayOut, int* numOut )
+{
+    Rngchkmst*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, RngchkmstArray1 ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		HNIKBN,
+		KNSGRP,
+		KMKCD,
+		ZAICD,
+		SSTCD,
+		SBT,
+		SSA,
+		ZEN_KYOYOU,
+		HRNG,
+		LRNG,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        RNGCHKMST
+    WHERE
+		HNIKBN = :hnikbn AND
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		ZAICD = :zaicd AND
+		SSTCD = :sstcd AND 
+		SBT = :sbt AND
+		KAIYMD <= :kaiymd AND 
+		HAIYMD >= :kaiymd
+
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Rngchkmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:hnikbn,
+			:knsgrp,
+			:kmkcd,
+			:zaicd,
+			:sstcd,
+			:sbt,
+			:ssa,
+			:zen_kyoyou,
+			:hrng,
+			:lrng,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Rngchkmst*)ZbmlRealloc( array,
+                                    sizeof( Rngchkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Rngchkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, RngchkmstArray1 );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

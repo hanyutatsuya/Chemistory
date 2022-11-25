@@ -1,0 +1,805 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Hyjkmk.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Hyjkmk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    defkbn;
+	char    wkupapp[33];
+	char    loginid[9];
+	char    hyjniy01[51];
+	char    hyjniy02[51];
+	char    hyjniy03[51];
+	char    hyjniy04[51];
+	char    hyjniy05[51];
+	char    hyjniy06[51];
+	char    hyjniy07[51];
+	char    hyjniy08[51];
+	char    hyjniy09[51];
+	char    hyjniy10[51];
+	char    hyjniy11[51];
+	char    hyjniy12[51];
+	char    hyjniy13[51];
+	char    hyjniy14[51];
+	char    hyjniy15[51];
+	char    hyjniy16[51];
+	char    hyjniy17[51];
+	char    hyjniy18[51];
+	char    hyjniy19[51];
+	char    hyjniy20[51];
+	char    hyjniy21[51];
+	char    hyjniy22[51];
+	char    hyjniy23[51];
+	char    hyjniy24[51];
+	char    hyjniy25[51];
+	char    hyjniy26[51];
+	char    hyjniy27[51];
+	char    hyjniy28[51];
+	char    hyjniy29[51];
+	char    hyjniy30[51];
+	char    hyjniy31[51];
+	char    hyjniy32[51];
+	char    hyjniy33[51];
+	char    hyjniy34[51];
+	char    hyjniy35[51];
+	char    hyjniy36[51];
+	char    hyjniy37[51];
+	char    hyjniy38[51];
+	char    hyjniy39[51];
+	char    hyjniy40[51];
+	char    hyjniy41[51];
+	char    hyjniy42[51];
+	char    hyjniy43[51];
+	char    hyjniy44[51];
+	char    hyjniy45[51];
+	char    hyjniy46[51];
+	char    hyjniy47[51];
+	char    hyjniy48[51];
+	char    hyjniy49[51];
+	char    hyjniy50[51];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Hyjkmk
+
+BmlDMMInfo	HyjkmkArray[] = {
+	DMM_SCHAR( defkbn ),
+	DMM_SSTRING( wkupapp ),
+	DMM_SSTRING( loginid ),
+	DMM_SSTRING( hyjniy01 ),
+	DMM_SSTRING( hyjniy02 ),
+	DMM_SSTRING( hyjniy03 ),
+	DMM_SSTRING( hyjniy04 ),
+	DMM_SSTRING( hyjniy05 ),
+	DMM_SSTRING( hyjniy06 ),
+	DMM_SSTRING( hyjniy07 ),
+	DMM_SSTRING( hyjniy08 ),
+	DMM_SSTRING( hyjniy09 ),
+	DMM_SSTRING( hyjniy10 ),
+	DMM_SSTRING( hyjniy11 ),
+	DMM_SSTRING( hyjniy12 ),
+	DMM_SSTRING( hyjniy13 ),
+	DMM_SSTRING( hyjniy14 ),
+	DMM_SSTRING( hyjniy15 ),
+	DMM_SSTRING( hyjniy16 ),
+	DMM_SSTRING( hyjniy17 ),
+	DMM_SSTRING( hyjniy18 ),
+	DMM_SSTRING( hyjniy19 ),
+	DMM_SSTRING( hyjniy20 ),
+	DMM_SSTRING( hyjniy21 ),
+	DMM_SSTRING( hyjniy22 ),
+	DMM_SSTRING( hyjniy23 ),
+	DMM_SSTRING( hyjniy24 ),
+	DMM_SSTRING( hyjniy25 ),
+	DMM_SSTRING( hyjniy26 ),
+	DMM_SSTRING( hyjniy27 ),
+	DMM_SSTRING( hyjniy28 ),
+	DMM_SSTRING( hyjniy29 ),
+	DMM_SSTRING( hyjniy30 ),
+	DMM_SSTRING( hyjniy31 ),
+	DMM_SSTRING( hyjniy32 ),
+	DMM_SSTRING( hyjniy33 ),
+	DMM_SSTRING( hyjniy34 ),
+	DMM_SSTRING( hyjniy35 ),
+	DMM_SSTRING( hyjniy36 ),
+	DMM_SSTRING( hyjniy37 ),
+	DMM_SSTRING( hyjniy38 ),
+	DMM_SSTRING( hyjniy39 ),
+	DMM_SSTRING( hyjniy40 ),
+	DMM_SSTRING( hyjniy41 ),
+	DMM_SSTRING( hyjniy42 ),
+	DMM_SSTRING( hyjniy43 ),
+	DMM_SSTRING( hyjniy44 ),
+	DMM_SSTRING( hyjniy45 ),
+	DMM_SSTRING( hyjniy46 ),
+	DMM_SSTRING( hyjniy47 ),
+	DMM_SSTRING( hyjniy48 ),
+	DMM_SSTRING( hyjniy49 ),
+	DMM_SSTRING( hyjniy50 ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbHyjkmkSelectAll()
+ *    HYJKMK レコード全件取得
+ * ■引数
+ *    [O]  Hyjkmk** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHyjkmkSelectAll( Hyjkmk** arrayOut, int* numOut )
+{
+    Hyjkmk*     array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		DEFKBN,
+		WKUPAPP,
+		LOGINID,
+		HYJNIY01,
+		HYJNIY02,
+		HYJNIY03,
+		HYJNIY04,
+		HYJNIY05,
+		HYJNIY06,
+		HYJNIY07,
+		HYJNIY08,
+		HYJNIY09,
+		HYJNIY10,
+		HYJNIY11,
+		HYJNIY12,
+		HYJNIY13,
+		HYJNIY14,
+		HYJNIY15,
+		HYJNIY16,
+		HYJNIY17,
+		HYJNIY18,
+		HYJNIY19,
+		HYJNIY20,
+		HYJNIY21,
+		HYJNIY22,
+		HYJNIY23,
+		HYJNIY24,
+		HYJNIY25,
+		HYJNIY26,
+		HYJNIY27,
+		HYJNIY28,
+		HYJNIY29,
+		HYJNIY30,
+		HYJNIY31,
+		HYJNIY32,
+		HYJNIY33,
+		HYJNIY34,
+		HYJNIY35,
+		HYJNIY36,
+		HYJNIY37,
+		HYJNIY38,
+		HYJNIY39,
+		HYJNIY40,
+		HYJNIY41,
+		HYJNIY42,
+		HYJNIY43,
+		HYJNIY44,
+		HYJNIY45,
+		HYJNIY46,
+		HYJNIY47,
+		HYJNIY48,
+		HYJNIY49,
+		HYJNIY50,
+		KSNDH
+    FROM
+        HYJKMK FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Hyjkmk* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:defkbn,
+			:wkupapp,
+			:loginid,
+			:hyjniy01,
+			:hyjniy02,
+			:hyjniy03,
+			:hyjniy04,
+			:hyjniy05,
+			:hyjniy06,
+			:hyjniy07,
+			:hyjniy08,
+			:hyjniy09,
+			:hyjniy10,
+			:hyjniy11,
+			:hyjniy12,
+			:hyjniy13,
+			:hyjniy14,
+			:hyjniy15,
+			:hyjniy16,
+			:hyjniy17,
+			:hyjniy18,
+			:hyjniy19,
+			:hyjniy20,
+			:hyjniy21,
+			:hyjniy22,
+			:hyjniy23,
+			:hyjniy24,
+			:hyjniy25,
+			:hyjniy26,
+			:hyjniy27,
+			:hyjniy28,
+			:hyjniy29,
+			:hyjniy30,
+			:hyjniy31,
+			:hyjniy32,
+			:hyjniy33,
+			:hyjniy34,
+			:hyjniy35,
+			:hyjniy36,
+			:hyjniy37,
+			:hyjniy38,
+			:hyjniy39,
+			:hyjniy40,
+			:hyjniy41,
+			:hyjniy42,
+			:hyjniy43,
+			:hyjniy44,
+			:hyjniy45,
+			:hyjniy46,
+			:hyjniy47,
+			:hyjniy48,
+			:hyjniy49,
+			:hyjniy50,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Hyjkmk*)ZbmlRealloc( array,
+                                    sizeof( Hyjkmk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Hyjkmk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, HyjkmkArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbHyjkmkSelectKey()
+ *    HYJKMK レコードKey条件取得
+ * ■引数
+ *    [I]  Hyjkmk* pKey       取得するレコードのキー
+ *    [O]  Hyjkmk** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHyjkmkSelectKey( Hyjkmk* pKey, Hyjkmk** arrayOut, int* numOut )
+{
+    Hyjkmk*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, HyjkmkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		DEFKBN,
+		WKUPAPP,
+		LOGINID,
+		HYJNIY01,
+		HYJNIY02,
+		HYJNIY03,
+		HYJNIY04,
+		HYJNIY05,
+		HYJNIY06,
+		HYJNIY07,
+		HYJNIY08,
+		HYJNIY09,
+		HYJNIY10,
+		HYJNIY11,
+		HYJNIY12,
+		HYJNIY13,
+		HYJNIY14,
+		HYJNIY15,
+		HYJNIY16,
+		HYJNIY17,
+		HYJNIY18,
+		HYJNIY19,
+		HYJNIY20,
+		HYJNIY21,
+		HYJNIY22,
+		HYJNIY23,
+		HYJNIY24,
+		HYJNIY25,
+		HYJNIY26,
+		HYJNIY27,
+		HYJNIY28,
+		HYJNIY29,
+		HYJNIY30,
+		HYJNIY31,
+		HYJNIY32,
+		HYJNIY33,
+		HYJNIY34,
+		HYJNIY35,
+		HYJNIY36,
+		HYJNIY37,
+		HYJNIY38,
+		HYJNIY39,
+		HYJNIY40,
+		HYJNIY41,
+		HYJNIY42,
+		HYJNIY43,
+		HYJNIY44,
+		HYJNIY45,
+		HYJNIY46,
+		HYJNIY47,
+		HYJNIY48,
+		HYJNIY49,
+		HYJNIY50,
+		KSNDH
+    FROM
+        HYJKMK
+    WHERE
+		DEFKBN = :defkbn AND
+		WKUPAPP = :wkupapp AND
+		LOGINID = :loginid FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Hyjkmk* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:defkbn,
+			:wkupapp,
+			:loginid,
+			:hyjniy01,
+			:hyjniy02,
+			:hyjniy03,
+			:hyjniy04,
+			:hyjniy05,
+			:hyjniy06,
+			:hyjniy07,
+			:hyjniy08,
+			:hyjniy09,
+			:hyjniy10,
+			:hyjniy11,
+			:hyjniy12,
+			:hyjniy13,
+			:hyjniy14,
+			:hyjniy15,
+			:hyjniy16,
+			:hyjniy17,
+			:hyjniy18,
+			:hyjniy19,
+			:hyjniy20,
+			:hyjniy21,
+			:hyjniy22,
+			:hyjniy23,
+			:hyjniy24,
+			:hyjniy25,
+			:hyjniy26,
+			:hyjniy27,
+			:hyjniy28,
+			:hyjniy29,
+			:hyjniy30,
+			:hyjniy31,
+			:hyjniy32,
+			:hyjniy33,
+			:hyjniy34,
+			:hyjniy35,
+			:hyjniy36,
+			:hyjniy37,
+			:hyjniy38,
+			:hyjniy39,
+			:hyjniy40,
+			:hyjniy41,
+			:hyjniy42,
+			:hyjniy43,
+			:hyjniy44,
+			:hyjniy45,
+			:hyjniy46,
+			:hyjniy47,
+			:hyjniy48,
+			:hyjniy49,
+			:hyjniy50,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Hyjkmk*)ZbmlRealloc( array,
+                                    sizeof( Hyjkmk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Hyjkmk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, HyjkmkArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHyjkmkInsert()
+ *    HYJKMK レコードを挿入する
+ * ■引数
+ *    [I]  Hyjkmk* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHyjkmkInsert( Hyjkmk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HyjkmkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO HYJKMK
+    (
+		DEFKBN,
+		WKUPAPP,
+		LOGINID,
+		HYJNIY01,
+		HYJNIY02,
+		HYJNIY03,
+		HYJNIY04,
+		HYJNIY05,
+		HYJNIY06,
+		HYJNIY07,
+		HYJNIY08,
+		HYJNIY09,
+		HYJNIY10,
+		HYJNIY11,
+		HYJNIY12,
+		HYJNIY13,
+		HYJNIY14,
+		HYJNIY15,
+		HYJNIY16,
+		HYJNIY17,
+		HYJNIY18,
+		HYJNIY19,
+		HYJNIY20,
+		HYJNIY21,
+		HYJNIY22,
+		HYJNIY23,
+		HYJNIY24,
+		HYJNIY25,
+		HYJNIY26,
+		HYJNIY27,
+		HYJNIY28,
+		HYJNIY29,
+		HYJNIY30,
+		HYJNIY31,
+		HYJNIY32,
+		HYJNIY33,
+		HYJNIY34,
+		HYJNIY35,
+		HYJNIY36,
+		HYJNIY37,
+		HYJNIY38,
+		HYJNIY39,
+		HYJNIY40,
+		HYJNIY41,
+		HYJNIY42,
+		HYJNIY43,
+		HYJNIY44,
+		HYJNIY45,
+		HYJNIY46,
+		HYJNIY47,
+		HYJNIY48,
+		HYJNIY49,
+		HYJNIY50,
+		KSNDH
+    ) VALUES (
+		:defkbn,
+		:wkupapp,
+		:loginid,
+		:hyjniy01,
+		:hyjniy02,
+		:hyjniy03,
+		:hyjniy04,
+		:hyjniy05,
+		:hyjniy06,
+		:hyjniy07,
+		:hyjniy08,
+		:hyjniy09,
+		:hyjniy10,
+		:hyjniy11,
+		:hyjniy12,
+		:hyjniy13,
+		:hyjniy14,
+		:hyjniy15,
+		:hyjniy16,
+		:hyjniy17,
+		:hyjniy18,
+		:hyjniy19,
+		:hyjniy20,
+		:hyjniy21,
+		:hyjniy22,
+		:hyjniy23,
+		:hyjniy24,
+		:hyjniy25,
+		:hyjniy26,
+		:hyjniy27,
+		:hyjniy28,
+		:hyjniy29,
+		:hyjniy30,
+		:hyjniy31,
+		:hyjniy32,
+		:hyjniy33,
+		:hyjniy34,
+		:hyjniy35,
+		:hyjniy36,
+		:hyjniy37,
+		:hyjniy38,
+		:hyjniy39,
+		:hyjniy40,
+		:hyjniy41,
+		:hyjniy42,
+		:hyjniy43,
+		:hyjniy44,
+		:hyjniy45,
+		:hyjniy46,
+		:hyjniy47,
+		:hyjniy48,
+		:hyjniy49,
+		:hyjniy50,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHyjkmkUpdate()
+ *    HYJKMK レコードを更新する
+ * ■引数
+ *    [I]  Hyjkmk* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHyjkmkUpdate( Hyjkmk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HyjkmkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE HYJKMK
+    SET (
+		HYJNIY01,
+		HYJNIY02,
+		HYJNIY03,
+		HYJNIY04,
+		HYJNIY05,
+		HYJNIY06,
+		HYJNIY07,
+		HYJNIY08,
+		HYJNIY09,
+		HYJNIY10,
+		HYJNIY11,
+		HYJNIY12,
+		HYJNIY13,
+		HYJNIY14,
+		HYJNIY15,
+		HYJNIY16,
+		HYJNIY17,
+		HYJNIY18,
+		HYJNIY19,
+		HYJNIY20,
+		HYJNIY21,
+		HYJNIY22,
+		HYJNIY23,
+		HYJNIY24,
+		HYJNIY25,
+		HYJNIY26,
+		HYJNIY27,
+		HYJNIY28,
+		HYJNIY29,
+		HYJNIY30,
+		HYJNIY31,
+		HYJNIY32,
+		HYJNIY33,
+		HYJNIY34,
+		HYJNIY35,
+		HYJNIY36,
+		HYJNIY37,
+		HYJNIY38,
+		HYJNIY39,
+		HYJNIY40,
+		HYJNIY41,
+		HYJNIY42,
+		HYJNIY43,
+		HYJNIY44,
+		HYJNIY45,
+		HYJNIY46,
+		HYJNIY47,
+		HYJNIY48,
+		HYJNIY49,
+		HYJNIY50,
+		KSNDH
+    ) = (
+		:hyjniy01,
+		:hyjniy02,
+		:hyjniy03,
+		:hyjniy04,
+		:hyjniy05,
+		:hyjniy06,
+		:hyjniy07,
+		:hyjniy08,
+		:hyjniy09,
+		:hyjniy10,
+		:hyjniy11,
+		:hyjniy12,
+		:hyjniy13,
+		:hyjniy14,
+		:hyjniy15,
+		:hyjniy16,
+		:hyjniy17,
+		:hyjniy18,
+		:hyjniy19,
+		:hyjniy20,
+		:hyjniy21,
+		:hyjniy22,
+		:hyjniy23,
+		:hyjniy24,
+		:hyjniy25,
+		:hyjniy26,
+		:hyjniy27,
+		:hyjniy28,
+		:hyjniy29,
+		:hyjniy30,
+		:hyjniy31,
+		:hyjniy32,
+		:hyjniy33,
+		:hyjniy34,
+		:hyjniy35,
+		:hyjniy36,
+		:hyjniy37,
+		:hyjniy38,
+		:hyjniy39,
+		:hyjniy40,
+		:hyjniy41,
+		:hyjniy42,
+		:hyjniy43,
+		:hyjniy44,
+		:hyjniy45,
+		:hyjniy46,
+		:hyjniy47,
+		:hyjniy48,
+		:hyjniy49,
+		:hyjniy50,
+		:ksndh
+    ) WHERE
+		DEFKBN = :defkbn AND
+		WKUPAPP = :wkupapp AND
+		LOGINID = :loginid;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHyjkmkDelete()
+ *    HYJKMK レコードを削除する
+ * ■引数
+ *    [I]  Hyjkmk* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHyjkmkDelete( Hyjkmk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HyjkmkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM HYJKMK
+    WHERE
+		DEFKBN = :defkbn AND
+		WKUPAPP = :wkupapp AND
+		LOGINID = :loginid;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

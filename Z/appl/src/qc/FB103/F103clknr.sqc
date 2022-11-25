@@ -1,0 +1,108 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： F103ctrlknr.sqc
+ *     機能概要  ：コントロール管理テーブルアクセス
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-27                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+
+#include "F103ctrlknr.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT      1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+    char    	knskisymd[11];
+    char    	bskkbn[5];
+    char    	bsklne[5];
+    char    	bskgok[7];
+    sqlint32   	ctrlno;
+    char    	ctrlhdflg;
+    char    	ctrlktflg;
+    char    	ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT  Ctrlknr
+
+BmlDMMInfo  CtrlknrArray[] = {
+    DMM_SDATE( knskisymd ),
+    DMM_SSTRING( bskkbn ),
+    DMM_SSTRING( bsklne ),
+    DMM_SSTRING( bskgok ),
+    DMM_SLONG( ctrlno ),
+    DMM_SCHAR( ctrlhdflg ),
+    DMM_SCHAR( ctrlktflg ),
+    DMM_STIMESTAMP( ksndh ),
+    DMM_NULL
+};
+
+
+/******************************************************************************
+ * FKtflgUpdate()
+ *    コントロール管理テーブルのコントロール確定フラグを更新
+ * ■引数
+ *    [I]  Ctrlknr* rec         更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FKtflgUpdate( Ctrlknr* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, CtrlknrArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE CTRLKNR
+    SET 
+         CTRLKTFLG  = '1'
+        ,KSNDH      = CURRENT TIMESTAMP
+    WHERE   KNSKISYMD   = :knskisymd
+    AND     BSKKBN      = :bskkbn
+    AND     BSKGOK      = :bskgok
+    AND     CTRLNO      = :ctrlno
+    ;
+    
+    return sqlca.sqlcode;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+printf("error code=%d %s\n",sqlca.sqlcode, &sqla_program_id[1]);
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

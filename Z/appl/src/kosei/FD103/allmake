@@ -1,0 +1,31 @@
+#!/bin/bash -
+
+kbn=Z
+seq=1
+db2 connect to $1 user $2 using $3
+
+if [ $? -gt 0 ]; then
+	exit 1
+fi
+
+/bin/rm ../*.c
+/bin/rm ./bnd/*
+for sqc in ./*.sqc; do
+	buf=`./tool/chget $sqc`
+	#./bp $sqc $buf all $ver
+	echo "Pre-Compiling $sqc (package:$seq$kbn$buf - ver:$seq$kbn)..."
+	db2 prep $sqc bindfile using bnd/$seq$kbn$buf.bnd package using $seq$kbn$buf
+	if [ $? -gt 0 ]; then
+		rm *.c
+		exit 1
+	fi
+	echo "Binding $seq$kbn$buf.bnd ..."
+	db2 bind ./bnd/$seq$kbn$buf.bnd
+	if [ $? -gt 0 ]; then
+		exit 1
+	fi
+	seq=$(($seq + 1))
+done
+mv *.c ../
+db2 terminate
+

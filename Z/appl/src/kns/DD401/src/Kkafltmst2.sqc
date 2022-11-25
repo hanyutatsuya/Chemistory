@@ -1,0 +1,198 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kkafltmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kkafltmst2.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    fltkka[25];
+	char    minval[13];
+	char    maxval[13];
+	char    knskka1[13];
+	char    knskka2[25];
+	char    knskka2kbn[3];
+	char    kkahskcd[4];
+	char    hjkka[25];
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+	char 	sstcd[8];
+	char 	tkykbn[2];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kkafltmst2
+
+BmlDMMInfo	KkafltmstArray2[] = {
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( fltkka ),
+	DMM_SSTRING( minval ),
+	DMM_SSTRING( maxval ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( hjkka ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( tkykbn ),
+	DMM_NULL
+};
+
+//2006-12-27 YOON
+long ZdbKkafltmstSelectGRPKMKKey2( Kkafltmst2* pKey, Kkafltmst2** arrayOut, int* numOut )
+{
+    Kkafltmst2*  array = NULL;
+    int         num = 0;
+	int 		tkykbnflg = 0; //1ならNOT FOUNDを返します。
+	int 		sscdflg = 0; //施設コードが1件目に"0000000"のチェック
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KkafltmstArray2 ) )
+        return HRC_INVALID_VALUE;
+
+//printf("SQL knsgrp:%s,kmkcd:%s,sstcd:%s\n",knsgrp,kmkcd,sstcd);
+
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c3 CURSOR FOR
+    SELECT
+		KNSGRP,
+		KMKCD,
+		FLTKKA,
+		MINVAL,
+		MAXVAL,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		HJKKA,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH,
+		SSTCD,
+		TKYKBN
+    FROM
+        KKAFLTMST
+    WHERE
+		KNSGRP = :knsgrp AND 
+		KMKCD = :kmkcd AND
+		KAIYMD <= CURRENT DATE AND
+		HAIYMD >= CURRENT DATE AND
+		(SSTCD = '0000000' OR
+		 SSTCD = :sstcd)
+		
+		ORDER BY SSTCD DESC
+		FOR READ ONLY;
+
+
+    EXEC SQL OPEN c3;
+
+//FOR READ ONLY;
+    while( 1 ) {
+        Kkafltmst2* rec;
+
+        EXEC SQL FETCH c3 INTO
+			:knsgrp,
+			:kmkcd,
+			:fltkka,
+			:minval,
+			:maxval,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:hjkka,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh,
+			:sstcd,
+			:tkykbn
+			;
+
+        if( SQLCODE == 100 )
+            break;
+
+
+		//(KkafltmstArray2+14)->pchHost -> sstcd(施設コード)
+		char *tmp_sstcd = (KkafltmstArray2+14)->pchHost;
+
+		
+		if(strcmp(tmp_sstcd,"0000000")==0 && num == 0)
+		{
+			sscdflg = 1;//１件目から施設コードが"0000000"の場合
+		}
+		else if(sscdflg == 0 && strcmp(tmp_sstcd,"0000000")==0 && num > 0)
+		{
+//			printf("yoon: 2番目 = 0000000 <num:%d>\n",num);
+			break;	//1件目以降に"0000000"が出る場合
+		}	
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kkafltmst2*)ZbmlRealloc( array,
+                                    sizeof( Kkafltmst2 ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kkafltmst2 ) * ALLOC_UNIT );
+        }
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KkafltmstArray2 );
+	
+		if(rec->tkykbn[0] == '1'){
+//			printf("yoon: tkykbn = 1\n");
+			ZbmlFree(rec);
+			*numOut  = 0;
+			tkykbnflg = 1;
+			break;
+		}
+    }
+
+    EXEC SQL CLOSE c3;
+	if(tkykbnflg == 1)
+		return HRC_SQL_NOT_FOUND;
+    
+	*arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

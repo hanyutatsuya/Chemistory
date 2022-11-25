@@ -1,0 +1,436 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kenpos.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kenpos.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    knndh[27];
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    trid[11];
+	short   trpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    rakitjho;
+	char    rakitjhossi[7];
+	char    ksndh[27];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kenpos
+
+BmlDMMInfo	KenposArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_STIMESTAMP( knndh ),
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( trid ),
+	DMM_SSHORT( trpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SCHAR( rakitjho ),
+	DMM_SSTRING( rakitjhossi ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKenposSelectAll()
+ *    KENPOS レコード全件取得
+ * ■引数
+ *    [O]  Kenpos** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKenposSelectAll( Kenpos** arrayOut, int* numOut )
+{
+    Kenpos*     array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNNDH,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		RAKITJHO,
+		RAKITJHOSSI,
+		KSNDH,
+		TRKDH
+    FROM
+        KENPOS FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Kenpos* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knndh,
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:rakitjho,
+			:rakitjhossi,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kenpos*)ZbmlRealloc( array,
+                                    sizeof( Kenpos ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kenpos ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KenposArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKenposSelectKey()
+ *    KENPOS レコードKey条件取得
+ * ■引数
+ *    [I]  Kenpos* pKey       取得するレコードのキー
+ *    [O]  Kenpos** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKenposSelectKey( Kenpos* pKey, Kenpos** arrayOut, int* numOut )
+{
+    Kenpos*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KenposArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNNDH,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		RAKITJHO,
+		RAKITJHOSSI,
+		KSNDH,
+		TRKDH
+    FROM
+        KENPOS
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Kenpos* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knndh,
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:rakitjho,
+			:rakitjhossi,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kenpos*)ZbmlRealloc( array,
+                                    sizeof( Kenpos ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kenpos ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KenposArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKenposInsert()
+ *    KENPOS レコードを挿入する
+ * ■引数
+ *    [I]  Kenpos* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKenposInsert( Kenpos* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KenposArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KENPOS
+    (
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNNDH,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		RAKITJHO,
+		RAKITJHOSSI,
+		KSNDH,
+		TRKDH
+    ) VALUES (
+		:knskisymd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:knndh,
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:trid,
+		:trpos,
+		:asyrckid,
+		:asyrckpos,
+		:rakitjho,
+		:rakitjhossi,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKenposUpdate()
+ *    KENPOS レコードを更新する
+ * ■引数
+ *    [I]  Kenpos* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKenposUpdate( Kenpos* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KenposArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KENPOS
+    SET (
+		KNTKETFLG,
+		KNNDH,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		RAKITJHO,
+		RAKITJHOSSI,
+		KSNDH,
+		TRKDH
+    ) = (
+		:kntketflg,
+		:knndh,
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:trid,
+		:trpos,
+		:asyrckid,
+		:asyrckpos,
+		:rakitjho,
+		:rakitjhossi,
+		CURRENT TIMESTAMP,
+		:trkdh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKenposDelete()
+ *    KENPOS レコードを削除する
+ * ■引数
+ *    [I]  Kenpos* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKenposDelete( Kenpos* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KenposArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KENPOS
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd AND
+		KNTNO = :kntno;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

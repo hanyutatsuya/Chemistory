@@ -1,0 +1,203 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kenorder.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kenorder.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	short   knssu;
+	short   knssueda;
+	char    irihsmkbn;
+	char    irikbn;
+	char    ksktkbn;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    sstcd[8];
+	char    trid[11];
+	short   trpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    oyakmkcd[8];
+	char    seccd[3];
+	char    bkfkkbn;
+	char    smpcd[8];
+	char    bskkbn[5];
+	char    nbkmkcd[8];
+	char    zrcd[5];
+	char    ysnlbl[3];
+	char    kjno[4];
+	char    fkhkknohjkbn;
+	char    tbkjno[4];
+	char    tbkjflg;
+	char    htkfkhms[25];
+	char    skflg;
+	char    tskflg[3];
+	char    tktflg[3];
+	char    ytiksbr[16];
+	char    kkflg;
+	char    kkiriflg;
+	short   kkirilotno;
+	char    sc[6];
+	char    tj[6];
+	char    tjtni;
+	char    sbtkbn;
+	char    birthday[9];
+	char    birthdaykbn;
+	char    age[4];
+	char    agekbn;
+	char    sstme[9];
+	char    ssymd[11];
+	char    tntme[5];
+	char    tntni;
+	char    tnryo[6];
+	char    tnryotni;
+	sqlint32  knsseq;
+	short   bthno;
+	char    knsjkflg;
+	char    ksndh[27];
+	sqlint32 Cnt;
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kenorder
+
+BmlDMMInfo	KenorderArrayCount[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( knssueda ),
+	DMM_SCHAR( irihsmkbn ),
+	DMM_SCHAR( irikbn ),
+	DMM_SCHAR( ksktkbn ),
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( trid ),
+	DMM_SSHORT( trpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SSTRING( oyakmkcd ),
+	DMM_SSTRING( seccd ),
+	DMM_SCHAR( bkfkkbn ),
+	DMM_SSTRING( smpcd ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( nbkmkcd ),
+	DMM_SSTRING( zrcd ),
+	DMM_SSTRING( ysnlbl ),
+	DMM_SSTRING( kjno ),
+	DMM_SCHAR( fkhkknohjkbn ),
+	DMM_SSTRING( tbkjno ),
+	DMM_SCHAR( tbkjflg ),
+	DMM_SSTRING( htkfkhms ),
+	DMM_SCHAR( skflg ),
+	DMM_SSTRING( tskflg ),
+	DMM_SSTRING( tktflg ),
+	DMM_SSTRING( ytiksbr ),
+	DMM_SCHAR( kkflg ),
+	DMM_SCHAR( kkiriflg ),
+	DMM_SSHORT( kkirilotno ),
+	DMM_SSTRING( sc ),
+	DMM_SSTRING( tj ),
+	DMM_SCHAR( tjtni ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( birthday ),
+	DMM_SCHAR( birthdaykbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_STIME( sstme ),
+	DMM_SDATE( ssymd ),
+	DMM_SSTRING( tntme ),
+	DMM_SCHAR( tntni ),
+	DMM_SSTRING( tnryo ),
+	DMM_SCHAR( tnryotni ),
+	DMM_SLONG( knsseq ),
+	DMM_SSHORT( bthno ),
+	DMM_SCHAR( knsjkflg ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKenorderSelectKeyCount()
+ *    KENORDER レコードKey条件取得
+ * ■引数
+ *    [I]  Kenorder* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long)   レコード数
+ ******************************************************************************/
+long ZdbKenorderSelectKeyCount( Kenorder* pKey )
+{
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KenorderArrayCount ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		Count(*)
+    FROM
+        KENORDER
+    WHERE
+		KNTNO = :kntno AND
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		KNSSU = :knssu AND
+		KNSSUEDA = :knssueda AND
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    EXEC SQL FETCH c2 INTO	:Cnt;
+
+    EXEC SQL CLOSE c2;
+
+    return Cnt;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

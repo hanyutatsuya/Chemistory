@@ -1,0 +1,239 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名：GD105Kkaconvmst.sqc
+ *     機能概要  ：結果変換マスタアクセス関数(報告処理)
+ *
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2009-05-11                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+#include "GD105Kkaconvmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+#include "bmllog.h"
+
+#define	RETRY			3		// リトライ回数
+#define	ERR_LOCK		-911	// デッドロック時エラーコード
+#define	LOCK_WAIT_SEC	5		// スリープ単位：秒
+
+#define	ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char		knsgrp[16+1];
+	char		kmkcd[7+1];
+	char		sstcd[7+1];
+	sqlint32	no;
+	char		sbtkbn;
+	char		age[32+1];
+	char		agekbn;
+	char		sc[32+1];
+	char		tj[32+1];
+	char		tjtni;
+	char		tntme[32+1];
+	char		tntni;
+	char		tnryo[32+1];
+	char		tnryotni;
+	char		knskka1[12+1];
+	char		knskka2[24+1];
+	char		knskka2kbn[2+1];
+	char		kkahskcd[3+1];
+	char		hjkka[24+1];
+	char		kaiymd[10+1];
+	char		haiymd[10+1];
+	char		hnktntid[8+1];
+	char		ksndh[26+1];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kkaconvmst
+
+BmlDMMInfo	KkaconvmstArray[] = {
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( sstcd ),
+	DMM_SLONG( no ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_SSTRING( sc ),
+	DMM_SSTRING( tj ),
+	DMM_SCHAR( tjtni ),
+	DMM_SSTRING( tntme ),
+	DMM_SCHAR( tntni ),
+	DMM_SSTRING( tnryo ),
+	DMM_SCHAR( tnryotni ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( hjkka ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * mGD105_KKACONVMST_SelAll()
+ *    KKACONVMST 全レコード取得
+ * ■引数
+ *    [O]    Kkaconvmst** arrayOut  取得レコード配列格納領域
+ *    [O]    int* numOut            取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL(0)      正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND(100) レコードなし
+ *           HRC_SQL_ERR(-2)        DBエラー
+ ******************************************************************************/
+long mGD105_KKACONVMST_SelAll( Kkaconvmst** arrayOut, int* numOut )
+{
+	Kkaconvmst*		array = NULL;
+	int				num = 0;
+	int				error = 0;
+
+	// リトライ用ループ設定
+	int i;
+	for (i = 0; i <= RETRY; i++) {
+		error = 0;
+
+		EXEC SQL DECLARE cur_kkaconvmst CURSOR FOR
+		SELECT
+			KNSGRP,
+			KMKCD,
+			SSTCD,
+			NO,
+			SBTKBN,
+			AGE,
+			AGEKBN,
+			SC,
+			TJ,
+			TJTNI,
+			TNTME,
+			TNTNI,
+			TNRYO,
+			TNRYOTNI,
+			KNSKKA1,
+			KNSKKA2,
+			KNSKKA2KBN,
+			KKAHSKCD,
+			HJKKA,
+			KAIYMD,
+			HAIYMD,
+			HNKTNTID,
+			KSNDH
+		FROM
+			KKACONVMST
+		ORDER BY
+			KNSGRP,
+			KMKCD,
+			SSTCD,
+			NO
+		FOR READ ONLY;
+
+	    EXEC SQL OPEN cur_kkaconvmst;
+
+		while( 1 ) {
+			Kkaconvmst* rec;
+
+			EXEC SQL FETCH cur_kkaconvmst INTO
+				:knsgrp,
+				:kmkcd,
+				:sstcd,
+				:no,
+				:sbtkbn,
+				:age,
+				:agekbn,
+				:sc,
+				:tj,
+				:tjtni,
+				:tntme,
+				:tntni,
+				:tnryo,
+				:tnryotni,
+				:knskka1,
+				:knskka2,
+				:knskka2kbn,
+				:kkahskcd,
+				:hjkka,
+				:kaiymd,
+				:haiymd,
+				:hnktntid,
+				:ksndh;
+
+			if( SQLCODE == HRC_SQL_NOT_FOUND ) {
+				break;
+			}
+
+			// ロック時のリトライ対応
+			if (sqlca.sqlcode < 0) {
+				// エラー発生時は領域解放してブレイク
+				if (array != NULL) {
+					ZbmlFree(array);
+					array = NULL;
+					num   = 0;
+				}
+				error = sqlca.sqlcode;
+				sFncPutLog ( TRCKIND_ERROR, __FILE__, "mGD105_KKACONVMST_Sel",
+							 __LINE__,
+							 EXEFLG_SEL, "020",
+							 "DBエラー発生 [sqlcode : %d]", sqlca.sqlcode ) ;
+				break;
+			}
+
+			if( num % ALLOC_UNIT == 0 ) {
+				array = (Kkaconvmst*)ZbmlRealloc( array, sizeof( Kkaconvmst ) * ( num + ALLOC_UNIT ) );
+				memset( array + num, 0, sizeof( Kkaconvmst ) * ALLOC_UNIT );
+			}
+
+			rec = array + num++;
+			ZbmlMapHostToStruct( (char*)rec, KkaconvmstArray );
+		}
+
+		EXEC SQL CLOSE cur_kkaconvmst;
+
+		// ロック時のリトライ対応
+		// ロックの場合はリトライ、ロック以外のエラーはデータ無しで終了
+		// リトライは５秒待ってから
+		if (error == ERR_LOCK) {
+			sFncPutLog( TRCKIND_ERROR, __FILE__, "mGD105_KKACONVMST_Sel", __LINE__, EXEFLG_SEL, "020",
+						"ロックによるリトライ[%d]回目", i ) ;
+			sleep(LOCK_WAIT_SEC);
+			continue;
+		}
+
+		*arrayOut = array;
+		*numOut   = num;
+
+		return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+	// リトライ用ループ終端
+	}
+
+	// リトライしてもエラーの場合、データ無しで終了
+	*arrayOut = NULL;
+	*numOut   = 0;
+	return HRC_SQL_NOT_FOUND;
+
+}
+
+/** End of File *********************************************************/

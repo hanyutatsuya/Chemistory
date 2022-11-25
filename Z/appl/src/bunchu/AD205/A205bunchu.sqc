@@ -1,0 +1,596 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： A205bunchu.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ *  2.01     2007-02-23                    Update WHEREにUTKYMD追加
+ *  2.02     2007-05-08                    Update ABunSelAllKey関数追加
+ **********************************************************************/
+#include <stdio.h>
+
+#include "A205bunchu.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    smpcd[8];
+	char    kmkcd[8];
+	short   smpcditno;
+	char    chkmj[5];
+	char    trid[11];
+	short   trpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    id2[11];
+	short   id2pos;
+	char    sbtkbn;
+	char    age[4];
+	char    agekbn;
+	char    tntme[5];
+	char    tntni;
+	char    tnryo[6];
+	char    tnryotni;
+	char    sstcd[8];
+	char    ecd[4];
+	char    bckid[4];
+	char    jtflg;
+	char    knssyr;
+	char    tknflg;
+	char    ttkkflg;
+	char    bnckka;
+	short   srtkey;
+	char    ksndh[27];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Bunchu
+
+BmlDMMInfo	BunchuArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( smpcd ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( smpcditno ),
+	DMM_SSTRING( chkmj ),
+	DMM_SSTRING( trid ),
+	DMM_SSHORT( trpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SSTRING( id2 ),
+	DMM_SSHORT( id2pos ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_SSTRING( tntme ),
+	DMM_SCHAR( tntni ),
+	DMM_SSTRING( tnryo ),
+	DMM_SCHAR( tnryotni ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( ecd ),
+	DMM_SSTRING( bckid ),
+	DMM_SCHAR( jtflg ),
+	DMM_SCHAR( knssyr ),
+	DMM_SCHAR( tknflg ),
+	DMM_SCHAR( ttkkflg ),
+	DMM_SCHAR( bnckka ),
+	DMM_SSHORT( srtkey ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbBunchuSelectKey()
+ *    BUNCHU レコードKey条件取得
+ * ■引数
+ *    [I]  Bunchu* pKey       取得するレコードのキー
+ *    [O]  Bunchu** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunSelKey( Bunchu* pKey, Bunchu** arrayOut, int* numOut )
+{
+    Bunchu*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, BunchuArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KMKCD,
+		SMPCDITNO,
+		CHKMJ,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		SSTCD,
+		ECD,
+		BCKID,
+		JTFLG,
+		KNSSYR,
+		TKNFLG,
+		TTKKFLG,
+		BNCKKA,
+		SRTKEY,
+		KSNDH,
+		TRKDH
+    FROM
+        BUNCHU
+    WHERE
+		IRINO = :irino AND
+		UTKYMD = :utkymd AND		-- 2.01 ADD
+		SMPCD = :smpcd AND
+		KMKCD = :kmkcd AND
+		BNCKKA != '1' AND
+		SRIYMD = :sriymd
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Bunchu* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:smpcd,
+			:kmkcd,
+			:smpcditno,
+			:chkmj,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:id2,
+			:id2pos,
+			:sbtkbn,
+			:age,
+			:agekbn,
+			:tntme,
+			:tntni,
+			:tnryo,
+			:tnryotni,
+			:sstcd,
+			:ecd,
+			:bckid,
+			:jtflg,
+			:knssyr,
+			:tknflg,
+			:ttkkflg,
+			:bnckka,
+			:srtkey,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Bunchu*)ZbmlRealloc( array,
+                                    sizeof( Bunchu ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Bunchu ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BunchuArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ABunBunIns()
+ *    BUNCHU レコードを挿入する
+ * ■引数
+ *    [I]  Bunchu* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunBunIns( Bunchu* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BunchuArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO BUNCHU
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KMKCD,
+		SMPCDITNO,
+		CHKMJ,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		SSTCD,
+		ECD,
+		BCKID,
+		JTFLG,
+		KNSSYR,
+		TKNFLG,
+		TTKKFLG,
+		BNCKKA,
+		SRTKEY,
+		KSNDH,
+		TRKDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:smpcd,
+		:kmkcd,
+		:smpcditno,
+		:chkmj,
+		:trid,
+		:trpos,
+		:asyrckid,
+		:asyrckpos,
+		:id2,
+		:id2pos,
+		:sbtkbn,
+		:age,
+		:agekbn,
+		:tntme,
+		:tntni,
+		:tnryo,
+		:tnryotni,
+		:sstcd,
+		:ecd,
+		:bckid,
+		:jtflg,
+		:knssyr,
+		:tknflg,
+		:ttkkflg,
+		:bnckka,
+		:srtkey,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ABunUpdate()
+ *    BUNCHU レコードを更新する
+ * ■引数
+ *    [I]  Bunchu* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunUpdate( Bunchu* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BunchuArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE BUNCHU
+    SET (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNTKETFLG,
+		SMPCDITNO,
+		CHKMJ,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		SSTCD,
+		ECD,
+		BCKID,
+		JTFLG,
+		KNSSYR,
+		TKNFLG,
+		TTKKFLG,
+		BNCKKA,
+		SRTKEY,
+		KSNDH
+    ) = (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:kntketflg,
+		:smpcditno,
+		:chkmj,
+		:trid,
+		:trpos,
+		:asyrckid,
+		:asyrckpos,
+		:id2,
+		:id2pos,
+		:sbtkbn,
+		:age,
+		:agekbn,
+		:tntme,
+		:tntni,
+		:tnryo,
+		:tnryotni,
+		:sstcd,
+		:ecd,
+		:bckid,
+		:jtflg,
+		:knssyr,
+		:tknflg,
+		:ttkkflg,
+		:bnckka,
+		:srtkey,
+		CURRENT TIMESTAMP
+    ) WHERE
+		KNTNO = :kntno AND
+		SMPCD = :smpcd AND
+		KMKCD = :kmkcd AND
+		SRIYMD = :sriymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+// add 2007.05.08 waj
+/******************************************************************************
+ * ABunSelAllKey()
+ *    BUNCHU レコードKey条件取得
+ * ■引数
+ *    [I]  Bunchu*  pKey        取得するレコードのキー
+ *    [O]  Bunchu** arrayOut    取得レコード配列格納領域
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunSelAllKey( Bunchu* pKey, Bunchu** arrayOut )
+{
+    Bunchu*     array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, BunchuArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE cBunAllKey CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		SMPCD,
+		KMKCD,
+		SMPCDITNO,
+		CHKMJ,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		ID2,
+		ID2POS,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		SSTCD,
+		ECD,
+		BCKID,
+		JTFLG,
+		KNSSYR,
+		TKNFLG,
+		TTKKFLG,
+		BNCKKA,
+		SRTKEY,
+		KSNDH,
+		TRKDH
+    FROM
+        BUNCHU
+    WHERE
+		SRIYMD = :sriymd AND
+		KNTNO  = :kntno  AND
+		KMKCD  = :kmkcd  AND
+		SMPCD  = :smpcd 
+		FOR READ ONLY;
+
+    EXEC SQL OPEN cBunAllKey;
+
+    while( 1 ) {
+        Bunchu* rec;
+
+        EXEC SQL FETCH cBunAllKey INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:smpcd,
+			:kmkcd,
+			:smpcditno,
+			:chkmj,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:id2,
+			:id2pos,
+			:sbtkbn,
+			:age,
+			:agekbn,
+			:tntme,
+			:tntni,
+			:tnryo,
+			:tnryotni,
+			:sstcd,
+			:ecd,
+			:bckid,
+			:jtflg,
+			:knssyr,
+			:tknflg,
+			:ttkkflg,
+			:bnckka,
+			:srtkey,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Bunchu*)ZbmlRealloc( array,
+                                    sizeof( Bunchu ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Bunchu ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BunchuArray );
+    }
+
+    EXEC SQL CLOSE cBunAllKey;
+
+    *arrayOut = array;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

@@ -1,0 +1,1000 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： A205irai.sqc
+ *     機能概要  ：依頼情報テーブルアクセス(分注展開用)
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-13                    Create
+ *  2.00     2009-01-07     Merits K.Ameno 施設コード増桁 通信仕様変更対応
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+
+#include "A205irai.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+// add 20070521 waj ロック対応
+#include "bmllog.h"
+#define RETRY           3
+#define ERR_LOCK        -911
+#define LOCK_WAIT_SEC   5	// 単位：秒
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    irihsmkbn;
+	char    irikbn;
+	char    ksktkbn;
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    chkmj[5];
+	char    stsrcd[5];
+	char    kmkrs[17];
+	char    oyakmkcd[8];
+	char    smpcd[8];
+	char    setkmkcd[8];
+	char    srinycd;
+	char    seccd[3];
+	char    skchkflg;
+	char    bkfkkbn;
+	char    ysnlbl[3];
+	char    skflg;
+	char    tkflg;
+	char    sjflg;
+	char    jktkflg;
+	char    kjno[4];
+	char    fkhkknohjkbn;
+	char    tbkjno[4];
+	char    tbkjflg;
+	char    htkfkhms[25];
+	char    tskflg[3];
+	char    tktflg[3];
+	char    bnckbn;
+	char    nbnckbn;
+	char    knskisyymd[11];
+	char    knskryymd[11];
+	char    knskrytme[9];
+	char    kkhkkflg;
+	char    kkiriflg;
+	short   kkirilotno;
+	char    kktoutkid[5];
+	short   knssu;
+	char    odrssflg;
+	char    ytiksbr[16];
+	char    hhkjkflg;
+	char    ksndh[27];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Irai
+
+BmlDMMInfo	IraiArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SCHAR( irihsmkbn ),
+	DMM_SCHAR( irikbn ),
+	DMM_SCHAR( ksktkbn ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( chkmj ),
+	DMM_SSTRING( stsrcd ),
+	DMM_SSTRING( kmkrs ),
+	DMM_SSTRING( oyakmkcd ),
+	DMM_SSTRING( smpcd ),
+	DMM_SSTRING( setkmkcd ),
+	DMM_SCHAR( srinycd ),
+	DMM_SSTRING( seccd ),
+	DMM_SCHAR( skchkflg ),
+	DMM_SCHAR( bkfkkbn ),
+	DMM_SSTRING( ysnlbl ),
+	DMM_SCHAR( skflg ),
+	DMM_SCHAR( tkflg ),
+	DMM_SCHAR( sjflg ),
+	DMM_SCHAR( jktkflg ),
+	DMM_SSTRING( kjno ),
+	DMM_SCHAR( fkhkknohjkbn ),
+	DMM_SSTRING( tbkjno ),
+	DMM_SCHAR( tbkjflg ),
+	DMM_SSTRING( htkfkhms ),
+	DMM_SSTRING( tskflg ),
+	DMM_SSTRING( tktflg ),
+	DMM_SCHAR( bnckbn ),
+	DMM_SCHAR( nbnckbn ),
+	DMM_SDATE( knskisyymd ),
+	DMM_SDATE( knskryymd ),
+	DMM_STIME( knskrytme ),
+	DMM_SCHAR( kkhkkflg ),
+	DMM_SCHAR( kkiriflg ),
+	DMM_SSHORT( kkirilotno ),
+	DMM_SSTRING( kktoutkid ),
+	DMM_SSHORT( knssu ),
+	DMM_SCHAR( odrssflg ),
+	DMM_SSTRING( ytiksbr ),
+	DMM_SCHAR( hhkjkflg ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ABunIriSel()
+ *    IRAI レコードKey条件取得
+ * ■引数
+ *    [I]  Irai* pKey       取得するレコードのキー
+ *    [O]  Irai** arrayOut      取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunIriSel( Irai* pKey, Irai** arrayOut, int* numOut )
+{
+    Irai*       array = NULL;
+    int         num = 0;
+	// add 20070521 waj ロック対応
+	int         error = 0;
+
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+/*** ameno ***/
+	sFncPutLog ( TRCKIND_WARNING, __FILE__, "ABunIriSel", __LINE__,
+		EXEFLG_NON, "00000000",
+		"依頼SELECT 受付日(%s) 依頼書No(%s) 属性世代No(%d)", utkymd, irino, zssdino );
+/*** ameno ***/
+
+	// del 20070521 waj リトライを行うため割込みを禁止する
+	//                  FETCHでエラーが発生するとCLOSEが実行されない
+    // EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	// add 20070521 waj リトライ用ループ設定
+	int i;
+	for (i = 0; i <= RETRY; i++) {
+		error = 0;
+
+	    EXEC SQL DECLARE c2 CURSOR FOR
+		SELECT
+			UTKYMD,
+			IRINO,
+			IRIKETFLG,
+			ZSSDINO,
+			KNSGRP,
+			KMKCD,
+			IRIHSMKBN,
+			IRIKBN,
+			KSKTKBN,
+			SRIYMD,
+			KNTNO,
+			KNTKETFLG,
+			CHKMJ,
+			STSRCD,
+			KMKRS,
+			OYAKMKCD,
+			SMPCD,
+			SETKMKCD,
+			SRINYCD,
+			SECCD,
+			SKCHKFLG,
+			BKFKKBN,
+			YSNLBL,
+			SKFLG,
+			TKFLG,
+			SJFLG,
+			JKTKFLG,
+			KJNO,
+			FKHKKNOHJKBN,
+			TBKJNO,
+			TBKJFLG,
+			HTKFKHMS,
+			TSKFLG,
+			TKTFLG,
+			BNCKBN,
+			NBNCKBN,
+			KNSKISYYMD,
+			KNSKRYYMD,
+			KNSKRYTME,
+			KKHKKFLG,
+			KKIRIFLG,
+			KKIRILOTNO,
+			KKTOUTKID,
+			KNSSU,
+			ODRSSFLG,
+			YTIKSBR,
+			HHKJKFLG,
+			KSNDH,
+			TRKDH
+   		FROM
+   		    IRAI
+	    WHERE
+			IRINO = :irino AND
+			ZSSDINO = :zssdino AND
+			UTKYMD = :utkymd
+			FOR READ ONLY;
+
+	    EXEC SQL OPEN c2;
+
+	    while( 1 ) {
+	        Irai* rec;
+	
+	        EXEC SQL FETCH c2 INTO
+				:utkymd,
+				:irino,
+				:iriketflg,
+				:zssdino,
+				:knsgrp,
+				:kmkcd,
+				:irihsmkbn,
+				:irikbn,
+				:ksktkbn,
+				:sriymd,
+				:kntno,
+				:kntketflg,
+				:chkmj,
+				:stsrcd,
+				:kmkrs,
+				:oyakmkcd,
+				:smpcd,
+				:setkmkcd,
+				:srinycd,
+				:seccd,
+				:skchkflg,
+				:bkfkkbn,
+				:ysnlbl,
+				:skflg,
+				:tkflg,
+				:sjflg,
+				:jktkflg,
+				:kjno,
+				:fkhkknohjkbn,
+				:tbkjno,
+				:tbkjflg,
+				:htkfkhms,
+				:tskflg,
+				:tktflg,
+				:bnckbn,
+				:nbnckbn,
+				:knskisyymd,
+				:knskryymd,
+				:knskrytme,
+				:kkhkkflg,
+				:kkiriflg,
+				:kkirilotno,
+				:kktoutkid,
+				:knssu,
+				:odrssflg,
+				:ytiksbr,
+				:hhkjkflg,
+				:ksndh,
+				:trkdh;
+	
+	        if( SQLCODE == 100 )
+	            break;
+	
+			// add 20070521 waj ロック時のリトライ対応
+			if (sqlca.sqlcode < 0) {
+				// エラー発生時は領域解放してブレイク
+				if (array != NULL) {
+					ZbmlFree(array);
+					array = NULL;
+					num   = 0;
+				}
+				error = sqlca.sqlcode;
+                sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunIriSel", __LINE__,
+                             EXEFLG_NON, "020", "DBエラー発生 [sqlcode : %d]", sqlca.sqlcode ) ;
+				break;
+			}
+
+	        if( num % ALLOC_UNIT == 0 ) {
+	            array = (Irai*)ZbmlRealloc( array,
+	                                    sizeof( Irai ) * ( num + ALLOC_UNIT ) );
+	            memset( array + num, 0, sizeof( Irai ) * ALLOC_UNIT );
+	        }
+	
+	        rec = array + num++;
+	        ZbmlMapHostToStruct( (char*)rec, IraiArray );
+	    }
+	
+	    EXEC SQL CLOSE c2;
+	
+		// add 20070521 waj ロック時のリトライ対応
+		//                  ロックの場合はリトライ、ロック以外のエラーはデータ無しで終了
+		//                  リトライは５秒待ってから
+		if (error == ERR_LOCK) {
+            sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunIriSel", __LINE__,
+                         EXEFLG_NON, "020", "ロックによるリトライ[%d]回目", i ) ;
+			sleep(LOCK_WAIT_SEC);
+			continue;
+		}
+
+	    *arrayOut = array;
+	    *numOut   = num;
+	
+	    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+	
+	// add 20070521 waj リトライ用ループ終端
+	}
+
+    // add 20070521 waj リトライしてもエラーの場合、データ無しで終了
+	*arrayOut = NULL;
+	*numOut   = 0;
+    return HRC_SQL_NOT_FOUND;
+
+// del 20070521 waj リトライを行うため割込みを禁止する
+// error:
+//     EXEC SQL WHENEVER SQLERROR CONTINUE;
+//     return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ABunKnsgrpUpdate()
+ *    IRAIの検査グループを更新する
+ * ■引数
+ *    [I]  Irai* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunKnsgrpUpdate( Irai* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE IRAI
+    SET (
+		KNSGRP,
+		ODRSSFLG,
+		SRINYCD,
+		KNSKISYYMD,
+		KJNO,
+		KSNDH
+    ) = (
+		:knsgrp,
+		:odrssflg,
+		:srinycd,
+		:knskisyymd,
+		:kjno,
+		CURRENT TIMESTAMP
+    ) WHERE
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KMKCD = :kmkcd AND
+		UTKYMD = :utkymd;
+
+    return sqlca.sqlcode;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    return sqlca.sqlcode;
+}
+
+long A1BunKnsgrpUpdate( Irai* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE IRAI
+    SET (
+		SRIYMD,
+		KNSSU,
+		ODRSSFLG,
+		KSNDH
+    ) = (
+		:sriymd,
+		:knssu,
+		:odrssflg,
+		CURRENT TIMESTAMP
+    ) WHERE
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KNSGRP = :knsgrp		AND
+		KMKCD = :kmkcd AND
+		UTKYMD = :utkymd;
+
+    return sqlca.sqlcode;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    return sqlca.sqlcode;
+}
+long ABunIridummy( Irai** arrayOut, int* numOut )
+{
+    Irai*       array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c4 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		IRIHSMKBN,
+		IRIKBN,
+		KSKTKBN,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		STSRCD,
+		KMKRS,
+		OYAKMKCD,
+		SMPCD,
+		SETKMKCD,
+		SRINYCD,
+		SECCD,
+		SKCHKFLG,
+		BKFKKBN,
+		YSNLBL,
+		SKFLG,
+		TKFLG,
+		SJFLG,
+		JKTKFLG,
+		KJNO,
+		FKHKKNOHJKBN,
+		TBKJNO,
+		TBKJFLG,
+		HTKFKHMS,
+		TSKFLG,
+		TKTFLG,
+		BNCKBN,
+		NBNCKBN,
+		KNSKISYYMD,
+		KNSKRYYMD,
+		KNSKRYTME,
+		KKHKKFLG,
+		KKIRIFLG,
+		KKIRILOTNO,
+		KKTOUTKID,
+		KNSSU,
+		ODRSSFLG,
+		YTIKSBR,
+		HHKJKFLG,
+		KSNDH
+    FROM
+        IRAI
+    WHERE
+		ODRSSFLG = 'A' AND
+		KSKTKBN IN ('K','T')
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c4;
+
+    while( 1 ) {
+        Irai* rec;
+
+        EXEC SQL FETCH c4 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:irihsmkbn,
+			:irikbn,
+			:ksktkbn,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:chkmj,
+			:stsrcd,
+			:kmkrs,
+			:oyakmkcd,
+			:smpcd,
+			:setkmkcd,
+			:srinycd,
+			:seccd,
+			:skchkflg,
+			:bkfkkbn,
+			:ysnlbl,
+			:skflg,
+			:tkflg,
+			:sjflg,
+			:jktkflg,
+			:kjno,
+			:fkhkknohjkbn,
+			:tbkjno,
+			:tbkjflg,
+			:htkfkhms,
+			:tskflg,
+			:tktflg,
+			:bnckbn,
+			:nbnckbn,
+			:knskisyymd,
+			:knskryymd,
+			:knskrytme,
+			:kkhkkflg,
+			:kkiriflg,
+			:kkirilotno,
+			:kktoutkid,
+			:knssu,
+			:odrssflg,
+			:ytiksbr,
+			:hhkjkflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Irai*)ZbmlRealloc( array,
+                                    sizeof( Irai ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Irai ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, IraiArray );
+    }
+
+    EXEC SQL CLOSE c4;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+long A205insIrai( Irai* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO IRAI
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		IRIHSMKBN,
+		IRIKBN,
+		KSKTKBN,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		STSRCD,
+		KMKRS,
+		OYAKMKCD,
+		SMPCD,
+		SETKMKCD,
+		SRINYCD,
+		SECCD,
+		SKCHKFLG,
+		BKFKKBN,
+		YSNLBL,
+		SKFLG,
+		TKFLG,
+		SJFLG,
+		JKTKFLG,
+		KJNO,
+		FKHKKNOHJKBN,
+		TBKJNO,
+		TBKJFLG,
+		HTKFKHMS,
+		TSKFLG,
+		TKTFLG,
+		BNCKBN,
+		NBNCKBN,
+		KNSKISYYMD,
+		KNSKRYYMD,
+		KNSKRYTME,
+		KKHKKFLG,
+		KKIRIFLG,
+		KKIRILOTNO,
+		KKTOUTKID,
+		KNSSU,
+		ODRSSFLG,
+		YTIKSBR,
+		HHKJKFLG,
+		KSNDH,
+		TRKDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:knsgrp,
+		:kmkcd,
+		:irihsmkbn,
+		:irikbn,
+		:ksktkbn,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:chkmj,
+		:stsrcd,
+		:kmkrs,
+		:oyakmkcd,
+		:smpcd,
+		:setkmkcd,
+		:srinycd,
+		:seccd,
+		:skchkflg,
+		:bkfkkbn,
+		:ysnlbl,
+		:skflg,
+		:tkflg,
+		:sjflg,
+		:jktkflg,
+		:kjno,
+		:fkhkknohjkbn,
+		:tbkjno,
+		:tbkjflg,
+		:htkfkhms,
+		:tskflg,
+		:tktflg,
+		:bnckbn,
+		:nbnckbn,
+		:knskisyymd,
+		:knskryymd,
+		:knskrytme,
+		:kkhkkflg,
+		:kkiriflg,
+		:kkirilotno,
+		:kktoutkid,
+		:knssu,
+		:odrssflg,
+		:ytiksbr,
+		:hhkjkflg,
+		CURRENT TIMESTAMP,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ABunIriKmkSel()
+ *    IRAI レコードKey条件取得
+ * ■引数
+ *    [I]  Irai* pKey       取得するレコードのキー
+ *    [O]  Irai** arrayOut      取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunIriKmkSel( Irai* pKey, Irai** arrayOut, int* numOut )
+{
+    Irai*       array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c5 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KNSGRP,
+		KMKCD,
+		IRIHSMKBN,
+		IRIKBN,
+		KSKTKBN,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		CHKMJ,
+		STSRCD,
+		KMKRS,
+		OYAKMKCD,
+		SMPCD,
+		SETKMKCD,
+		SRINYCD,
+		SECCD,
+		SKCHKFLG,
+		BKFKKBN,
+		YSNLBL,
+		SKFLG,
+		TKFLG,
+		SJFLG,
+		JKTKFLG,
+		KJNO,
+		FKHKKNOHJKBN,
+		TBKJNO,
+		TBKJFLG,
+		HTKFKHMS,
+		TSKFLG,
+		TKTFLG,
+		BNCKBN,
+		NBNCKBN,
+		KNSKISYYMD,
+		KNSKRYYMD,
+		KNSKRYTME,
+		KKHKKFLG,
+		KKIRIFLG,
+		KKIRILOTNO,
+		KKTOUTKID,
+		KNSSU,
+		ODRSSFLG,
+		YTIKSBR,
+		HHKJKFLG,
+		KSNDH,
+		TRKDH
+    FROM
+        IRAI
+    WHERE
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		UTKYMD = :utkymd AND
+		KMKCD = :kmkcd
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c5;
+
+    while( 1 ) {
+        Irai* rec;
+
+        EXEC SQL FETCH c5 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:knsgrp,
+			:kmkcd,
+			:irihsmkbn,
+			:irikbn,
+			:ksktkbn,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:chkmj,
+			:stsrcd,
+			:kmkrs,
+			:oyakmkcd,
+			:smpcd,
+			:setkmkcd,
+			:srinycd,
+			:seccd,
+			:skchkflg,
+			:bkfkkbn,
+			:ysnlbl,
+			:skflg,
+			:tkflg,
+			:sjflg,
+			:jktkflg,
+			:kjno,
+			:fkhkknohjkbn,
+			:tbkjno,
+			:tbkjflg,
+			:htkfkhms,
+			:tskflg,
+			:tktflg,
+			:bnckbn,
+			:nbnckbn,
+			:knskisyymd,
+			:knskryymd,
+			:knskrytme,
+			:kkhkkflg,
+			:kkiriflg,
+			:kkirilotno,
+			:kktoutkid,
+			:knssu,
+			:odrssflg,
+			:ytiksbr,
+			:hhkjkflg,
+			:ksndh,
+			:trkdh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Irai*)ZbmlRealloc( array,
+                                    sizeof( Irai ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Irai ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, IraiArray );
+    }
+
+    EXEC SQL CLOSE c5;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/*  2.00     2009-01-07     Merits K.Ameno 施設コード増桁 通信仕様変更対応 追加 */
+/******************************************************************************
+ * ABunIriKmkCdSel()
+ *    IRAI レコードKey条件取得
+ * ■引数
+ *    [I]  Irai* pKey       取得するレコードのキー
+ *    [O]  char** arrayOut      取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunIriKmkCdSel( Irai* pKey, Irai** arrayOut, int* numOut )
+{
+    Irai*       array = NULL;
+    int         num = 0;
+	int         error = 0;
+
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, IraiArray ) )
+        return HRC_INVALID_VALUE;
+
+/*** ameno ***/
+	sFncPutLog ( TRCKIND_WARNING, __FILE__, "ABunIriKmkCdSel", __LINE__,
+		EXEFLG_NON, "00000000",
+		"依頼から項目コードSELECT 受付日(%s) 依頼書No(%s) サンプリングコード(%s)", utkymd, irino, smpcd );
+/*** ameno ***/
+
+	int i;
+	for (i = 0; i <= RETRY; i++) {
+		error = 0;
+
+	    EXEC SQL DECLARE c6 CURSOR FOR
+		SELECT DISTINCT
+			KMKCD
+		FROM
+			IRAI
+		WHERE
+			IRINO = :irino AND
+			UTKYMD = :utkymd AND
+			SMPCD = :smpcd
+		ORDER BY
+			KMKCD
+		FOR READ ONLY;
+
+	    EXEC SQL OPEN c6;
+
+	    while( 1 ) {
+	        Irai* rec;
+
+			EXEC SQL FETCH c6 INTO
+				:kmkcd;
+
+			if( SQLCODE == 100 )
+				break;
+			
+			if (sqlca.sqlcode < 0) {
+				// エラー発生時は領域解放してブレイク
+				if (array != NULL) {
+					ZbmlFree(array);
+					array = NULL;
+					num   = 0;
+				}
+				error = sqlca.sqlcode;
+                sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunIriKmkCdSel", __LINE__,
+                             EXEFLG_NON, "020", "DBエラー発生 [sqlcode : %d]", sqlca.sqlcode ) ;
+				break;
+			}
+
+	        if( num % ALLOC_UNIT == 0 ) {
+	            array = (Irai*)ZbmlRealloc( array,
+	                                    sizeof( Irai ) * ( num + ALLOC_UNIT ) );
+	            memset( array + num, 0, sizeof( Irai ) * ALLOC_UNIT );
+	        }
+	
+	
+	        rec = array + num++;
+	        ZbmlMapHostToStruct( (char*)rec, IraiArray );
+	    }
+	
+	    EXEC SQL CLOSE c6;
+
+		// ロックの場合はリトライ、ロック以外のエラーはデータ無しで終了
+		// リトライは５秒待ってから
+		if (error == ERR_LOCK) {
+            sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunIriKmkCdSel", __LINE__,
+                         EXEFLG_NON, "020", "ロックによるリトライ[%d]回目", i ) ;
+			sleep(LOCK_WAIT_SEC);
+			continue;
+		}
+
+	    *arrayOut = array;
+	    *numOut   = num;
+	
+	    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+	
+	// リトライ用ループ終端
+	}
+
+    // リトライしてもエラーの場合、データ無しで終了
+	*arrayOut = NULL;
+	*numOut   = 0;
+    return HRC_SQL_NOT_FOUND;
+
+}
+/** End of File *********************************************************/

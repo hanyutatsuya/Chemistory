@@ -1,0 +1,344 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Chksbtmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Chksbtmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    chksbt[3];
+	char    chkkmmn[21];
+	short   chktmg;
+	short   chkkbn;
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Chksbtmst
+
+BmlDMMInfo	ChksbtmstArray[] = {
+	DMM_SSTRING( chksbt ),
+	DMM_SSTRING( chkkmmn ),
+	DMM_SSHORT( chktmg ),
+	DMM_SSHORT( chkkbn ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbChksbtmstSelectAll()
+ *    CHKSBTMST レコード全件取得
+ * ■引数
+ *    [O]  Chksbtmst** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChksbtmstSelectAll( Chksbtmst** arrayOut, int* numOut )
+{
+    Chksbtmst*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		CHKSBT,
+		CHKKMMN,
+		CHKTMG,
+		CHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        CHKSBTMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Chksbtmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:chksbt,
+			:chkkmmn,
+			:chktmg,
+			:chkkbn,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Chksbtmst*)ZbmlRealloc( array,
+                                    sizeof( Chksbtmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Chksbtmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ChksbtmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbChksbtmstSelectKey()
+ *    CHKSBTMST レコードKey条件取得
+ * ■引数
+ *    [I]  Chksbtmst* pKey      取得するレコードのキー
+ *    [O]  Chksbtmst** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChksbtmstSelectKey( Chksbtmst* pKey, Chksbtmst** arrayOut, int* numOut )
+{
+    Chksbtmst*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, ChksbtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		CHKSBT,
+		CHKKMMN,
+		CHKTMG,
+		CHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        CHKSBTMST
+    WHERE
+		CHKSBT = :chksbt AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Chksbtmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:chksbt,
+			:chkkmmn,
+			:chktmg,
+			:chkkbn,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Chksbtmst*)ZbmlRealloc( array,
+                                    sizeof( Chksbtmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Chksbtmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, ChksbtmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChksbtmstInsert()
+ *    CHKSBTMST レコードを挿入する
+ * ■引数
+ *    [I]  Chksbtmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChksbtmstInsert( Chksbtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChksbtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO CHKSBTMST
+    (
+		CHKSBT,
+		CHKKMMN,
+		CHKTMG,
+		CHKKBN,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:chksbt,
+		:chkkmmn,
+		:chktmg,
+		:chkkbn,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChksbtmstUpdate()
+ *    CHKSBTMST レコードを更新する
+ * ■引数
+ *    [I]  Chksbtmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChksbtmstUpdate( Chksbtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChksbtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE CHKSBTMST
+    SET (
+		CHKKMMN,
+		CHKTMG,
+		CHKKBN,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:chkkmmn,
+		:chktmg,
+		:chkkbn,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		CHKSBT = :chksbt AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbChksbtmstDelete()
+ *    CHKSBTMST レコードを削除する
+ * ■引数
+ *    [I]  Chksbtmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbChksbtmstDelete( Chksbtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, ChksbtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM CHKSBTMST
+    WHERE
+		CHKSBT = :chksbt AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

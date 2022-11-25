@@ -1,0 +1,356 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Ctrlijhtmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Ctrlijhtmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    bskkbn[5];
+	char    nbkmkcd[8];
+	short   ctrlhnsu;
+	char    kyuhniflg;
+	short   sjhnsu;
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Ctrlijhtmst
+
+BmlDMMInfo	CtrlijhtmstArray[] = {
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( nbkmkcd ),
+	DMM_SSHORT( ctrlhnsu ),
+	DMM_SCHAR( kyuhniflg ),
+	DMM_SSHORT( sjhnsu ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbCtrlijhtmstSelectAll()
+ *    CTRLIJHTMST レコード全件取得
+ * ■引数
+ *    [O]  Ctrlijhtmst** arrayO 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbCtrlijhtmstSelectAll( Ctrlijhtmst** arrayOut, int* numOut )
+{
+    Ctrlijhtmst* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		BSKKBN,
+		NBKMKCD,
+		CTRLHNSU,
+		KYUHNIFLG,
+		SJHNSU,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        CTRLIJHTMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Ctrlijhtmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:bskkbn,
+			:nbkmkcd,
+			:ctrlhnsu,
+			:kyuhniflg,
+			:sjhnsu,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ctrlijhtmst*)ZbmlRealloc( array,
+                                    sizeof( Ctrlijhtmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ctrlijhtmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, CtrlijhtmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbCtrlijhtmstSelectKey()
+ *    CTRLIJHTMST レコードKey条件取得
+ * ■引数
+ *    [I]  Ctrlijhtmst* pKey    取得するレコードのキー
+ *    [O]  Ctrlijhtmst** arrayO 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbCtrlijhtmstSelectKey( Ctrlijhtmst* pKey, Ctrlijhtmst** arrayOut, int* numOut )
+{
+    Ctrlijhtmst* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, CtrlijhtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		BSKKBN,
+		NBKMKCD,
+		CTRLHNSU,
+		KYUHNIFLG,
+		SJHNSU,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        CTRLIJHTMST
+    WHERE
+		BSKKBN = :bskkbn AND
+		NBKMKCD = :nbkmkcd AND
+		CTRLHNSU = :ctrlhnsu AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Ctrlijhtmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:bskkbn,
+			:nbkmkcd,
+			:ctrlhnsu,
+			:kyuhniflg,
+			:sjhnsu,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ctrlijhtmst*)ZbmlRealloc( array,
+                                    sizeof( Ctrlijhtmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ctrlijhtmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, CtrlijhtmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbCtrlijhtmstInsert()
+ *    CTRLIJHTMST レコードを挿入する
+ * ■引数
+ *    [I]  Ctrlijhtmst* rec     挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbCtrlijhtmstInsert( Ctrlijhtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, CtrlijhtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO CTRLIJHTMST
+    (
+		BSKKBN,
+		NBKMKCD,
+		CTRLHNSU,
+		KYUHNIFLG,
+		SJHNSU,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:bskkbn,
+		:nbkmkcd,
+		:ctrlhnsu,
+		:kyuhniflg,
+		:sjhnsu,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbCtrlijhtmstUpdate()
+ *    CTRLIJHTMST レコードを更新する
+ * ■引数
+ *    [I]  Ctrlijhtmst* rec     更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbCtrlijhtmstUpdate( Ctrlijhtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, CtrlijhtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE CTRLIJHTMST
+    SET (
+		KYUHNIFLG,
+		SJHNSU,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:kyuhniflg,
+		:sjhnsu,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		BSKKBN = :bskkbn AND
+		NBKMKCD = :nbkmkcd AND
+		CTRLHNSU = :ctrlhnsu AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbCtrlijhtmstDelete()
+ *    CTRLIJHTMST レコードを削除する
+ * ■引数
+ *    [I]  Ctrlijhtmst* rec     削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbCtrlijhtmstDelete( Ctrlijhtmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, CtrlijhtmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM CTRLIJHTMST
+    WHERE
+		BSKKBN = :bskkbn AND
+		NBKMKCD = :nbkmkcd AND
+		CTRLHNSU = :ctrlhnsu AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

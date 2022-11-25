@@ -1,0 +1,534 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Hkkknri.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Hkkknri.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    hkksjymd[11];
+	sqlint32  hkksjno;
+	char    hkkkbn;
+	char    hkkjkn;
+	char    utkymd[11];
+	char    sriymd[11];
+	char    knsgrp[17];
+	char    kmkcd[8];
+	char    bskkbn[5];
+	char    bskgok[7];
+	char    hkkjknst[21];
+	char    hkkjkned[21];
+	char    seccd[3];
+	char    hkkflnm[51];
+	char    hkksjtts[9];
+	char    hkkdh[27];
+	char    hkkstdh[27];
+	char    hkkeddh[27];
+	char    tnsstdh[27];
+	char    tnseddh[27];
+	sqlint32  hkkssknsu;
+	sqlint32  hkkhrysu;
+	char    ssnmtfilid[13];
+	char    hkkjkflg[3];
+	char    hkkerrcode[9];
+	short   kkirilotno;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Hkkknri
+
+BmlDMMInfo	HkkknriArray[] = {
+	DMM_SDATE( hkksjymd ),
+	DMM_SLONG( hkksjno ),
+	DMM_SCHAR( hkkkbn ),
+	DMM_SCHAR( hkkjkn ),
+	DMM_SDATE( utkymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bskgok ),
+	DMM_SSTRING( hkkjknst ),
+	DMM_SSTRING( hkkjkned ),
+	DMM_SSTRING( seccd ),
+	DMM_SSTRING( hkkflnm ),
+	DMM_SSTRING( hkksjtts ),
+	DMM_STIMESTAMP( hkkdh ),
+	DMM_STIMESTAMP( hkkstdh ),
+	DMM_STIMESTAMP( hkkeddh ),
+	DMM_STIMESTAMP( tnsstdh ),
+	DMM_STIMESTAMP( tnseddh ),
+	DMM_SLONG( hkkssknsu ),
+	DMM_SLONG( hkkhrysu ),
+	DMM_SSTRING( ssnmtfilid ),
+	DMM_SSTRING( hkkjkflg ),
+	DMM_SSTRING( hkkerrcode ),
+	DMM_SSHORT( kkirilotno ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbHkkknriSelectAll()
+ *    HKKKNRI レコード全件取得
+ * ■引数
+ *    [O]  Hkkknri** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHkkknriSelectAll( Hkkknri** arrayOut, int* numOut )
+{
+    Hkkknri*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		HKKSJYMD,
+		HKKSJNO,
+		HKKKBN,
+		HKKJKN,
+		UTKYMD,
+		SRIYMD,
+		KNSGRP,
+		KMKCD,
+		BSKKBN,
+		BSKGOK,
+		HKKJKNST,
+		HKKJKNED,
+		SECCD,
+		HKKFLNM,
+		HKKSJTTS,
+		HKKDH,
+		HKKSTDH,
+		HKKEDDH,
+		TNSSTDH,
+		TNSEDDH,
+		HKKSSKNSU,
+		HKKHRYSU,
+		SSNMTFILID,
+		HKKJKFLG,
+		HKKERRCODE,
+		KKIRILOTNO,
+		KSNDH
+    FROM
+        HKKKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Hkkknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:hkksjymd,
+			:hkksjno,
+			:hkkkbn,
+			:hkkjkn,
+			:utkymd,
+			:sriymd,
+			:knsgrp,
+			:kmkcd,
+			:bskkbn,
+			:bskgok,
+			:hkkjknst,
+			:hkkjkned,
+			:seccd,
+			:hkkflnm,
+			:hkksjtts,
+			:hkkdh,
+			:hkkstdh,
+			:hkkeddh,
+			:tnsstdh,
+			:tnseddh,
+			:hkkssknsu,
+			:hkkhrysu,
+			:ssnmtfilid,
+			:hkkjkflg,
+			:hkkerrcode,
+			:kkirilotno,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Hkkknri*)ZbmlRealloc( array,
+                                    sizeof( Hkkknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Hkkknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, HkkknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbHkkknriSelectKey()
+ *    HKKKNRI レコードKey条件取得
+ * ■引数
+ *    [I]  Hkkknri* pKey       取得するレコードのキー
+ *    [O]  Hkkknri** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHkkknriSelectKey( Hkkknri* pKey, Hkkknri** arrayOut, int* numOut )
+{
+    Hkkknri*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, HkkknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		HKKSJYMD,
+		HKKSJNO,
+		HKKKBN,
+		HKKJKN,
+		UTKYMD,
+		SRIYMD,
+		KNSGRP,
+		KMKCD,
+		BSKKBN,
+		BSKGOK,
+		HKKJKNST,
+		HKKJKNED,
+		SECCD,
+		HKKFLNM,
+		HKKSJTTS,
+		HKKDH,
+		HKKSTDH,
+		HKKEDDH,
+		TNSSTDH,
+		TNSEDDH,
+		HKKSSKNSU,
+		HKKHRYSU,
+		SSNMTFILID,
+		HKKJKFLG,
+		HKKERRCODE,
+		KKIRILOTNO,
+		KSNDH
+    FROM
+        HKKKNRI
+    WHERE
+		HKKSJYMD = :hkksjymd AND
+		HKKSJNO = :hkksjno FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Hkkknri* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:hkksjymd,
+			:hkksjno,
+			:hkkkbn,
+			:hkkjkn,
+			:utkymd,
+			:sriymd,
+			:knsgrp,
+			:kmkcd,
+			:bskkbn,
+			:bskgok,
+			:hkkjknst,
+			:hkkjkned,
+			:seccd,
+			:hkkflnm,
+			:hkksjtts,
+			:hkkdh,
+			:hkkstdh,
+			:hkkeddh,
+			:tnsstdh,
+			:tnseddh,
+			:hkkssknsu,
+			:hkkhrysu,
+			:ssnmtfilid,
+			:hkkjkflg,
+			:hkkerrcode,
+			:kkirilotno,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Hkkknri*)ZbmlRealloc( array,
+                                    sizeof( Hkkknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Hkkknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, HkkknriArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHkkknriInsert()
+ *    HKKKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Hkkknri* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHkkknriInsert( Hkkknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HkkknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO HKKKNRI
+    (
+		HKKSJYMD,
+		HKKSJNO,
+		HKKKBN,
+		HKKJKN,
+		UTKYMD,
+		SRIYMD,
+		KNSGRP,
+		KMKCD,
+		BSKKBN,
+		BSKGOK,
+		HKKJKNST,
+		HKKJKNED,
+		SECCD,
+		HKKFLNM,
+		HKKSJTTS,
+		HKKDH,
+		HKKSTDH,
+		HKKEDDH,
+		TNSSTDH,
+		TNSEDDH,
+		HKKSSKNSU,
+		HKKHRYSU,
+		SSNMTFILID,
+		HKKJKFLG,
+		HKKERRCODE,
+		KKIRILOTNO,
+		KSNDH
+    ) VALUES (
+		:hkksjymd,
+		:hkksjno,
+		:hkkkbn,
+		:hkkjkn,
+		:utkymd,
+		:sriymd,
+		:knsgrp,
+		:kmkcd,
+		:bskkbn,
+		:bskgok,
+		:hkkjknst,
+		:hkkjkned,
+		:seccd,
+		:hkkflnm,
+		:hkksjtts,
+		:hkkdh,
+		:hkkstdh,
+		:hkkeddh,
+		:tnsstdh,
+		:tnseddh,
+		:hkkssknsu,
+		:hkkhrysu,
+		:ssnmtfilid,
+		:hkkjkflg,
+		:hkkerrcode,
+		:kkirilotno,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHkkknriUpdate()
+ *    HKKKNRI レコードを更新する
+ * ■引数
+ *    [I]  Hkkknri* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHkkknriUpdate( Hkkknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HkkknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE HKKKNRI
+    SET (
+		HKKKBN,
+		HKKJKN,
+		UTKYMD,
+		SRIYMD,
+		KNSGRP,
+		KMKCD,
+		BSKKBN,
+		BSKGOK,
+		HKKJKNST,
+		HKKJKNED,
+		SECCD,
+		HKKFLNM,
+		HKKSJTTS,
+		HKKDH,
+		HKKSTDH,
+		HKKEDDH,
+		TNSSTDH,
+		TNSEDDH,
+		HKKSSKNSU,
+		HKKHRYSU,
+		SSNMTFILID,
+		HKKJKFLG,
+		HKKERRCODE,
+		KKIRILOTNO,
+		KSNDH
+    ) = (
+		:hkkkbn,
+		:hkkjkn,
+		:utkymd,
+		:sriymd,
+		:knsgrp,
+		:kmkcd,
+		:bskkbn,
+		:bskgok,
+		:hkkjknst,
+		:hkkjkned,
+		:seccd,
+		:hkkflnm,
+		:hkksjtts,
+		:hkkdh,
+		:hkkstdh,
+		:hkkeddh,
+		:tnsstdh,
+		:tnseddh,
+		:hkkssknsu,
+		:hkkhrysu,
+		:ssnmtfilid,
+		:hkkjkflg,
+		:hkkerrcode,
+		:kkirilotno,
+		:ksndh
+    ) WHERE
+		HKKSJYMD = :hkksjymd AND
+		HKKSJNO = :hkksjno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbHkkknriDelete()
+ *    HKKKNRI レコードを削除する
+ * ■引数
+ *    [I]  Hkkknri* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbHkkknriDelete( Hkkknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, HkkknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM HKKKNRI
+    WHERE
+		HKKSJYMD = :hkksjymd AND
+		HKKSJNO = :hkksjno;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

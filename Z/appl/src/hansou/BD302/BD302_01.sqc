@@ -1,0 +1,297 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：BD302_01. sqc                                                */
+/* 　概　　　要：ストッカー【回収】                                           */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/01/15     芳賀弘幸       新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "BD302.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+
+char	sel_knskisymd[11];
+char	sel_trid[11];
+short	from;
+short	to;
+char	sel_asyrckid[11];
+short	sel_asyrckpos;
+
+char	upd_trid[11];
+char	upd_asyrckid[11];
+short	rIdx;
+char	trid[11] ;
+char	rakitjhossi[7] ;
+char	upd_instkno[11] ;
+
+
+struct
+{
+  char knskisymd[11];
+  char sriymd[11];
+  char kntno[14];
+  char kntketflg[2];
+  char knndh[27];
+  char utkymd[11];
+  char irino[12];
+  char iriketflg[2];
+  short zssdino;
+  char trid[11];
+  short trpos;
+  char asyrckid[11];
+  short asyrckpos;
+  char rakitjho[2];
+  char rakitjhossi[7];
+  char ksndh[27];
+  char trkdh[27];
+} sqlKENPOS;
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：sFncUpdKENORDER()	      									  */
+/*  機能概要　：検査オーダー情報更新						  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	アッセイラックＩＤ										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdKENORDER( pSel_knskisymd, pSel_asyrckid )
+char	*pSel_knskisymd ;
+char	*pSel_asyrckid ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	/***
+	 ***	検査オーダー情報更新
+	 ***	【次期】
+	 ***		更新項目
+	 ***			検査状況フラグ ＝ 検査完了
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			アッセイラックＩＤ
+	 ***			
+	 ***/
+     sFncPutLog ( TRCKIND_TRACE, __FILE__, "sFncUpdKENORDER",
+     	__LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+        "UPDATE [KENORDER] CLM[KNSJKFLG='2' KSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s'ASYRCKID='%s' AND TRPOS 1-5 AND KNSJKFLG = '1']"
+            , pSel_knskisymd,pSel_asyrckid);
+
+	EXEC SQL UPDATE KENORDER
+		  SET  KNSJKFLG  =  '2'
+			  ,KSNDH	 =  CURRENT_TIMESTAMP
+	  	WHERE  ASYRCKID  =  :sel_asyrckid 
+	  	  AND  ASYRCKPOS >= 1
+	  	  AND  ASYRCKPOS <= 5
+		  AND  KNSKISYMD =  :sel_knskisymd
+		  AND  KNSJKFLG  =  '1' ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdKENORDER", 
+				 __LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDER] CLM[KNSJKFLG='2' KSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( sqlca.sqlcode ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKENPOS()		 				     					  */
+/*  機能概要　：検体ポジション情報追加      				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	アッセイラックＩＤ										  */
+/*　 第３引数 ：	回収トレーＩＤ											  */
+/*　 第４引数 ：	ストッカーＮＯ											  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncInsKENPOS( pSel_knskisymd, pSel_asyrckid, pTrid, pRakitjhossi, prIdx )
+char	*pSel_knskisymd ;
+char	*pSel_asyrckid ;
+char	*pTrid ;
+char	*pRakitjhossi ;
+int		 prIdx ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	//	設定値
+	strcpy ( trid, pTrid ) ;
+	strcpy ( rakitjhossi, pRakitjhossi ) ;
+	rIdx = prIdx ;
+
+	
+	/***
+	 ***	カーソル定義
+	 ***/
+    EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT   A.KNSKISYMD
+			,A.SRIYMD
+			,A.KNTNO
+			,A.KNTKETFLG
+			,CURRENT_TIMESTAMP
+			,A.UTKYMD
+			,A.IRINO
+			,A.IRIKETFLG
+			,A.ZSSDINO
+			,:trid
+		    ,A.ASYRCKPOS + ( 5 * :rIdx )
+			,A.ASYRCKID
+			,A.ASYRCKPOS
+			,'E'
+			,:rakitjhossi
+			,CURRENT_TIMESTAMP
+			,CURRENT_TIMESTAMP
+	  FROM   (   SELECT  KNSKISYMD
+				   		,SRIYMD
+				   		,KNTNO
+				   		,KNTKETFLG
+				   		,UTKYMD
+				   		,IRINO
+				   		,IRIKETFLG
+				   		,ZSSDINO
+				   		,TRID
+				   		,TRPOS
+				   		,ASYRCKID
+				   		,ASYRCKPOS
+			  	  FROM   KENORDER
+	  	  	   	 WHERE  ASYRCKID  = :sel_asyrckid
+			       AND  KNSKISYMD = :sel_knskisymd
+	           	   AND  KNSJKFLG  = '1' 
+			 	GROUP BY  KNSKISYMD
+					  	 ,SRIYMD
+					  	 ,KNTNO
+				      	 ,KNTKETFLG
+				      	 ,UTKYMD
+				      	 ,IRINO
+				      	 ,IRIKETFLG
+				      	 ,ZSSDINO
+				      	 ,TRID
+				      	 ,TRPOS
+				      	 ,ASYRCKID
+				      	 ,ASYRCKPOS
+			 ) AS A 
+	 FOR READ ONLY ;
+
+	/***
+	 ***	検体ポジション情報追加
+	 ***/
+    EXEC SQL OPEN c1 ;
+    while( 1 ) {
+        EXEC SQL FETCH c1 INTO :sqlKENPOS ;
+        if ( SQLCODE == 100 ) {
+        	break;
+		}
+		EXEC SQL INSERT INTO KENPOS VALUES ( :sqlKENPOS ) ;
+    }
+
+    EXEC SQL CLOSE c1;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKENPOS", 
+				 __LINE__, EXEFLG_INS, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENPOS] CLM[RAKITJHOSSI=%s SELECT FROM KENORDER KNSKISYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pRakitjhossi, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( sqlca.sqlcode ) ;
+}
+/******************************************************************************/
+/*  関 数 名　：sFncUpdTRAYKNRI()		 									  */
+/*  機能概要　：トレー管理情報更新							  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	ストッカーＮＯ											  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdTRAYKNRI( pSel_knskisymd, pSel_trid, pUpd_instkno )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+char	*pUpd_instkno ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	strcpy ( upd_instkno,   pUpd_instkno ) ;
+
+	/***
+	 ***	トレー管理情報更新
+	 ***		更新項目
+	 ***			回収日時
+	 ***			回収ストッカーＮＯ（取得できないためブランク）
+	 ***			回収回数
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			トレーＩＤ
+	 ***/
+	EXEC SQL UPDATE TRAYKNRI
+		  SET  OUTSTKDH   = CURRENT_TIMESTAMP
+			  ,OUTSTKNO   = :upd_instkno
+			  ,OUTSKSU    = OUTSKSU + 1
+			  ,KSNDH	  = CURRENT_TIMESTAMP
+		WHERE  KNSKISYMD  = :sel_knskisymd
+	  	  AND  TRID       = :sel_trid ;
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdTRAYKNRI", __LINE__,
+			 	 EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[TRAYKNRI] CLM[INSTKDH=TIMESTAMP,INSTKNO='%s',INSTKSU=+1] WHERE[KNSKISYMD='%s' AND TRID='%s']", sqlca.sqlcode, sqlca.sqlstate, pUpd_instkno, pSel_knskisymd, pSel_trid ) ;
+	return ( sqlca.sqlcode ) ;
+}
+/** End of File *********************************************************/

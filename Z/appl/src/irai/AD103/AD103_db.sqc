@@ -1,0 +1,1868 @@
+/*****************************************************************************/
+/*   ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/*   システム名：次世代システム                                               */
+/*   ファイル名：AD103_db.sqc                                                 */
+/*   概      要：ＤＢアクセス                                                 */
+/*   OS        ：SUSE LINUX Enterprise Server 9 (s390x)                       */
+/*                 - Kernel 2.6.5-7.139-s390x (2).                            */
+/*   言語      ：DB2/C                                                        */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/02/08     INTEC.INC      CREATE                             */
+/*  1.01     2006/05/01     INTEC.INC      SJIS,項目追加(親施設,登録日時)対応 */
+/*  1.03     2006/06/10     INTEC.INC      患者属性修正時依頼情報世代No更新   */
+/*  1.04     2009/06/29     Merits K.Ameno 障害管理No:0904031814/0904031719対応*/
+/*                                         SelKanjya関数追加/DelKanjya関数追加*/
+/*                                         InsShusei_Kanjya関数追加           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include	<stdio.h>
+#include 	<stdlib.h>
+#include 	<string.h>
+#include	<sqlca.h>
+#include	"AD103.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+EXEC SQL INCLUDE 'tagAD103.h';
+	char		hst_ymd[11];
+	char		hst_utkymd[10+1]; 
+    char    	hst_irino[11+1];
+	sqlint32	hst_zssdino;
+	short		ind_zssdino;
+	sqlint32	hst_cnt;
+	short		ind_cnt;
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/*  関 数 名  ：SelSysknrmst                                                  */
+/*  機能概要  ：システム管理マスタ SELECT                                     */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _SYSKNRMST *knr;   : システム管理マスタ               */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		SelSysknrmst( knr )
+struct		_SYSKNRMST	*knr;
+{
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelSysknrmst" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &hsysknrmst,	'\0',	sizeof( struct _SYSKNRMST ));
+
+EXEC SQL SELECT	
+		 	kjnsriymd
+			, nxirisriymd
+			, iriendflg
+	INTO	:hsysknrmst.kjnsriymd
+			, :hsysknrmst.nxirisriymd
+			, :hsysknrmst.iriendflg
+	FROM	sysknrmst
+	;
+
+    /* not found --> SQLCODE = +100, SQLSTATE == '02000' */
+    /* many rows --> ERROR!!         SQLSTATE == '21000' */
+    /* duplicate --> SQLCODE = -803                      */
+    /* dead lock --> SQLCODE = -911, SQLERRD[2]== 2      */
+    /* time out  --> SQLCODE = -911, SQLERRD[2]== 68     */
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT kjnsriymd FROM sysknrmst" );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+		memcpy( knr, &hsysknrmst, sizeof( struct _SYSKNRMST ));
+		ret = RTN_OK;
+	} else if ( sqlca.sqlcode == 100 ){	/* NOT FOUND */
+		/* SQLCODE +100, SQLSTATE '02000' */
+		sprintf( G_msg, "システム管理マスタ(kjnsriymd)が存在しません。" );
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			
+		ret=RTN_ZERO;
+	} else {
+		if( sqlca.sqlcode == -911 ){        // LOCK
+			switch( sqlca.sqlerrd[2] ){
+			case     2 :
+				strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"DEAD LOCK が発生しました。" );
+				break;
+			case    68 :
+				strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"TIMETOUT が発生しました。" );
+				break;
+			default :
+				sprintf( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"不具合が発生しました。" );
+				break;
+			}
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+				"不具合が発生しました。" );
+		}
+		ret=RTN_DBERR;
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+EXEC SQL COMMIT;
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SelEigmst                                                     */
+/*  機能概要  ：営業所マスタ SELECT                                           */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _EIGMST    *egm;   : 営業所マスタ                     */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		SelEigmst( egm )
+struct		_EIGMST		*egm;			/* 営業所マスタ */
+{
+EXEC SQL BEGIN DECLARE SECTION;
+	char		hst_shcd[3];
+EXEC SQL END DECLARE SECTION;
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelEigmst" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &heigmst,		'\0', sizeof( struct _EIGMST ));
+	strcpy( heigmst.ecd,	egm->ecd );
+	strcpy( hst_shcd,		egm->shcdfr );
+	strcpy( hst_ymd,		egm->kaiymd );
+
+EXEC SQL SELECT	
+			  shcdfr
+			, shcdto
+			, yjhkkbn
+			, kaiymd
+			, haiymd
+	INTO	  :heigmst.shcdfr
+		  	, :heigmst.shcdto
+		  	, :heigmst.yjhkkbn
+			, :heigmst.kaiymd
+			, :heigmst.haiymd
+	FROM	eigmst
+	WHERE	ecd		=  :heigmst.ecd
+	AND		shcdfr	<= :hst_shcd
+	AND		shcdto	>= :hst_shcd
+	AND		kaiymd	<= :hst_ymd
+	AND		haiymd	>= :hst_ymd
+	;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT eigmst : ecd[%s]shcd[%s]ymd[%s]",
+		egm->ecd, egm->shcdfr, egm->kaiymd );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+		memcpy( egm, &heigmst,	sizeof( struct _EIGMST ));
+		ret = RTN_OK;
+	} else {
+		if ( sqlca.sqlcode == 100 ){	/* NOT FOUND */
+			/* SQLCODE +100, SQLSTATE '02000' */
+			sprintf( G_msg,
+				"営業所マスタが存在しません。営業所[%s]集配[%s]基準日[%s]"
+				,egm->ecd, egm->shcdfr, egm->kaiymd );
+			EditCsvMsg( G_msg );
+			LogOut( LT_WRN, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+			ret=RTN_ZERO;
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg,
+				"営業マスタ SELECT で不具合が発生しました。"
+				"営業所[%s]集配[%s]基準日[%s]"
+				,egm->ecd, egm->shcdfr, egm->kaiymd );
+			EditCsvMsg( G_msg );
+			LogOut( LT_WRN, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			 
+			ret=RTN_DBERR;
+		}
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：InsKanjya                                                     */
+/*  機能概要  ：属性属性　INSERT                                              */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA     *zok;   : 患者情報                        */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		InsKanjya( kan )
+struct		_KANJYA	*kan;			/* 属性データ */
+{
+	struct	sqlca	sqlca;
+	char	func_nm[MYAPP_LEN_FNCNM+1];		/* 関数名称	*/
+	int	ret;
+
+	/* 初期処理	*/
+	strcpy(func_nm, "InsKanjya" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのセット	*/
+	memcpy( &hkanjya, kan, sizeof( struct _KANJYA ));
+
+EXEC SQL INSERT	INTO	kanjya
+		( utkymd
+		, irino
+		, iriketflg
+		, zssdino
+		, sstcd
+		, subsstcd
+		, cdkbn1
+		, cdkbn2
+		, irimkey
+		, srkcd
+		, srknm
+		, tticd
+		, ttinm
+		, gpcd
+		, gpnm
+		, skicd
+		, skinm
+		, krtno
+		, knjid
+		, knjnmn
+		, knjnmk
+		, knjnmkey
+		, sc
+		, tj
+		, tjtni
+		, sbtkbn
+		, birthday
+		, birthdaykbn
+		, age
+		, agekbn
+		, btcd
+		, btnm
+		, utkcmtcd1
+		, utkcmtcd2
+		, utkcmtcd3
+		, utkcmtfr1
+		, utkcmtfr2
+		, utkcmtfrflg
+		, ngkbn
+		, nsssu
+		, hkncd
+		, ktshsu
+		, iniriymd
+		, zssflg
+		, kkiriflg
+		, hknskbn
+		, utkkbn
+		, nekbn
+		, inknskbn
+		, utkjkkbn
+		, krflg
+		, fdhhkkflg
+		, utkdh
+		, mutkymd
+		, mirino
+		, knsjslbcd1
+		, knsjslbcd2
+		, knsjslbcd3
+		, knsjslbcd4
+		, ymhkkflg
+		, hkkkbdh
+		, ecd
+		, shcd
+		, sstssnmj
+		, sstssnmn
+		, sstrsj
+		, sstrsn
+		, sstsbt
+		, ttsstflg
+		, rucd
+		, irikmksu
+		, bmskn
+		, irinrsbt
+		, irihsmkbn
+		, caresstflg
+		, tktyflg
+		, apkntino
+		, sdnm
+		, bko1
+		, bko2
+		, bko3
+		, zstrdh
+		, zsssdh
+		, stlzsssdh
+		, stlzsssip
+		, stlzssssyaid
+		, ksndh
+		, oyasstcd				-- 1.01 ADD
+		, trkdh					-- 1.01 ADD
+		)
+	VALUES	( :hkanjya.utkymd
+		, :hkanjya.irino
+		, :hkanjya.iriketflg
+		, :hkanjya.zssdino
+		, :hkanjya.sstcd
+		, :hkanjya.subsstcd
+		, :hkanjya.cdkbn1
+		, :hkanjya.cdkbn2
+		, :hkanjya.irimkey
+		, :hkanjya.srkcd
+		, :hkanjya.srknm
+		, :hkanjya.tticd
+		, :hkanjya.ttinm
+		, :hkanjya.gpcd
+		, :hkanjya.gpnm
+		, :hkanjya.skicd
+		, :hkanjya.skinm
+		, :hkanjya.krtno
+		, :hkanjya.knjid
+		, :hkanjya.knjnmn
+		, :hkanjya.knjnmk
+		, :hkanjya.knjnmkey
+		, :hkanjya.sc
+		, :hkanjya.tj
+		, :hkanjya.tjtni
+		, :hkanjya.sbtkbn
+		, :hkanjya.birthday
+		, :hkanjya.birthdaykbn
+		, :hkanjya.age
+		, :hkanjya.agekbn
+		, :hkanjya.btcd
+		, :hkanjya.btnm
+		, :hkanjya.utkcmtcd1
+		, :hkanjya.utkcmtcd2
+		, :hkanjya.utkcmtcd3
+		, :hkanjya.utkcmtfr1
+		, :hkanjya.utkcmtfr2
+		, :hkanjya.utkcmtfrflg
+		, :hkanjya.ngkbn
+		, :hkanjya.nsssu
+		, :hkanjya.hkncd
+		, :hkanjya.ktshsu
+		, :hkanjya.iniriymd
+		, :hkanjya.zssflg
+		, :hkanjya.kkiriflg
+		, :hkanjya.hknskbn
+		, :hkanjya.utkkbn
+		, :hkanjya.nekbn
+		, :hkanjya.inknskbn
+		, :hkanjya.utkjkkbn
+		, :hkanjya.krflg
+		, :hkanjya.fdhhkkflg
+		, :hkanjya.utkdh
+		, :hkanjya.mutkymd
+		, :hkanjya.mirino
+		, :hkanjya.knsjslbcd1
+		, :hkanjya.knsjslbcd2
+		, :hkanjya.knsjslbcd3
+		, :hkanjya.knsjslbcd4
+		, :hkanjya.ymhkkflg
+		, :hkanjya.hkkkbdh
+		, :hkanjya.ecd
+		, :hkanjya.shcd
+		, :hkanjya.sstssnmj
+		, :hkanjya.sstssnmn
+		, :hkanjya.sstrsj
+		, :hkanjya.sstrsn
+		, :hkanjya.sstsbt
+		, :hkanjya.ttsstflg
+		, :hkanjya.rucd
+		, :hkanjya.irikmksu
+		, :hkanjya.bmskn
+		, :hkanjya.irinrsbt
+		, :hkanjya.irihsmkbn
+		, :hkanjya.caresstflg
+		, :hkanjya.tktyflg
+		, :hkanjya.apkntino
+		, :hkanjya.sdnm
+		, :hkanjya.bko1
+		, :hkanjya.bko2
+		, :hkanjya.bko3
+		, :hkanjya.zstrdh
+		, :hkanjya.zsssdh
+		, :hkanjya.stlzsssdh
+		, :hkanjya.stlzsssip
+		, :hkanjya.stlzssssyaid
+		, CURRENT TIMESTAMP
+		, :hkanjya.oyasstcd				-- 1.01 ADD
+		, CURRENT TIMESTAMP				-- 1.01 ADD
+		)
+	;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "INSERT kanjya : utkymd[%s]irino[%s]zssdino[%d]",
+		kan->utkymd, kan->irino, kan->zssdino );
+	LogOut( LT_DBG, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+		ret = RTN_OK;
+	} else {
+		if ( sqlca.sqlcode == MYAPP_RTN_DUP ) {	// duplicate
+			sprintf( G_msg,
+				"患者情報(kanjya)は既に存在しています。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,kan->utkymd, kan->irino, kan->zssdino );
+			/* ERROR */
+			ret=MYAPP_RTN_DUP;
+		} else {
+			sprintf( G_msg,
+				"患者情報(kanjya)の INSERT に失敗しました。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,kan->utkymd, kan->irino, kan->zssdino );
+			/* ERROR */
+			ret=RTN_DBERR;
+		}
+		EditCsvMsg( G_msg );
+		LogOut( LT_TRC, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SelKanjyaZssdinoMax                                           */
+/*  機能概要  ：患者情報．属性世代NO　MAX取得                                 */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：以外         異常終了                                         */
+/******************************************************************************/
+int		SelKanjyaZssdinoMax( kan )
+struct		_KANJYA		*kan;			// 患者情報
+{
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelKanjyaZssdinoMax" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memcpy( &hkanjya, kan, sizeof( struct _KANJYA ));
+	hst_zssdino=0;
+	ind_zssdino=0;
+
+EXEC SQL SELECT	MAX( zssdino )
+	INTO	  :hst_zssdino	INDICATOR :ind_zssdino
+	FROM	kanjya
+	WHERE	utkymd	= :hkanjya.utkymd
+	AND		irino	= :hkanjya.irino
+	;
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT MAX(zssdino) FROM kanjya : "
+		"utkymd[%s]irino[%s] indicator[%d] sqlcode[%s]",
+		kan->utkymd, kan->irino, ind_zssdino, G_err );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	// 標識変数による判断
+		// sqlcode=0 indicator=0  -> FOUND
+		// sqlcode=0 indicator=-1 -> NOT FOUND
+		// sqlcode<>0 -> DB ERROR
+	if (sqlca.sqlcode == 0) {		/* OK */
+		if( ind_zssdino == 0 ) {
+			kan->zssdino=hst_zssdino;
+			ret = RTN_OK;
+		} else if( ind_zssdino == -1 ){	/* NOT FOUND */
+			kan->zssdino=0;
+			ret = RTN_ZERO;
+		}
+	} else {
+		sprintf( G_msg,
+			"修正対象の患者情報(kanjya)のMAX( 属性世代NO )取得に失敗しました。"
+			"BML受付年月日[%s]依頼書NO[%s] SELECT INDICATOR[%d]"
+			,kan->utkymd, kan->irino, ind_zssdino );
+		EditCsvMsg( G_msg );
+		LogOut( LT_TRC, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		kan->zssdino=0;
+		ret=RTN_NG;
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：UpdKanjyaTktyflg                                              */
+/*  機能概要  ：患者情報.治験拡張フラグ UPDATE                                */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/*  特記事項  ：INSERT と　同一transaction内のupdateのためselectしない        */
+/******************************************************************************/
+int		UpdKanjyaTktyflg( kan )
+struct		_KANJYA		*kan;			/* 患者情報 */
+{
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "UpdKanjyaTktyflg" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memcpy( &hkanjya, kan, sizeof( struct _KANJYA ));
+
+EXEC SQL UPDATE	kanjya	
+	SET		tktyflg = '1'
+	WHERE	utkymd	= :hkanjya.utkymd
+	AND		irino	= :hkanjya.irino
+	AND		zssdino	= :hkanjya.zssdino
+	;
+
+    /* not found --> SQLCODE = +100, SQLSTATE == '02000' */
+	/* many rows --> ERROR!!         SQLSTATE == '21000' */
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "UPDATE kanjya : utkymd[%s]irino[%s]zssdino[%d]",
+		kan->utkymd, kan->irino, kan->zssdino );
+	LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if (sqlca.sqlcode == 0) {		/* OK */
+		ret = RTN_OK;
+	} else {
+		/* SQLCODE > 0 -> WARNING */
+		/* SQLCODE < 0 -> ERROR */
+		sprintf( G_msg,
+			"患者情報(kanjya)の UPDATE に失敗しました。"
+			"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+			,kan->utkymd, kan->irino, kan->zssdino );
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		ret=RTN_DBERR;
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：UpdKinkyuKanjya                                               */
+/*  機能概要  ：AS400後日依頼対応　患者情報 UPDATE                            */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		UpdKinkyuKanjya( kan )
+struct		_KANJYA		*kan;			/* 患者情報 */
+{
+	int		ret;
+	char	func_nm[30];				/* 関数名称	*/
+	char	wbuf[30];					// 1.01 登録日時退避用
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "UpdKinkyuKanjya" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &hkanjya, '\0', sizeof( struct _KANJYA ));
+	strcpy( hkanjya.utkymd,	kan->utkymd );
+	strcpy( hkanjya.irino,	kan->irino );
+	hkanjya.zssdino=kan->zssdino;
+
+// ----- SELECT  ------------------------------------------------------------
+	// 対象データのSELECT
+EXEC SQL SELECT	* INTO
+		  :hkanjya.utkymd
+		, :hkanjya.irino
+		, :hkanjya.iriketflg
+		, :hkanjya.zssdino
+		, :hkanjya.sstcd
+		, :hkanjya.subsstcd
+		, :hkanjya.cdkbn1
+		, :hkanjya.cdkbn2
+		, :hkanjya.irimkey
+		, :hkanjya.srkcd
+		, :hkanjya.srknm
+		, :hkanjya.tticd
+		, :hkanjya.ttinm
+		, :hkanjya.gpcd
+		, :hkanjya.gpnm
+		, :hkanjya.skicd
+		, :hkanjya.skinm
+		, :hkanjya.krtno
+		, :hkanjya.knjid
+		, :hkanjya.knjnmn
+		, :hkanjya.knjnmk
+		, :hkanjya.knjnmkey
+		, :hkanjya.sc
+		, :hkanjya.tj
+		, :hkanjya.tjtni
+		, :hkanjya.sbtkbn
+		, :hkanjya.birthday
+		, :hkanjya.birthdaykbn
+		, :hkanjya.age
+		, :hkanjya.agekbn
+		, :hkanjya.btcd
+		, :hkanjya.btnm
+		, :hkanjya.utkcmtcd1
+		, :hkanjya.utkcmtcd2
+		, :hkanjya.utkcmtcd3
+		, :hkanjya.utkcmtfr1
+		, :hkanjya.utkcmtfr2
+		, :hkanjya.utkcmtfrflg
+		, :hkanjya.ngkbn
+		, :hkanjya.nsssu
+		, :hkanjya.hkncd
+		, :hkanjya.ktshsu
+		, :hkanjya.iniriymd
+		, :hkanjya.zssflg
+		, :hkanjya.kkiriflg
+		, :hkanjya.hknskbn
+		, :hkanjya.utkkbn
+		, :hkanjya.nekbn
+		, :hkanjya.inknskbn
+		, :hkanjya.utkjkkbn
+		, :hkanjya.krflg
+		, :hkanjya.fdhhkkflg
+		, :hkanjya.utkdh
+		, :hkanjya.mutkymd
+		, :hkanjya.mirino
+		, :hkanjya.knsjslbcd1
+		, :hkanjya.knsjslbcd2
+		, :hkanjya.knsjslbcd3
+		, :hkanjya.knsjslbcd4
+		, :hkanjya.ymhkkflg
+		, :hkanjya.hkkkbdh
+		, :hkanjya.ecd
+		, :hkanjya.shcd
+		, :hkanjya.sstssnmj
+		, :hkanjya.sstssnmn
+		, :hkanjya.sstrsj
+		, :hkanjya.sstrsn
+		, :hkanjya.sstsbt
+		, :hkanjya.ttsstflg
+		, :hkanjya.rucd
+		, :hkanjya.irikmksu
+		, :hkanjya.bmskn
+		, :hkanjya.irinrsbt
+		, :hkanjya.irihsmkbn
+		, :hkanjya.caresstflg
+		, :hkanjya.tktyflg
+		, :hkanjya.apkntino
+		, :hkanjya.sdnm
+		, :hkanjya.bko1
+		, :hkanjya.bko2
+		, :hkanjya.bko3
+		, :hkanjya.zstrdh
+		, :hkanjya.zsssdh
+		, :hkanjya.stlzsssdh
+		, :hkanjya.stlzsssip
+		, :hkanjya.stlzssssyaid
+		, :hkanjya.ksndh
+		, :hkanjya.oyasstcd				-- 1.01 ADD
+		, :hkanjya.trkdh				-- 1.01 ADD
+	FROM	kanjya
+	WHERE	utkymd	= :hkanjya.utkymd
+	AND		irino	= :hkanjya.irino
+	AND		zssdino	= :hkanjya.zssdino
+	;
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT * FROM kanjya before update: "
+		"utkymd[%s]irino[%s]zssdino[%d]",
+		kan->utkymd, kan->irino, kan->zssdino );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+		// 更新前情報のLOG出力
+		EditCsvKanjya( &hkanjya );
+		LogOut( LT_TRC, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	} else {
+		if ( sqlca.sqlcode == 100 ){	/* NOT FOUND */
+			/* SQLCODE +100, SQLSTATE '02000' */
+			sprintf( G_msg, "更新対象の患者情報(kanjya)が存在しません。" );
+			// NOT FOUND
+			ret=RTN_ZERO;
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg, "更新対象の患者情報(kanjya) SELECT で"
+				"不具合が発生しました。" );
+			ret=RTN_DBERR;
+		}
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+	/* ホスト変数セット	*/
+		// 1.01 ADD 登録日時は更新前の値を引き継ぐ
+	strcpy( wbuf,			hkanjya.trkdh );
+	memcpy( &hkanjya, kan,	sizeof( struct _KANJYA ));
+	strcpy( hkanjya.trkdh,	wbuf );				// 1.01 ADD
+	if( stcPRM.myp_debug == 1 ){
+		zoku_pr( &hkanjya );
+	}
+
+// ----- UPDATE ------------------------------------------------------------
+EXEC SQL UPDATE	kanjya	
+	SET	  iriketflg	= :hkanjya.iriketflg
+		, sstcd		= :hkanjya.sstcd
+		, subsstcd	= :hkanjya.subsstcd
+		, cdkbn1	= :hkanjya.cdkbn1
+		, cdkbn2	= :hkanjya.cdkbn2
+		, irimkey	= :hkanjya.irimkey
+		, srkcd		= :hkanjya.srkcd
+		, srknm		= :hkanjya.srknm
+		, tticd		= :hkanjya.tticd
+		, ttinm		= :hkanjya.ttinm
+		, gpcd		= :hkanjya.gpcd
+		, gpnm		= :hkanjya.gpnm
+		, skicd		= :hkanjya.skicd
+		, skinm		= :hkanjya.skinm
+		, krtno		= :hkanjya.krtno
+		, knjid		= :hkanjya.knjid
+		, knjnmn	= :hkanjya.knjnmn
+		, knjnmk	= :hkanjya.knjnmk
+		, knjnmkey	= :hkanjya.knjnmkey
+		, sc		= :hkanjya.sc
+		, tj		= :hkanjya.tj
+		, tjtni		= :hkanjya.tjtni
+		, sbtkbn	= :hkanjya.sbtkbn
+		, birthday	= :hkanjya.birthday
+		, birthdaykbn	= :hkanjya.birthdaykbn
+		, age		= :hkanjya.age
+		, agekbn	= :hkanjya.agekbn
+		, btcd		= :hkanjya.btcd
+		, btnm		= :hkanjya.btnm
+		, utkcmtcd1	= :hkanjya.utkcmtcd1
+		, utkcmtcd2	= :hkanjya.utkcmtcd2
+		, utkcmtcd3	= :hkanjya.utkcmtcd3
+		, utkcmtfr1	= :hkanjya.utkcmtfr1
+		, utkcmtfr2	= :hkanjya.utkcmtfr2
+		, utkcmtfrflg	= :hkanjya.utkcmtfrflg
+		, ngkbn		= :hkanjya.ngkbn
+		, nsssu		= :hkanjya.nsssu
+		, hkncd		= :hkanjya.hkncd
+		, ktshsu	= :hkanjya.ktshsu
+		, iniriymd	= :hkanjya.iniriymd
+		, zssflg	= :hkanjya.zssflg
+		, kkiriflg	= :hkanjya.kkiriflg
+		, hknskbn	= :hkanjya.hknskbn
+		, utkkbn	= :hkanjya.utkkbn
+		, nekbn		= :hkanjya.nekbn
+		, inknskbn	= :hkanjya.inknskbn
+		, utkjkkbn	= :hkanjya.utkjkkbn
+		, krflg		= :hkanjya.krflg
+		, fdhhkkflg	= :hkanjya.fdhhkkflg
+		, utkdh		= :hkanjya.utkdh
+		, mutkymd	= :hkanjya.mutkymd
+		, mirino	= :hkanjya.mirino
+		, knsjslbcd1= :hkanjya.knsjslbcd1
+		, knsjslbcd2= :hkanjya.knsjslbcd2
+		, knsjslbcd3= :hkanjya.knsjslbcd3
+		, knsjslbcd4= :hkanjya.knsjslbcd4
+		, ymhkkflg	= :hkanjya.ymhkkflg
+		, hkkkbdh	= :hkanjya.hkkkbdh
+		, ecd		= :hkanjya.ecd
+		, shcd		= :hkanjya.shcd
+		, sstssnmj	= :hkanjya.sstssnmj
+		, sstssnmn	= :hkanjya.sstssnmn
+		, sstrsj	= :hkanjya.sstrsj
+		, sstrsn	= :hkanjya.sstrsn
+		, sstsbt	= :hkanjya.sstsbt
+		, ttsstflg	= :hkanjya.ttsstflg
+		, rucd		= :hkanjya.rucd
+		, irikmksu	= :hkanjya.irikmksu
+		, bmskn		= :hkanjya.bmskn
+		, irinrsbt	= :hkanjya.irinrsbt
+		, irihsmkbn	= :hkanjya.irihsmkbn
+		, caresstflg= :hkanjya.caresstflg
+		, tktyflg	= :hkanjya.tktyflg
+		, apkntino	= :hkanjya.apkntino
+		, sdnm		= :hkanjya.sdnm
+		, bko1		= :hkanjya.bko1
+		, bko2		= :hkanjya.bko2
+		, bko3		= :hkanjya.bko3
+		, zstrdh	= :hkanjya.zstrdh
+		, zsssdh	= :hkanjya.zsssdh
+		, stlzsssdh	= :hkanjya.stlzsssdh
+		, stlzsssip	= :hkanjya.stlzsssip
+		, stlzssssyaid= :hkanjya.stlzssssyaid
+		, ksndh		= CURRENT TIMESTAMP
+		, oyasstcd	= :hkanjya.oyasstcd			-- 1.01 ADD
+		, trkdh		= :hkanjya.trkdh			-- 1.01 ADD
+	WHERE	utkymd	= :hkanjya.utkymd
+	AND		irino	= :hkanjya.irino
+	AND		zssdino	= :hkanjya.zssdino
+	;
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "UPDATE kanjya kinkyu : "
+		"utkymd[%s]irino[%s]zssdino[%d]",
+		kan->utkymd, kan->irino, kan->zssdino );
+	LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if (sqlca.sqlcode == 0) {		/* OK */
+		ret = RTN_OK;
+	} else {
+        if( sqlca.sqlcode == -911 ){        // LOCK
+            switch( sqlca.sqlerrd[2] ){
+            case     2 :
+                strcpy( G_msg, "AS400後日依頼情報対応の患者情報(kanjya)の "
+					"UPDATE で DEAD LOCK が発生しました。" );
+                break;
+            case    68 :
+                strcpy( G_msg, "AS400後日依頼情報対応の患者情報(kanjya)の "
+                    "UPDATE で TIMETOUT が発生しました。" );
+                break;
+            default :
+                strcpy( G_msg, "AS400後日依頼情報対応の患者情報(kanjya)の "
+                    "不具合が発生しました。" );
+                break;
+            }
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg,
+			"AS400後日依頼情報対応の患者情報(kanjya)の UPDATE に失敗しました。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,kan->utkymd, kan->irino, kan->zssdino );
+		}
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		ret=RTN_DBERR;
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：InsChikenzok                                                  */
+/*  機能概要  ：治験拡張　INSERT                                              */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _CHIKENZOK     *try;   : ：治験拡張                   */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		InsChikenzok( try )
+struct		_CHIKENZOK	*try;			/* 属性データ */
+{
+	struct	sqlca	sqlca;
+	char	func_nm[MYAPP_LEN_FNCNM+1];		/* 関数名称	*/
+	int	ret;
+
+	/* 初期処理	*/
+	strcpy(func_nm, "InsChikenzok" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのセット	*/
+	memcpy( &hchikenzok, try, sizeof( struct _CHIKENZOK ));
+	strcpy( hchikenzok.ksndh, "2006/02/08 19:40:00" );
+
+EXEC SQL INSERT	INTO	chikenzok
+		( utkymd
+		, irino
+		, iriketflg
+		, zssdino
+		, prtclno
+		, kosstcd
+		, tytme
+		, tyryo
+		, tyryotni
+		, yzfktme
+		, ikasflg
+		, kntsu
+		, kmksu
+		, sspit
+		, zrcd01
+		, zrcd02
+		, zrcd03
+		, zrcd04
+		, zrcd05
+		, zrcd06
+		, zrkg01
+		, zrkg02
+		, zrkg03
+		, zrkg04
+		, zrkg05
+		, zrkg06
+		, hrseq
+		, kntksflg
+		, gcpflg
+		, prtclnm
+		, ksndh
+		)
+	VALUES	( :hchikenzok.utkymd
+		, :hchikenzok.irino
+		, :hchikenzok.iriketflg
+		, :hchikenzok.zssdino
+		, :hchikenzok.prtclno
+		, :hchikenzok.kosstcd
+		, :hchikenzok.tytme
+		, :hchikenzok.tyryo
+		, :hchikenzok.tyryotni
+		, :hchikenzok.yzfktme
+		, :hchikenzok.ikasflg
+		, :hchikenzok.kntsu
+		, :hchikenzok.kmksu
+		, :hchikenzok.sspit
+		, :hchikenzok.zrcd01
+		, :hchikenzok.zrcd02
+		, :hchikenzok.zrcd03
+		, :hchikenzok.zrcd04
+		, :hchikenzok.zrcd05
+		, :hchikenzok.zrcd06
+		, :hchikenzok.zrkg01
+		, :hchikenzok.zrkg02
+		, :hchikenzok.zrkg03
+		, :hchikenzok.zrkg04
+		, :hchikenzok.zrkg05
+		, :hchikenzok.zrkg06
+		, :hchikenzok.hrseq
+		, :hchikenzok.kntksflg
+		, :hchikenzok.gcpflg
+		, :hchikenzok.prtclnm
+		, CURRENT TIMESTAMP
+		)
+	;
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "INSERT chikenzok : utkymd[%s]irino[%s]zssdino[%d]",
+		try->utkymd, try->irino, try->zssdino );
+	LogOut( LT_DBG, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if (sqlca.sqlcode == 0) {		/* OK */
+		ret = RTN_OK;
+	} else {
+		if ( sqlca.sqlcode == -803 ) {	// duplicate
+			sprintf( G_msg,
+				"治験拡張属性(chikenzok)は既に存在しています。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,try->utkymd, try->irino, try->zssdino );
+			ret=RTN_NG;
+		} else {
+			sprintf( G_msg,
+				"治験拡張属性(chikenzok)の INSERT に失敗しました。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,try->utkymd, try->irino, try->zssdino );
+			ret=RTN_DBERR;
+		}
+		// ERROR
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：SelKinkyuIrai                                                 */
+/*  機能概要  ：AS/400からの依頼項目が存在するかチェックする                  */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：COUNT結果    正常終了                                         */
+/*            ：0 未満       異常終了                                         */
+/******************************************************************************/
+int		SelKinkyuIrai( kan )
+struct		_KANJYA		*kan;			// 患者情報
+{
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];		/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelKinkyuIrai" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	strcpy( hst_utkymd,	kan->utkymd );
+	strcpy( hst_irino,	kan->irino );
+	hst_cnt=0;
+	ind_cnt=0;
+
+	// 削除フラグは考慮しない
+EXEC SQL SELECT	COUNT( irikbn )
+	INTO	  :hst_cnt	INDICATOR :ind_cnt
+	FROM	irai
+	WHERE	utkymd	= :hst_utkymd
+	AND		irino	= :hst_irino
+	AND		irikbn	= 'K'
+	;
+
+    /* not found --> SQLCODE = +100, SQLSTATE == '02000' */
+	/* many rows --> ERROR!!         SQLSTATE == '21000' */
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT COUNT( irikbn ) FROM irai WHERE ___ irikbn='K' : "
+		"utkymd[%s]irino[%s] indicator[%d] sqlcode[%s]",
+		kan->utkymd, kan->irino, ind_cnt, G_err );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	// 標識変数による判断
+	if( ind_cnt == 0 ) {
+		// COUNT結果を返す（0もあり）
+		ret = hst_cnt;
+	} else {
+		sprintf( G_msg,
+			"AS400依頼項目情報(irai)取得に失敗しました。"
+			"BML受付年月日[%s]依頼書NO[%s] SELECT INDICATOR[%d]"
+			,kan->utkymd, kan->irino, ind_cnt );
+		EditCsvMsg( G_msg );
+		LogOut( LT_TRC, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		ret=RTN_NG;
+	}
+	// DEBUG
+	sprintf( G_msg, "AS400 irai COUNT[%d]", ret );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：UpdIraiZssdino                                                */
+/*  機能概要  ：属性修正対象に紐づく依頼情報.世代No更新(オーダ未作成のみ)     */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		UpdIraiZssdino( kan )
+struct		_KANJYA		*kan;			/* 患者情報 */
+{
+EXEC SQL BEGIN DECLARE SECTION;
+	char		hst_kmkcd[7+1];
+	char		hst_smpcd[7+1];
+EXEC SQL END DECLARE SECTION;
+	int		ret;
+	int		i;
+	char	func_nm[30];				/* 関数名称	*/
+	char	wbuf[30];
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "UpdIraiZssdino" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	strcpy( hst_utkymd,	kan->utkymd );
+	strcpy( hst_irino,	kan->irino );
+	hst_zssdino = kan->zssdino;
+	hst_cnt=0;
+	ind_cnt=0;
+	hkanjya.zssdino = kan->zssdino;
+
+	// オーダ未作成の依頼情報の存在チェック
+EXEC SQL SELECT	COUNT( zssdino )
+	INTO	  :hst_cnt	INDICATOR :ind_cnt
+	FROM	irai
+	WHERE	utkymd	= :hst_utkymd
+	AND		irino	= :hst_irino
+--	AND		knsgrp  = ' '			// 依頼展開での検査G付加に伴い条件外
+	AND		odrssflg= ' '
+	;
+
+	/* SQLCODE */
+	// edit sqlcacode for LogOut errcode
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT COUNT( zssdino ) FROM irai WHERE _ odrssflg=' ' : "
+		"utkymd[%s]irino[%s] indicator[%d] sqlcod[%s]",
+		kan->utkymd, kan->irino, ind_cnt, G_err );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if( sqlca.sqlcode == 0 ) {
+		// 件数による判断
+		if( hst_cnt == 0 ){
+			// 該当無し
+			return( RTN_OK );
+		}
+    } else {
+		sprintf( G_msg,
+			"患者属性更新対象依頼項目情報(irai)取得に失敗しました。"
+			"BML受付年月日[%s]依頼書NO[%s] SELECT INDICATOR[%d]"
+			,kan->utkymd, kan->irino, ind_cnt );
+		EditCsvMsg( G_msg );
+		LogOut( LT_TRC, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		return( RTN_NG );
+	}
+	// 更新対象存在
+// ----- UPDATE  ------------------------------------------------------------
+
+EXEC SQL DECLARE    iri_cur CURSOR  FOR
+    SELECT  zssdino
+            , kmkcd
+            , smpcd
+	FROM	irai
+	WHERE	utkymd	= :hst_utkymd
+	AND		irino	= :hst_irino
+--	AND		knsgrp  = ' '				// 依頼展開での検査G付加に伴い条件外
+	AND		odrssflg= ' '
+	FOR UPDATE
+	;
+EXEC SQL OPEN iri_cur;
+
+    i=0;
+
+    while( sqlca.sqlcode == 0 ){
+        EXEC SQL    FETCH   iri_cur
+                    INTO      :hst_zssdino
+                            , :hst_kmkcd
+                            , :hst_smpcd
+                    ;
+
+		/* SQLCODE */
+		// edit sqlcacode for LogOut errcode
+		sprintf( G_err, "%d", sqlca.sqlcode );
+		// DEBUG
+		sprintf( G_msg, "FETCH irai zssdino : "
+			"utkymd[%s]irino[%s]zssdino[%d]kmkcd[%s]smpcd[%s]"
+			, hst_utkymd, hst_irino, hst_zssdino, hst_kmkcd, hst_smpcd );
+		LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		if (sqlca.sqlcode == 0) {		
+			ret=RTN_OK;
+		} else if (sqlca.sqlcode == 100) {		
+			ret=RTN_OK;
+			break;
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg,
+				"依頼情報(irai)のFETCH に失敗しました。"
+				"受付日[%s]依頼書NO[%s]元世代No[%d]項目[%s]"
+				, hst_utkymd, hst_irino, hst_zssdino, hst_kmkcd );
+        	EditCsvMsg( G_msg );
+			LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+        	ret=RTN_DBERR;
+			break;
+       }
+
+		EXEC SQL    UPDATE  irai
+					SET     zssdino   = :hkanjya.zssdino
+					WHERE	CURRENT OF iri_cur
+					;
+/* =================================================
+            WHERE   utkymd  = :hst_utkymd
+            AND     irino   = :hst_irino
+			AND		zssdino	= :hst_zssdino
+			AND		knsgrp  = ' '
+			AND		kmkcd	= :hst_kmkcd
+			AND		odrssflg= ' '
+            ;
+===================================================*/
+
+		/* SQLCODE */
+		// edit sqlcacode for LogOut errcode
+		sprintf( G_err, "%d", sqlca.sqlcode );
+		// DEBUG
+		sprintf( G_msg, "UPDATE irai zssdino : "
+			"utkymd[%s]irino[%s]zssdino[%d]kmkcd[%s]smpcd[%s]"
+			, hst_utkymd, hst_irino, hst_zssdino, hst_kmkcd, hst_smpcd );
+		LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		if (sqlca.sqlcode == 0) {
+			// TRACE
+			sprintf( G_msg, "属性修正に合わせ依頼情報の世代Noを更新しました : "
+				"受付日[%s]依頼書NO[%s]元世代No[%d]項目[%s]"
+				, hst_utkymd, hst_irino, hst_zssdino, hst_kmkcd );
+			ret=RTN_OK;
+			EditCsvMsg( G_msg );
+			LogOut( LT_TRC, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg,
+				"依頼情報(irai)の属性世代No UPDATE に失敗しました。"
+				"受付日[%s]依頼書NO[%s]元世代No[%d]項目[%s]"
+				, hst_utkymd, hst_irino, hst_zssdino, hst_kmkcd );
+        	ret=RTN_DBERR;
+			EditCsvMsg( G_msg );
+			LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+       }
+    }
+EXEC SQL CLOSE iri_cur;
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/*  1.04     2009/06/29     Merits K.Ameno 障害管理No:0904031814/0904031719対応 --> */
+
+/******************************************************************************/
+/*  関 数 名  ：SelKanjya                                                     */
+/*  機能概要  ：患者情報から同じ患者情報が既にあるかをチェックする            */
+/*  入    力  ：                                                              */
+/*  第１引数  ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：取得出来ればSELECT結果をhkanjyaに格納して応答(RTN_OK)         */
+/*            ：取得できなかったら、何も格納しない                            */
+/*  復帰情報  ：RTN_OK       正常終了(取得成功)                               */
+/*            ：RTN_ZERO     正常終了(該当レコードなし)                       */
+/*            ：RTN_DBERR    異常終了(DBエラー発生)                           */
+/******************************************************************************/
+int		SelKanjya( kan )
+struct		_KANJYA		*kan;							/* 患者情報 */
+{
+	int		ret;										/* 実行結果 */
+	char	func_nm[30];								/* 関数名称	*/
+	char	wbuf[30];									/* ワークバッファ */
+	struct	sqlca	sqlca;								/* SQL実行コード */
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelKanjya" );						/* 実行関数名を設定 */
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &hkanjya, '\0', sizeof( struct _KANJYA ));	/* 変数初期化 */
+	strcpy( hkanjya.utkymd,	kan->utkymd );				/* 受け日を設定 */
+	strcpy( hkanjya.irino,	kan->irino );				/* 依頼書Noを設定 */
+
+/*----- SELECT ここから ------------------------------------------------------------*/
+	/* 対象データ(受け日,依頼書No)のSELECT */
+	/* 2016.04.18 ２件ヒットしてエラーとなる不具合に対する対応 */
+	/* FETCH FIRST と ORDER BY を組み合わせて、属性修正フラグ 1 のレコードのみ SELECT 対象とする。*/
+EXEC SQL SELECT	* INTO
+		  :hkanjya.utkymd
+		, :hkanjya.irino
+		, :hkanjya.iriketflg
+		, :hkanjya.zssdino
+		, :hkanjya.sstcd
+		, :hkanjya.subsstcd
+		, :hkanjya.cdkbn1
+		, :hkanjya.cdkbn2
+		, :hkanjya.irimkey
+		, :hkanjya.srkcd
+		, :hkanjya.srknm
+		, :hkanjya.tticd
+		, :hkanjya.ttinm
+		, :hkanjya.gpcd
+		, :hkanjya.gpnm
+		, :hkanjya.skicd
+		, :hkanjya.skinm
+		, :hkanjya.krtno
+		, :hkanjya.knjid
+		, :hkanjya.knjnmn
+		, :hkanjya.knjnmk
+		, :hkanjya.knjnmkey
+		, :hkanjya.sc
+		, :hkanjya.tj
+		, :hkanjya.tjtni
+		, :hkanjya.sbtkbn
+		, :hkanjya.birthday
+		, :hkanjya.birthdaykbn
+		, :hkanjya.age
+		, :hkanjya.agekbn
+		, :hkanjya.btcd
+		, :hkanjya.btnm
+		, :hkanjya.utkcmtcd1
+		, :hkanjya.utkcmtcd2
+		, :hkanjya.utkcmtcd3
+		, :hkanjya.utkcmtfr1
+		, :hkanjya.utkcmtfr2
+		, :hkanjya.utkcmtfrflg
+		, :hkanjya.ngkbn
+		, :hkanjya.nsssu
+		, :hkanjya.hkncd
+		, :hkanjya.ktshsu
+		, :hkanjya.iniriymd
+		, :hkanjya.zssflg
+		, :hkanjya.kkiriflg
+		, :hkanjya.hknskbn
+		, :hkanjya.utkkbn
+		, :hkanjya.nekbn
+		, :hkanjya.inknskbn
+		, :hkanjya.utkjkkbn
+		, :hkanjya.krflg
+		, :hkanjya.fdhhkkflg
+		, :hkanjya.utkdh
+		, :hkanjya.mutkymd
+		, :hkanjya.mirino
+		, :hkanjya.knsjslbcd1
+		, :hkanjya.knsjslbcd2
+		, :hkanjya.knsjslbcd3
+		, :hkanjya.knsjslbcd4
+		, :hkanjya.ymhkkflg
+		, :hkanjya.hkkkbdh
+		, :hkanjya.ecd
+		, :hkanjya.shcd
+		, :hkanjya.sstssnmj
+		, :hkanjya.sstssnmn
+		, :hkanjya.sstrsj
+		, :hkanjya.sstrsn
+		, :hkanjya.sstsbt
+		, :hkanjya.ttsstflg
+		, :hkanjya.rucd
+		, :hkanjya.irikmksu
+		, :hkanjya.bmskn
+		, :hkanjya.irinrsbt
+		, :hkanjya.irihsmkbn
+		, :hkanjya.caresstflg
+		, :hkanjya.tktyflg
+		, :hkanjya.apkntino
+		, :hkanjya.sdnm
+		, :hkanjya.bko1
+		, :hkanjya.bko2
+		, :hkanjya.bko3
+		, :hkanjya.zstrdh
+		, :hkanjya.zsssdh
+		, :hkanjya.stlzsssdh
+		, :hkanjya.stlzsssip
+		, :hkanjya.stlzssssyaid
+		, :hkanjya.ksndh
+		, :hkanjya.oyasstcd
+		, :hkanjya.trkdh
+	FROM	KANJYA
+	WHERE	utkymd	= :hkanjya.utkymd
+	AND		irino	= :hkanjya.irino
+	ORDER BY zssflg DESC, zssdino DESC
+	FETCH FIRST 1 ROWS ONLY
+	;
+/*----- SELECT ここまで ------------------------------------------------------------*/
+	sprintf( G_err, "%d", sqlca.sqlcode );
+	sprintf( G_msg, "SELECT * FROM KANJYA : "
+		"utkymd[%s]irino[%s]zssdino[%d]",
+		hkanjya.utkymd, hkanjya.irino, hkanjya.zssdino );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+	if ( sqlca.sqlcode == 0 ) {							/* SQL実行OK */
+		EditCsvKanjya( &hkanjya );						/* 更新前情報のLOG出力 */
+		LogOut( LT_TRC, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		ret = RTN_OK;									/* 実行結果 OK */
+	}
+	else{												/* SQL実行NG */
+		if ( sqlca.sqlcode == 100 ){					/* 対象レコードが見つからなかった(NOT FOUND) */
+			/* SQLCODE +100, SQLSTATE '02000' */
+			sprintf( G_msg, "患者情報(KANJYA)が存在しません。" );
+			EditCsvMsg( G_msg );
+			LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			ret = RTN_ZERO;								/* 実行結果 NOT FOUND */
+		}
+		else{
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg, "患者情報(KANJYA) SELECT で"
+				"不具合が発生しました。" );
+			EditCsvMsg( G_msg );
+			LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			ret = RTN_DBERR;							/* 実行結果 DB ERROR */
+		}
+
+	}
+	return(ret);										/* 実行結果を応答 */
+}
+
+/******************************************************************************/
+/*  関 数 名  ：InsShusei_Kanjya                                              */
+/*  機能概要  ：修正属性 INSERT                                               */
+/*  入    力  ：ホスト変数：hkanjya                                           */
+/*            ：コール前にhkanjyaに患者情報を取得すること                     */
+/*  第１引数  ：NONE                                                          */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK        正常終了                                        */
+/*            ：MYAPP_RTN_DUP 異常終了(重複エラー発生) *これはありえない      */
+/*            ：RTN_DBERR     異常終了(DBエラー発生)                          */
+/******************************************************************************/
+int		InsShusei_Kanjya()
+{
+	struct	sqlca	sqlca;								/* SQL実行コード */
+	char	func_nm[MYAPP_LEN_FNCNM+1];					/* 関数名称	*/
+	int	ret;											/* 実行結果 */
+
+	/* 初期処理	*/
+	strcpy(func_nm, "InsShusei_Kanjya" );				/* 実行関数名を設定 */
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+/*----- INSERT ここから ------------------------------------------------------------*/
+EXEC SQL INSERT	INTO	SHUSEI_KANJYA
+		( utkymd
+		, irino
+		, iriketflg
+		, zssdino
+		, sstcd
+		, subsstcd
+		, cdkbn1
+		, cdkbn2
+		, irimkey
+		, srkcd
+		, srknm
+		, tticd
+		, ttinm
+		, gpcd
+		, gpnm
+		, skicd
+		, skinm
+		, krtno
+		, knjid
+		, knjnmn
+		, knjnmk
+		, knjnmkey
+		, sc
+		, tj
+		, tjtni
+		, sbtkbn
+		, birthday
+		, birthdaykbn
+		, age
+		, agekbn
+		, btcd
+		, btnm
+		, utkcmtcd1
+		, utkcmtcd2
+		, utkcmtcd3
+		, utkcmtfr1
+		, utkcmtfr2
+		, utkcmtfrflg
+		, ngkbn
+		, nsssu
+		, hkncd
+		, ktshsu
+		, iniriymd
+		, zssflg
+		, kkiriflg
+		, hknskbn
+		, utkkbn
+		, nekbn
+		, inknskbn
+		, utkjkkbn
+		, krflg
+		, fdhhkkflg
+		, utkdh
+		, mutkymd
+		, mirino
+		, knsjslbcd1
+		, knsjslbcd2
+		, knsjslbcd3
+		, knsjslbcd4
+		, ymhkkflg
+		, hkkkbdh
+		, ecd
+		, shcd
+		, sstssnmj
+		, sstssnmn
+		, sstrsj
+		, sstrsn
+		, sstsbt
+		, ttsstflg
+		, rucd
+		, irikmksu
+		, bmskn
+		, irinrsbt
+		, irihsmkbn
+		, caresstflg
+		, tktyflg
+		, apkntino
+		, sdnm
+		, bko1
+		, bko2
+		, bko3
+		, zstrdh
+		, zsssdh
+		, stlzsssdh
+		, stlzsssip
+		, stlzssssyaid
+		, ksndh
+		, oyasstcd
+		, trkdh
+		)
+	VALUES	( :hkanjya.utkymd
+		, :hkanjya.irino
+		, :hkanjya.iriketflg
+		, :hkanjya.zssdino
+		, :hkanjya.sstcd
+		, :hkanjya.subsstcd
+		, :hkanjya.cdkbn1
+		, :hkanjya.cdkbn2
+		, :hkanjya.irimkey
+		, :hkanjya.srkcd
+		, :hkanjya.srknm
+		, :hkanjya.tticd
+		, :hkanjya.ttinm
+		, :hkanjya.gpcd
+		, :hkanjya.gpnm
+		, :hkanjya.skicd
+		, :hkanjya.skinm
+		, :hkanjya.krtno
+		, :hkanjya.knjid
+		, :hkanjya.knjnmn
+		, :hkanjya.knjnmk
+		, :hkanjya.knjnmkey
+		, :hkanjya.sc
+		, :hkanjya.tj
+		, :hkanjya.tjtni
+		, :hkanjya.sbtkbn
+		, :hkanjya.birthday
+		, :hkanjya.birthdaykbn
+		, :hkanjya.age
+		, :hkanjya.agekbn
+		, :hkanjya.btcd
+		, :hkanjya.btnm
+		, :hkanjya.utkcmtcd1
+		, :hkanjya.utkcmtcd2
+		, :hkanjya.utkcmtcd3
+		, :hkanjya.utkcmtfr1
+		, :hkanjya.utkcmtfr2
+		, :hkanjya.utkcmtfrflg
+		, :hkanjya.ngkbn
+		, :hkanjya.nsssu
+		, :hkanjya.hkncd
+		, :hkanjya.ktshsu
+		, :hkanjya.iniriymd
+		, :hkanjya.zssflg
+		, :hkanjya.kkiriflg
+		, :hkanjya.hknskbn
+		, :hkanjya.utkkbn
+		, :hkanjya.nekbn
+		, :hkanjya.inknskbn
+		, :hkanjya.utkjkkbn
+		, :hkanjya.krflg
+		, :hkanjya.fdhhkkflg
+		, :hkanjya.utkdh
+		, :hkanjya.mutkymd
+		, :hkanjya.mirino
+		, :hkanjya.knsjslbcd1
+		, :hkanjya.knsjslbcd2
+		, :hkanjya.knsjslbcd3
+		, :hkanjya.knsjslbcd4
+		, :hkanjya.ymhkkflg
+		, :hkanjya.hkkkbdh
+		, :hkanjya.ecd
+		, :hkanjya.shcd
+		, :hkanjya.sstssnmj
+		, :hkanjya.sstssnmn
+		, :hkanjya.sstrsj
+		, :hkanjya.sstrsn
+		, :hkanjya.sstsbt
+		, :hkanjya.ttsstflg
+		, :hkanjya.rucd
+		, :hkanjya.irikmksu
+		, :hkanjya.bmskn
+		, :hkanjya.irinrsbt
+		, :hkanjya.irihsmkbn
+		, :hkanjya.caresstflg
+		, :hkanjya.tktyflg
+		, :hkanjya.apkntino
+		, :hkanjya.sdnm
+		, :hkanjya.bko1
+		, :hkanjya.bko2
+		, :hkanjya.bko3
+		, :hkanjya.zstrdh
+		, :hkanjya.zsssdh
+		, :hkanjya.stlzsssdh
+		, :hkanjya.stlzsssip
+		, :hkanjya.stlzssssyaid
+		, CURRENT TIMESTAMP
+		, :hkanjya.oyasstcd
+		, CURRENT TIMESTAMP
+		)
+	;
+/*----- INSERT ここまで ------------------------------------------------------------*/
+
+	sprintf( G_err, "%d", sqlca.sqlcode );
+	sprintf( G_msg, "INSERT kanjya : utkymd[%s]irino[%s]zssdino[%d]",
+		hkanjya.utkymd, hkanjya.irino, hkanjya.zssdino );
+	LogOut( LT_DBG, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+	if ( sqlca.sqlcode == 0 ) {							/* SQL実行OK */
+		ret = RTN_OK;
+	}
+	else {
+		if ( sqlca.sqlcode == MYAPP_RTN_DUP ) {			/* SQL実行 重複エラー */
+														/* ★但し、ここでは絶対にありえないはず！★ */
+			sprintf( G_msg,
+				"属性修正情報(SHUSEI_KANJYA)は既に存在しています。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,hkanjya.utkymd, hkanjya.irino, hkanjya.zssdino );
+			/* ERROR */
+			ret=MYAPP_RTN_DUP;							/* 実行結果 重複エラー */
+		}
+		else{
+			sprintf( G_msg,
+				"属性修正情報(SHUSEI_KANJYA)の INSERT に失敗しました。"
+				"BML受付年月日[%s]依頼書NO[%s]属性世代NO[%d]"
+				,hkanjya.utkymd, hkanjya.irino, hkanjya.zssdino );
+			/* ERROR */
+			ret=RTN_DBERR;								/* 実行結果 DB ERROR */
+		}
+		EditCsvMsg( G_msg );
+		LogOut( LT_TRC, LX_INS, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+
+	}
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+	return( ret );										/* 実行結果を応答 */
+}
+
+/******************************************************************************/
+/*  関 数 名  ：DelKanjya                                                     */
+/*  機能概要  ：属性修正のあった患者情報を削除する                            */
+/*  入    力  ：                                                              */
+/*  第１引数  ：struct  _KANJYA    *kan;   : 患者情報                         */
+/*  出    力  ：NODE                                                          */
+/*  復帰情報  ：RTN_OK       正常終了(DELETE成功)                             */
+/*            ：RTN_ZERO     異常終了(該当レコードなし)                       */
+/*            ：RTN_DBERR    異常終了(DBエラー発生)                           */
+/******************************************************************************/
+int		DelKanjya( kan )
+struct		_KANJYA		*kan;							/* 患者情報 */
+{
+	int		ret;										/* 実行結果 */
+	char	func_nm[30];								/* 関数名称	*/
+	char	wbuf[30];									/* ワークバッファ */
+	struct	sqlca	sqlca;								/* SQL実行コード */
+
+	/* 初期処理	*/
+	strcpy( func_nm, "DelKanjya" );						/* 実行関数名を設定 */
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+														/* LOG出力 */
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &hkanjya, '\0', sizeof( struct _KANJYA ));	/* 変数初期化 */
+	strcpy( hkanjya.utkymd,	kan->utkymd );				/* 受け日を設定 */
+	strcpy( hkanjya.irino,	kan->irino );				/* 依頼書Noを設定 */
+
+/*----- DELETE ここから ------------------------------------------------------------*/
+	/* 対象データ(受け日,依頼書No)でDELETE */
+	EXEC SQL DELETE FROM KANJYA
+		WHERE	utkymd	= :hkanjya.utkymd
+		AND		irino	= :hkanjya.irino
+		;
+
+/*----- DELETE ここまで ------------------------------------------------------------*/
+	if ( sqlca.sqlcode == 0 ) {							/* SQL実行OK */
+		ret = RTN_OK;									/* 実行結果 OK */
+	}
+	else{												/* SQL実行NG */
+		if ( sqlca.sqlcode == 100 ){					/* 対象レコードが見つからなかった(NOT FOUND) */
+		/* SQLCODE +100, SQLSTATE '02000' */
+		sprintf( G_msg, "削除患者情報(KANJYA)が存在しません。" );
+		EditCsvMsg( G_msg );
+		LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		ret = RTN_ZERO;									/* 実行結果 NOT FOUND */
+		}
+		else{											/* SQL実行NG */
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg, "患者情報(KANJYA) DELETE で"
+								"不具合が発生しました。" );
+			EditCsvMsg( G_msg );
+			LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			ret = RTN_DBERR;							/* 実行結果 DB ERROR */
+		}
+	}
+	return(ret);										/* 実行結果を応答 */
+}
+
+/*  1.04     2009/06/29     Merits K.Ameno 障害管理No:0904031814/0904031719対応 <-- */
+
+//****************************************************************************
+//-----<Ydbcommit>----------------------------------------------------------
+int Ydbcommit()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+	strcpy( func_nm, "Ydbcommit" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	EXEC SQL COMMIT;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "COMMIT", func_nm, __FILE__, __LINE__ );
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+
+} /* DbDisconn */
+
+//-----<Ydbrollback>----------------------------------------------------------
+int Ydbrollback()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+	strcpy( func_nm, "Ydbrollback" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* rollback the transaction */
+	EXEC SQL ROLLBACK;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//		sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[2] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "ROLLBACK", func_nm, __FILE__, __LINE__ );
+/*  SqlInfoPrint("ROLLBACK", &sqlca, __LINE__, __FILE__);*/
+
+	if (sqlca.sqlcode == 0) {
+		sprintf( G_msg, "The transaction was rolled back." );
+		LogOut( LT_TRC, LX_NON, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+} /* TransRollback */
+
+//-----<Ydbconn>----------------------------------------------------------
+int Ydbconn()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	char	dbAlias[15];
+	char	user[129];
+	char	pswd[15];
+EXEC SQL END DECLARE SECTION;
+
+	strcpy( func_nm, "Ydbconn" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	strcpy( dbAlias,	stcPRM.dbp_dbAlias );
+	strcpy( user,		stcPRM.dbp_user );
+	strcpy( pswd,		stcPRM.dbp_pswd );
+
+	EXEC SQL CONNECT TO :dbAlias USER :user USING :pswd;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "CONNECT", func_nm, __FILE__, __LINE__ );
+
+	/* 本当は"00000"でcmpareしたい	*/
+	if( memcmp( sqlca.sqlstate, "00000", 5 ) != 0 ){
+		/* ERROR  */
+		sprintf( G_msg, "ＤＢ２への接続に失敗しました。" );
+		LogOut( LT_TRC, LX_NON, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		ret = RTN_NG;
+	}
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( ret );
+} /* DbConn */
+
+//-----<Ydbdisconn>----------------------------------------------------------
+int Ydbdisconn()
+{
+	struct sqlca sqlca;
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int	ret=RTN_OK;
+
+	strcpy( func_nm, "Ydbdisconn" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+  	/* Commit all non-committed transactions to release database locks */
+	EXEC SQL COMMIT;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "COMMIT BEFORE CONNECT RESET"
+			, func_nm, __FILE__, __LINE__ );
+
+	EXEC SQL CONNECT RESET;
+
+	// edit sqlcacode for LogOut errcode
+	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "CONNECT RESET",func_nm, __FILE__, __LINE__);
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+} /* DbDisconn */
+/** End of File ***************************************************************/

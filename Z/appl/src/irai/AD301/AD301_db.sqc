@@ -1,0 +1,365 @@
+/******************************************************************************/
+/*   ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/*   システム名：次世代システム                                               */
+/*   ファイル名：AD301_db.sqc                                                 */
+/*   概      要：ＤＢアクセス                                                 */
+/*   OS        ：SUSE LINUX Enterprise Server 9 (s390x)                       */
+/*                 - Kernel 2.6.5-7.139-s390x (2).                            */
+/*   言語      ：DB2/C                                                        */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/04/03     INTEC.INC      CREATE                             */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include	<stdio.h>
+#include 	<stdlib.h>
+#include 	<string.h>
+#include	<sqlca.h>
+#include	"AD301.h"
+
+EXEC SQL BEGIN DECLARE SECTION;
+EXEC SQL INCLUDE 'tagAD301.h';
+	char		hst_ymd[11];
+	sqlint32	hst_cnt;					// マスタ件数
+	short		ind_cnt;					// 標識変数
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/*  関 数 名  ：SelSysknrmst                                                  */
+/*  機能概要  ：システム管理マスタ SELECT                                     */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _SYSKNRMST *knr;   : システム管理マスタ               *
+/*   第１引数 ：char	ymd[];	: 	基準処理日                                */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		SelSysknrmst( knr )
+struct      _SYSKNRMST  *knr;
+{
+	int		ret;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	struct	sqlca	sqlca;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "SelSysknrmst" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数へのキー項目セット	*/
+	memset( &hsysknrmst,    '\0',   sizeof( struct _SYSKNRMST ));
+
+EXEC SQL SELECT	
+			sateid
+		 	, kjnsriymd
+			, iriendflg
+			, bchendflg
+			, ssntubn
+			, ksndh
+	INTO	:hsysknrmst.sateid
+			, :hsysknrmst.kjnsriymd
+			, :hsysknrmst.iriendflg
+			, :hsysknrmst.bchendflg
+			, :hsysknrmst.ssntubn
+			, :hsysknrmst.ksndh
+	FROM	sysknrmst
+	;
+
+    /* not found --> SQLCODE = +100, SQLSTATE == '02000' */
+	/* many rows --> ERROR!!         SQLSTATE == '21000' */
+    /* duplicate --> SQLCODE = -803                      */
+    /* dead lock --> SQLCODE = -911, SQLERRD[2]== 2      */
+    /* time out  --> SQLCODE = -911, SQLERRD[2]== 68     */
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	sprintf( G_msg, "SELECT kjnsriymd FROM sysknrmst" );
+	LogOut( LT_DBG, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+		memcpy( knr, &hsysknrmst, sizeof( struct _SYSKNRMST ));
+		ret = RTN_OK;
+	} else  if ( sqlca.sqlcode == 100 ){	/* NOT FOUND */
+		/* SQLCODE +100, SQLSTATE '02000' */
+		sprintf( G_msg, "システム管理マスタ(kjnsriymd)が存在しません。" );
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			
+		ret=RTN_ZERO;
+	} else {
+		if( sqlca.sqlcode == -911 ){		// LOCK
+			switch( sqlca.sqlerrd[2] ){
+			case	 2 :
+				strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"DEAD LOCK が発生しました。" );
+				break;
+			case	68 :
+				strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"TIMETOUT が発生しました。" );
+				break;
+			default	:
+				sprintf( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+					"不具合が発生しました。" );
+				break;
+			}
+		} else {
+			/* SQLCODE > 0 -> WARNING */
+			/* SQLCODE < 0 -> ERROR */
+			sprintf( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+				"不具合が発生しました。" );
+		}
+		ret=RTN_DBERR;
+		LogOut( LT_ERR, LX_SEL, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+EXEC SQL COMMIT;
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/******************************************************************************/
+/*  関 数 名  ：UpdSysknrmstSsntubn                                           */
+/*  機能概要  ：システム管理.送信通番 UPDATE                                  */
+/*  入    力  ：                                                              */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/*  特記事項  ：                                                              */
+/******************************************************************************/
+//int		UpdSysknrmstSsntubn( tuban )
+//int		tuban;					// 	送信通番
+int		UpdSysknrmstSsntubn( )
+{
+	struct	sqlca	sqlca;
+	char	func_nm[MYAPP_LEN_FNCNM+1];				/* 関数名称	*/
+	int		ret;
+
+	/* 初期処理	*/
+	strcpy( func_nm, "UpdSysknrmstSsntubn" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* ホスト変数への項目セット	*/
+
+	// 対象データのSELECT
+EXEC SQL DECLARE	tuban_cur CURSOR  FOR
+	SELECT	ssntubn
+			, ksndh
+	FROM	sysknrmst
+	FOR		UPDATE
+	;
+EXEC SQL OPEN tuban_cur;
+
+	while( sqlca.sqlcode == 0 ) {
+		EXEC SQL    FETCH   tuban_cur
+					INTO    :hsysknrmst.ssntubn
+							, :hsysknrmst.ksndh
+					;
+		// edit sqlcacode for LogOut errcode
+		sprintf( G_err, "%d", sqlca.sqlcode );
+		// DEBUG
+		sprintf(G_msg,"FETCH sysknrmst : ssntubn[%d]",hsysknrmst.ssntubn);
+		LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		if ( sqlca.sqlcode != 0 ) {		/* OK */
+			ret = RTN_NG;
+			break;
+		}
+
+		EXEC SQL	UPDATE	sysknrmst	
+					SET		ssntubn		=  :hsysknrmst.ssntubn + 1
+							,ksndh		=	CURRENT TIMESTAMP
+					WHERE   CURRENT OF tuban_cur
+					;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+		sprintf( G_err, "%d", sqlca.sqlcode );
+
+		// DEBUG
+		sprintf(G_msg,"UPDATE sysknrmst : ssntubn[%d]",hsysknrmst.ssntubn);
+		LogOut( LT_DBG, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+
+		if (sqlca.sqlcode == 0) {		/* OK */
+			ret = hsysknrmst.ssntubn + 1;
+		} else {
+			if( sqlca.sqlcode == -911 ){		// LOCK
+				switch( sqlca.sqlerrd[2] ){
+				case	 2 :
+					strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+						"DEAD LOCK が発生しました。" );
+					break;
+				case	68 :
+					strcpy( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+						"TIMETOUT が発生しました。" );
+					break;
+				default :
+					sprintf( G_msg, "システム管理マスタ(kjnsriymd) SELECT で"
+						"不具合が発生しました。" );
+					break;
+				}
+			} else {
+				/* SQLCODE > 0 -> WARNING */
+				/* SQLCODE < 0 -> ERROR */
+				sprintf( G_msg,
+					"システム管理マスタ(sysknrmst)依頼END情報の UPDATE に"
+					"失敗しました。基準処理年月日[%s]"
+					,stcPRM.myp_kjnymd );
+			}
+			LogOut( LT_ERR, LX_UPD, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+			ret=RTN_DBERR;
+		}
+		// 1回で抜ける
+		break;
+	}
+EXEC SQL    CLOSE   tuban_cur;
+EXEC SQL	COMMIT;
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+	return( ret );
+}
+
+/****************************************************************************
+****************************************************************************/
+//-----<Ydbcommit>----------------------------------------------------------
+int Ydbcommit()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+	strcpy( func_nm, "Ydbcommit" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	EXEC SQL COMMIT;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "COMMIT", func_nm, __FILE__, __LINE__ );
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+
+} /* DbDisconn */
+
+//-----<Ydbrollback>----------------------------------------------------------
+int Ydbrollback()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+	strcpy( func_nm, "Ydbrollback" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	/* rollback the transaction */
+	EXEC SQL ROLLBACK;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//		sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[2] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "ROLLBACK", func_nm, __FILE__, __LINE__ );
+/*  SqlInfoPrint("ROLLBACK", &sqlca, __LINE__, __FILE__);*/
+
+	if (sqlca.sqlcode == 0) {
+		sprintf( G_msg, "The transaction was rolled back." );
+		LogOut( LT_TRC, LX_NON, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+	}
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+} /* TransRollback */
+
+//-----<Ydbconn>----------------------------------------------------------
+int Ydbconn()
+{
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int		ret=RTN_OK;
+	struct	sqlca sqlca;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	char	dbAlias[15];
+	char	user[129];
+	char	pswd[15];
+EXEC SQL END DECLARE SECTION;
+
+	strcpy( func_nm, "Ydbconn" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+	strcpy( dbAlias,	stcPRM.dbp_dbAlias );
+	strcpy( user,		stcPRM.dbp_user );
+	strcpy( pswd,		stcPRM.dbp_pswd );
+
+	EXEC SQL CONNECT TO :dbAlias USER :user USING :pswd;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "CONNECT", func_nm, __FILE__, __LINE__ );
+
+	/* 本当は"00000"でcmpareしたい	*/
+	if( memcmp( sqlca.sqlstate, "00000", 5 ) != 0 ){
+		/* ERROR  */
+		sprintf( G_msg, "ＤＢ２への接続に失敗しました。" );
+		LogOut( LT_TRC, LX_NON, G_err, G_msg, func_nm, __FILE__, __LINE__ );
+		ret = RTN_NG;
+	}
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( ret );
+} /* DbConn */
+
+//-----<Ydbdisconn>----------------------------------------------------------
+int Ydbdisconn()
+{
+	struct sqlca sqlca;
+	char	func_nm[MYAPP_LEN_FNCNM+1];
+	int	ret=RTN_OK;
+
+	strcpy( func_nm, "Ydbdisconn" );
+	LogOut( LT_STA, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+
+  	/* Commit all non-committed transactions to release database locks */
+	EXEC SQL COMMIT;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "COMMIT BEFORE CONNECT RESET"
+			, func_nm, __FILE__, __LINE__ );
+
+	EXEC SQL CONNECT RESET;
+
+	// edit sqlcacode for LogOut errcode
+//	sprintf( G_err, "sql:cd[%d]sta[%.5s]erd[%d]",
+//			sqlca.sqlcode, sqlca.sqlstate , sqlca.sqlerrd[3] );
+	sprintf( G_err, "%d", sqlca.sqlcode );
+
+	// DEBUG
+	LogOut( LT_DBG, LX_NON, G_err, "CONNECT RESET",func_nm, __FILE__, __LINE__);
+
+	LogOut( LT_END, LX_NON, LE_NON, "", func_nm, __FILE__, __LINE__ );
+  	return( RTN_OK );
+} /* DbDisconn */
+/** End of File ***************************************************************/

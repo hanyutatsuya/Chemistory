@@ -1,0 +1,34 @@
+
+lib_loging.c
+過去使っていたが、現在は未使用（コメントアウトされている）
+BD301_LOG.ini が存在しない→BD301のログがない
+
+
+インターフェイスファイルパス
+/apdata/today/file/NSWS/Send/RkInfo/	分注ＯＫ分
+/apdata/today/file/NSWS/Send/TrInfo/	ＷＳ作成分
+
+/apdata/today/file/NSWS/Recv/*
+
+BD301.c
+main {
+
+・daemon コール
+
+initFunction
+
+mainFunction
+
+endFunction
+
+１回ずつ呼び出し
+}
+
+initFunction {
+
+
+
+
+
+}
+

@@ -1,0 +1,10 @@
+#!/bin/sh
+
+/usr/bin/lftp kensys02 <<END_FTP
+USER merits merits
+cd /home/ftp/mail
+lcd /tmp
+put mailapdata_IA
+quit
+END_FTP
+

@@ -1,0 +1,102 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：ND102_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "ND102.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+// <<   情報      >>
+sqlint32	rec_cnt ;
+
+struct {
+        char    knskisymd[10+1];
+        char    asyrckid[10+1];
+} sqlORDERRACK;
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+/******************************************************************************/
+/*  関 数 名　：sFncInsKekka()							*/
+/*  機能概要　：属性情報情報							*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncInsRackOeder ( kka )
+my_stORDERRACK	*kka ;
+{
+	/* ホスト変数へのセット */
+	memcpy( &sqlORDERRACK, kka, sizeof( my_stORDERRACK ));
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = 0 ;
+
+	/*	カーソル定義 */
+	EXEC SQL INSERT INTO ORDERRACK
+		( knskisymd
+		, asyrckid
+		, ksndh
+		, trkdh
+		)
+	VALUES 
+		( :sqlORDERRACK.knskisymd
+		, :sqlORDERRACK.asyrckid
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP	
+	)
+	;
+
+	EXEC SQL COMMIT;
+
+	return ( RTN_OK ) ;
+error:
+	
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+        if( sqlca.sqlcode == MYAPP_SQL_DUPLICATION ){
+		EXEC SQL COMMIT;
+
+                /* すでに登録済みのラックの場合は無視する */
+                return ( RTN_OK ) ;
+        } else {
+
+		sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsRackOeder", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+					    "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+
+		EXEC SQL ROLLBACK;
+
+		return ( RTN_NG ) ;
+	}
+}
+
+/** End of File *********************************************************/

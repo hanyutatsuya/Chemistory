@@ -1,0 +1,68 @@
+
+
+
+2021-08-17-07.57.21.205890+540 I219465A613          LEVEL: Error
+PID     : 9654                 TID : 2203372742928  PROC : db2sysc 0
+INSTANCE: db2inst1             NODE : 000           DB   : KEA00DB
+APPHDL  : 0-20999              APPID: GA01B548.PA12.225286165009
+UOWID   : 247                  ACTID: 1
+AUTHID  : DB2INST1             HOSTNAME: kea00dba
+EDUID   : 1274                 EDUNAME: db2agent (KEA00DB) 0
+FUNCTION: DB2 UDB, common communication, sqlcctcptest, probe:11
+MESSAGE : Detected client termination
+DATA #1 : Hexdump, 2 bytes
+0x00000201033FA660 : 0036                                       .6
+
+2021-08-17-07.57.21.234971+540 I220079A595          LEVEL: Error
+PID     : 9654                 TID : 2203372742928  PROC : db2sysc 0
+INSTANCE: db2inst1             NODE : 000           DB   : KEA00DB
+APPHDL  : 0-20999              APPID: GA01B548.PA12.225286165009
+UOWID   : 247                  ACTID: 1
+AUTHID  : DB2INST1             HOSTNAME: kea00dba
+EDUID   : 1274                 EDUNAME: db2agent (KEA00DB) 0
+FUNCTION: DB2 UDB, common communication, sqlcctest, probe:50
+MESSAGE : sqlcctest RC
+DATA #1 : Hexdump, 2 bytes
+0x00000201033FC758 : 0036                                       .6
+
+2021-08-17-07.57.21.235028+540 I220675A586          LEVEL: Error
+PID     : 9654                 TID : 2203372742928  PROC : db2sysc 0
+INSTANCE: db2inst1             NODE : 000           DB   : KEA00DB
+APPHDL  : 0-20999              APPID: GA01B548.PA12.225286165009
+UOWID   : 247                  ACTID: 1
+AUTHID  : DB2INST1             HOSTNAME: kea00dba
+EDUID   : 1274                 EDUNAME: db2agent (KEA00DB) 0
+FUNCTION: DB2 UDB, base sys utilities, sqeAgent::AgentBreathingPoint, probe:10
+CALLED  : DB2 UDB, common communication, sqlcctest
+RETCODE : ZRC=0x00000036=54
+
+Answer
+このメッセージは、エージェント (db2agent) が UOW 実行中に、リモート・アプリケーションの終了を検出したことを示すインフォメーション・メッセージです。
+SQL 実行中にデータベース接続を切断せずにアプリケーションを終了した場合や、ネットワークが切断された場合などに記録されます。
+
+サーバーによる検出の頻度は DB2CHECKCLIENTINTERVAL レジストリー変数で制御できます。
+V8.1 フィックスパック 4 以降のデフォルト値は 50 ですが、単位は内部的なカウンター (AgentBreathingPoint の回数) を示し、秒数や分数ではありません。低い値ほどチェックが頻繁になります。
+
+どのリモート・クライアントと切断されたかは、db2diag.log に記録されている APPID から判断できます。Db2 9.1 以降の DB2 クライアントは、APPID の一部に自分の IP アドレスを使用します。
+
+運用上の考慮点
+DB2CHECKCLIENTINTERVAL を変更する場合は、Knowledge Center に記載されている注意事項をご参照ください。
+DB2CHECKCLIENTINTERVAL を 0 にするとリモート・クライアント切断の検出が遅れ、Db2 サーバーが無駄な作業を中止する機会を失います。
+[抜粋]
+DB2 のワークロードが重い (内部要求が多い) 場合、DB2CHECKCLIENTINTERVAL に低い値を設定すると、ワークロードが軽い状況よりも、パフォーマンスに重大な影響があります。
+
+APPIDからリモートのIPアドレスを求める。
+APPID=GA01B548.0313
+ GA.01.B5.48 (hex) G->0....P->9
+ ↓
+ 0A.01.B5.48
+
+10.1.181.72 KEA00CLP02
+
+-------------------------------------------------------------------------------------------------------------------------------------------
+
+10.1.49.185 ケミストリーhyper-socket
+
+
+
+

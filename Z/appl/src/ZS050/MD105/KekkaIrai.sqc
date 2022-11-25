@@ -1,0 +1,1176 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Kekka.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Kekka.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	short   knssu;
+	short   knssueda;
+	char    irihsmkbn;
+	char    irikbn;
+	char    ksktkbn;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    sstcd[8];
+	char    trid[11];
+	short   trpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    oyakmkcd[8];
+	char    seccd[3];
+	char    bkfkkbn;
+	char    smpcd[8];
+	char    bskkbn[5];
+	char    bsklne[5];
+	char    bskgok[7];
+	sqlint32  bskseq;
+	char    bskerrsts[3];
+	char    sktdh[27];
+	char    nbkmkcd[8];
+	char    tstrflg;
+	char    zrcd[5];
+	char    ysnlbl[3];
+	char    kjno[4];
+	char    fkhkknohjkbn;
+	char    tbkjno[4];
+	char    tbkjflg;
+	char    htkfkhms[25];
+	char    skflg;
+	char    tskflg[3];
+	char    tktflg[3];
+	char    jisksbr[16];
+	char    kkflg;
+	char    kkiriflg;
+	short   kkirilotno;
+	char    hsykflg;
+	char    hskflg;
+	char    hhkkflg;
+	char    rawdata[21];
+	char    knskka1[13];
+	char    knskka2[25];
+	char    knskka2kbn[3];
+	char    kkahskcd[4];
+	char    hjkka[25];
+	char    sdi[4];
+	char    kkacmt1[6];
+	char    kkacmt2[6];
+	char    kkajkcd;
+	char    pncrgflg;
+	char    knspncrgflg;
+	char    kkaksflg;
+	char    kkassflg;
+	char    ijkbnm;
+	char    ijkbnf;
+	char    ijkbnn;
+	char    tbijkbnm;
+	char    tbijkbnf;
+	char    tbijkbnn;
+	char    nbdolbl[3];
+	char    nbdoerr[4];
+	char    ykdolbl[3];
+	char    ykdoerr[4];
+	char    etclbl[3];
+	char    etcerr[4];
+	sqlint32  ctrlno;
+	sqlint32  knsseq;
+	short   bthno;
+	sqlint32  pltno;
+	sqlint32  pltseq;
+	char    dtnrtts[9];
+	char    dtnrdh[27];
+	char    knskrdh[27];
+	char    hkkdh[27];
+	char    hkkkbdh[9];
+	char    zkhkkyymd[11];
+	char    zkhkkytme[5];
+	char    frkkaflg;
+	char    gzbsflg;
+	char    hsiflg;
+	char    kkaysnflg;
+	char    tnyrkflg;
+	char    siyflg;
+	char    knsflg;
+	char    renjicflg;
+	char    soukn1flg;
+	char    kanrenflg;
+	char    bunkkuflg;
+	char    kesseiflg;
+	char    rirekiflg;
+	char    syougoflg;
+	char    keisanflg;
+	char    per100flg;
+	char    tousekflg;
+	char    kisyakflg;
+	char    kouseiflg;
+	char    syoungflg;
+	char    soukn2flg;
+	char    fukaptflg;
+	char    yobiflg01;
+	char    tobiflg02;
+	char    yobiflg03;
+	char    yobiflg04;
+	char    yobiflg05;
+	char    skrycda[4];
+	char    skrycdb[4];
+	char    skrycdc[4];
+	char    ksndh[27];
+	char    trkdh[27];
+	char	skkka[25];
+
+	/* ADD 2006-09-09 Nagata */
+	char    skkacmt1[6];
+	char    skkacmt2[6];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kekka
+
+BmlDMMInfo	KekkaIraiArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( knssueda ),
+	DMM_SCHAR( irihsmkbn ),
+	DMM_SCHAR( irikbn ),
+	DMM_SCHAR( ksktkbn ),
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( trid ),
+	DMM_SSHORT( trpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SSTRING( oyakmkcd ),
+	DMM_SSTRING( seccd ),
+	DMM_SCHAR( bkfkkbn ),
+	DMM_SSTRING( smpcd ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bsklne ),
+	DMM_SSTRING( bskgok ),
+	DMM_SLONG( bskseq ),
+	DMM_SSTRING( bskerrsts ),
+	DMM_STIMESTAMP( sktdh ),
+	DMM_SSTRING( nbkmkcd ),
+	DMM_SCHAR( tstrflg ),
+	DMM_SSTRING( zrcd ),
+	DMM_SSTRING( ysnlbl ),
+	DMM_SSTRING( kjno ),
+	DMM_SCHAR( fkhkknohjkbn ),
+	DMM_SSTRING( tbkjno ),
+	DMM_SCHAR( tbkjflg ),
+	DMM_SSTRING( htkfkhms ),
+	DMM_SCHAR( skflg ),
+	DMM_SSTRING( tskflg ),
+	DMM_SSTRING( tktflg ),
+	DMM_SSTRING( jisksbr ),
+	DMM_SCHAR( kkflg ),
+	DMM_SCHAR( kkiriflg ),
+	DMM_SSHORT( kkirilotno ),
+	DMM_SCHAR( hsykflg ),
+	DMM_SCHAR( hskflg ),
+	DMM_SCHAR( hhkkflg ),
+	DMM_SSTRING( rawdata ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( hjkka ),
+	DMM_SSTRING( sdi ),
+	DMM_SSTRING( kkacmt1 ),
+	DMM_SSTRING( kkacmt2 ),
+	DMM_SCHAR( kkajkcd ),
+	DMM_SCHAR( pncrgflg ),
+	DMM_SCHAR( knspncrgflg ),
+	DMM_SCHAR( kkaksflg ),
+	DMM_SCHAR( kkassflg ),
+	DMM_SCHAR( ijkbnm ),
+	DMM_SCHAR( ijkbnf ),
+	DMM_SCHAR( ijkbnn ),
+	DMM_SCHAR( tbijkbnm ),
+	DMM_SCHAR( tbijkbnf ),
+	DMM_SCHAR( tbijkbnn ),
+	DMM_SSTRING( nbdolbl ),
+	DMM_SSTRING( nbdoerr ),
+	DMM_SSTRING( ykdolbl ),
+	DMM_SSTRING( ykdoerr ),
+	DMM_SSTRING( etclbl ),
+	DMM_SSTRING( etcerr ),
+	DMM_SLONG( ctrlno ),
+	DMM_SLONG( knsseq ),
+	DMM_SSHORT( bthno ),
+	DMM_SLONG( pltno ),
+	DMM_SLONG( pltseq ),
+	DMM_SSTRING( dtnrtts ),
+	DMM_STIMESTAMP( dtnrdh ),
+	DMM_STIMESTAMP( knskrdh ),
+	DMM_STIMESTAMP( hkkdh ),
+	DMM_STIME( hkkkbdh ),
+	DMM_SDATE( zkhkkyymd ),
+	DMM_SSTRING( zkhkkytme ),
+	DMM_SCHAR( frkkaflg ),
+	DMM_SCHAR( gzbsflg ),
+	DMM_SCHAR( hsiflg ),
+	DMM_SCHAR( kkaysnflg ),
+	DMM_SCHAR( tnyrkflg ),
+	DMM_SCHAR( siyflg ),
+	DMM_SCHAR( knsflg ),
+	DMM_SCHAR( renjicflg ),
+	DMM_SCHAR( soukn1flg ),
+	DMM_SCHAR( kanrenflg ),
+	DMM_SCHAR( bunkkuflg ),
+	DMM_SCHAR( kesseiflg ),
+	DMM_SCHAR( rirekiflg ),
+	DMM_SCHAR( syougoflg ),
+	DMM_SCHAR( keisanflg ),
+	DMM_SCHAR( per100flg ),
+	DMM_SCHAR( tousekflg ),
+	DMM_SCHAR( kisyakflg ),
+	DMM_SCHAR( kouseiflg ),
+	DMM_SCHAR( syoungflg ),
+	DMM_SCHAR( soukn2flg ),
+	DMM_SCHAR( fukaptflg ),
+	DMM_SCHAR( yobiflg01 ),
+	DMM_SCHAR( tobiflg02 ),
+	DMM_SCHAR( yobiflg03 ),
+	DMM_SCHAR( yobiflg04 ),
+	DMM_SCHAR( yobiflg05 ),
+	DMM_SSTRING( skrycda ),
+	DMM_SSTRING( skrycdb ),
+	DMM_SSTRING( skrycdc ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_SSTRING( skkka ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKekkaSelectKey()
+ *    KEKKA レコードKey条件取得
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ *    [O]  Kekka** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkaSelectIrai( Kekka* pKey, Kekka** arrayOut, int* numOut )
+{
+    Kekka*      array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		IRIHSMKBN,
+		IRIKBN,
+		KSKTKBN,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SSTCD,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		OYAKMKCD,
+		SECCD,
+		BKFKKBN,
+		SMPCD,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKSEQ,
+		BSKERRSTS,
+		SKTDH,
+		NBKMKCD,
+		TSTRFLG,
+		ZRCD,
+		YSNLBL,
+		KJNO,
+		FKHKKNOHJKBN,
+		TBKJNO,
+		TBKJFLG,
+		HTKFKHMS,
+		SKFLG,
+		TSKFLG,
+		TKTFLG,
+		JISKSBR,
+		KKFLG,
+		KKIRIFLG,
+		KKIRILOTNO,
+		HSYKFLG,
+		HSKFLG,
+		HHKKFLG,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		HJKKA,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		PNCRGFLG,
+		KNSPNCRGFLG,
+		KKAKSFLG,
+		KKASSFLG,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		NBDOLBL,
+		NBDOERR,
+		YKDOLBL,
+		YKDOERR,
+		ETCLBL,
+		ETCERR,
+		CTRLNO,
+		KNSSEQ,
+		BTHNO,
+		PLTNO,
+		PLTSEQ,
+		DTNRTTS,
+		DTNRDH,
+		KNSKRDH,
+		HKKDH,
+		HKKKBDH,
+		ZKHKKYYMD,
+		ZKHKKYTME,
+		FRKKAFLG,
+		GZBSFLG,
+		HSIFLG,
+		KKAYSNFLG,
+		TNYRKFLG,
+		SIYFLG,
+		KNSFLG,
+		RENJICFLG,
+		SOUKN1FLG,
+		KANRENFLG,
+		BUNKKUFLG,
+		KESSEIFLG,
+		RIREKIFLG,
+		SYOUGOFLG,
+		KEISANFLG,
+		PER100FLG,
+		TOUSEKFLG,
+		KISYAKFLG,
+		KOUSEIFLG,
+		SYOUNGFLG,
+		SOUKN2FLG,
+		FUKAPTFLG,
+		YOBIFLG01,
+		TOBIFLG02,
+		YOBIFLG03,
+		YOBIFLG04,
+		YOBIFLG05,
+		SKRYCDA,
+		SKRYCDB,
+		SKRYCDC,
+		KSNDH,
+		TRKDH,
+		SKKKA
+    FROM
+        KEKKA
+    WHERE
+		IRINO = :irino AND
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		KKAYSNFLG = '1' AND
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Kekka* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knsgrp,
+			:kmkcd,
+			:knssu,
+			:knssueda,
+			:irihsmkbn,
+			:irikbn,
+			:ksktkbn,
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sstcd,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:oyakmkcd,
+			:seccd,
+			:bkfkkbn,
+			:smpcd,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskseq,
+			:bskerrsts,
+			:sktdh,
+			:nbkmkcd,
+			:tstrflg,
+			:zrcd,
+			:ysnlbl,
+			:kjno,
+			:fkhkknohjkbn,
+			:tbkjno,
+			:tbkjflg,
+			:htkfkhms,
+			:skflg,
+			:tskflg,
+			:tktflg,
+			:jisksbr,
+			:kkflg,
+			:kkiriflg,
+			:kkirilotno,
+			:hsykflg,
+			:hskflg,
+			:hhkkflg,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:hjkka,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:kkajkcd,
+			:pncrgflg,
+			:knspncrgflg,
+			:kkaksflg,
+			:kkassflg,
+			:ijkbnm,
+			:ijkbnf,
+			:ijkbnn,
+			:tbijkbnm,
+			:tbijkbnf,
+			:tbijkbnn,
+			:nbdolbl,
+			:nbdoerr,
+			:ykdolbl,
+			:ykdoerr,
+			:etclbl,
+			:etcerr,
+			:ctrlno,
+			:knsseq,
+			:bthno,
+			:pltno,
+			:pltseq,
+			:dtnrtts,
+			:dtnrdh,
+			:knskrdh,
+			:hkkdh,
+			:hkkkbdh,
+			:zkhkkyymd,
+			:zkhkkytme,
+			:frkkaflg,
+			:gzbsflg,
+			:hsiflg,
+			:kkaysnflg,
+			:tnyrkflg,
+			:siyflg,
+			:knsflg,
+			:renjicflg,
+			:soukn1flg,
+			:kanrenflg,
+			:bunkkuflg,
+			:kesseiflg,
+			:rirekiflg,
+			:syougoflg,
+			:keisanflg,
+			:per100flg,
+			:tousekflg,
+			:kisyakflg,
+			:kouseiflg,
+			:syoungflg,
+			:soukn2flg,
+			:fukaptflg,
+			:yobiflg01,
+			:tobiflg02,
+			:yobiflg03,
+			:yobiflg04,
+			:yobiflg05,
+			:skrycda,
+			:skrycdb,
+			:skrycdc,
+			:ksndh,
+			:trkdh,
+			:skkka;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kekka*)ZbmlRealloc( array,
+                                    sizeof( Kekka ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kekka ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KekkaIraiArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkaUpdateJKCD()
+ *    KEKKA 状況コードの初期化
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ *    ADD 2006/08/03  Osada [報告済み]は対象外とする
+ ******************************************************************************/
+long ZdbKekkaUpdateJKCD( Kekka* pKey )
+{
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KEKKA
+	SET KKAJKCD = '1',
+		KKAYSNFLG = ' ',
+		SIYFLG = ' '
+    WHERE
+		KNTNO = :kntno AND
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd	AND
+		KNSFLG != 'E';
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkaUpdateNbYk()
+ *    KEKKA 乳び溶血セット
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ *2006-09-05 Nagata 既に入っている場合は更新しない
+ ******************************************************************************/
+long ZdbKekkaUpdateNbYk( Kekka* pKey )
+{
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KEKKA
+	SET	NBDOLBL	= :nbdolbl,
+		NBDOERR	= :nbdoerr,
+		YKDOLBL	= :ykdolbl,
+		YKDOERR	= :ykdoerr,
+		ETCLBL	= :etclbl,
+		ETCERR	= :etcerr
+    WHERE
+		KNSKISYMD	= :knskisymd	AND
+		ASYRCKID	= :asyrckid		AND
+		ASYRCKPOS	= :asyrckpos	AND
+		NBDOLBL = ' ' AND
+		KNSFLG != 'E';
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKekkaSelectRckPos
+ *    KEKKA 同ラックID、同ポジションデータ取得
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ *    [O]  Kekka** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKekkaSelectRckPos( Kekka* pKey, Kekka** arrayOut, int* numOut )
+{
+    Kekka*      array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c3 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		IRIHSMKBN,
+		IRIKBN,
+		KSKTKBN,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		SSTCD,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		OYAKMKCD,
+		SECCD,
+		BKFKKBN,
+		SMPCD,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKSEQ,
+		BSKERRSTS,
+		SKTDH,
+		NBKMKCD,
+		TSTRFLG,
+		ZRCD,
+		YSNLBL,
+		KJNO,
+		FKHKKNOHJKBN,
+		TBKJNO,
+		TBKJFLG,
+		HTKFKHMS,
+		SKFLG,
+		TSKFLG,
+		TKTFLG,
+		JISKSBR,
+		KKFLG,
+		KKIRIFLG,
+		KKIRILOTNO,
+		HSYKFLG,
+		HSKFLG,
+		HHKKFLG,
+		RAWDATA,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		HJKKA,
+		SDI,
+		KKACMT1,
+		KKACMT2,
+		KKAJKCD,
+		PNCRGFLG,
+		KNSPNCRGFLG,
+		KKAKSFLG,
+		KKASSFLG,
+		IJKBNM,
+		IJKBNF,
+		IJKBNN,
+		TBIJKBNM,
+		TBIJKBNF,
+		TBIJKBNN,
+		NBDOLBL,
+		NBDOERR,
+		YKDOLBL,
+		YKDOERR,
+		ETCLBL,
+		ETCERR,
+		CTRLNO,
+		KNSSEQ,
+		BTHNO,
+		PLTNO,
+		PLTSEQ,
+		DTNRTTS,
+		DTNRDH,
+		KNSKRDH,
+		HKKDH,
+		HKKKBDH,
+		ZKHKKYYMD,
+		ZKHKKYTME,
+		FRKKAFLG,
+		GZBSFLG,
+		HSIFLG,
+		KKAYSNFLG,
+		TNYRKFLG,
+		SIYFLG,
+		KNSFLG,
+		RENJICFLG,
+		SOUKN1FLG,
+		KANRENFLG,
+		BUNKKUFLG,
+		KESSEIFLG,
+		RIREKIFLG,
+		SYOUGOFLG,
+		KEISANFLG,
+		PER100FLG,
+		TOUSEKFLG,
+		KISYAKFLG,
+		KOUSEIFLG,
+		SYOUNGFLG,
+		SOUKN2FLG,
+		FUKAPTFLG,
+		YOBIFLG01,
+		TOBIFLG02,
+		YOBIFLG03,
+		YOBIFLG04,
+		YOBIFLG05,
+		SKRYCDA,
+		SKRYCDB,
+		SKRYCDC,
+		KSNDH,
+		TRKDH,
+		SKKKA
+    FROM
+        KEKKA
+    WHERE
+		KNSKISYMD	= :knskisymd	AND
+		/* 2006-08-23 Nagata */
+		/* KNSSU		= :knssu		AND */
+		ASYRCKID	= :asyrckid		AND
+		ASYRCKPOS	= :asyrckpos AND
+		/* 2006-08-24 Nagata */
+		KNSFLG not in ('E','M')
+		ORDER BY KNSSU DESC;
+
+    EXEC SQL OPEN c3;
+
+    while( 1 ) {
+        Kekka* rec;
+
+        EXEC SQL FETCH c3 INTO
+			:knskisymd,
+			:sriymd,
+			:kntno,
+			:kntketflg,
+			:knsgrp,
+			:kmkcd,
+			:knssu,
+			:knssueda,
+			:irihsmkbn,
+			:irikbn,
+			:ksktkbn,
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:sstcd,
+			:trid,
+			:trpos,
+			:asyrckid,
+			:asyrckpos,
+			:oyakmkcd,
+			:seccd,
+			:bkfkkbn,
+			:smpcd,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskseq,
+			:bskerrsts,
+			:sktdh,
+			:nbkmkcd,
+			:tstrflg,
+			:zrcd,
+			:ysnlbl,
+			:kjno,
+			:fkhkknohjkbn,
+			:tbkjno,
+			:tbkjflg,
+			:htkfkhms,
+			:skflg,
+			:tskflg,
+			:tktflg,
+			:jisksbr,
+			:kkflg,
+			:kkiriflg,
+			:kkirilotno,
+			:hsykflg,
+			:hskflg,
+			:hhkkflg,
+			:rawdata,
+			:knskka1,
+			:knskka2,
+			:knskka2kbn,
+			:kkahskcd,
+			:hjkka,
+			:sdi,
+			:kkacmt1,
+			:kkacmt2,
+			:kkajkcd,
+			:pncrgflg,
+			:knspncrgflg,
+			:kkaksflg,
+			:kkassflg,
+			:ijkbnm,
+			:ijkbnf,
+			:ijkbnn,
+			:tbijkbnm,
+			:tbijkbnf,
+			:tbijkbnn,
+			:nbdolbl,
+			:nbdoerr,
+			:ykdolbl,
+			:ykdoerr,
+			:etclbl,
+			:etcerr,
+			:ctrlno,
+			:knsseq,
+			:bthno,
+			:pltno,
+			:pltseq,
+			:dtnrtts,
+			:dtnrdh,
+			:knskrdh,
+			:hkkdh,
+			:hkkkbdh,
+			:zkhkkyymd,
+			:zkhkkytme,
+			:frkkaflg,
+			:gzbsflg,
+			:hsiflg,
+			:kkaysnflg,
+			:tnyrkflg,
+			:siyflg,
+			:knsflg,
+			:renjicflg,
+			:soukn1flg,
+			:kanrenflg,
+			:bunkkuflg,
+			:kesseiflg,
+			:rirekiflg,
+			:syougoflg,
+			:keisanflg,
+			:per100flg,
+			:tousekflg,
+			:kisyakflg,
+			:kouseiflg,
+			:syoungflg,
+			:soukn2flg,
+			:fukaptflg,
+			:yobiflg01,
+			:tobiflg02,
+			:yobiflg03,
+			:yobiflg04,
+			:yobiflg05,
+			:skrycda,
+			:skrycdb,
+			:skrycdc,
+			:ksndh,
+			:trkdh,
+			:skkka;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Kekka*)ZbmlRealloc( array,
+                                    sizeof( Kekka ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Kekka ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KekkaIraiArray );
+    }
+
+    EXEC SQL CLOSE c3;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKekkaUpdateCmt12()
+ *    KEKKA コメントコード更新
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ *    ADD 2006/08/03  Osada [報告済み]は対象外とする
+ *    ADD 2006-09-09 コメント１，２取得カーソルループを作成し、
+ *					 一旦コメントを取得。血清コメントを付けなおして
+					 再び更新する
+ ******************************************************************************/
+long ZdbKekkaUpdateCmt12( Kekka* pKey )
+{
+	
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    /* EXEC SQL WHENEVER NOT FOUND GO TO notfound; */
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL DECLARE c_selCmt CURSOR FOR
+    SELECT  KKACMT1,
+			KKACMT2,
+            KNSSU,
+            KNSSUEDA
+     FROM   KEKKA
+     WHERE
+		KNTNO     = :kntno AND
+        KNSGRP    = :knsgrp AND
+        KMKCD     = :kmkcd AND
+        KNSKISYMD = :knskisymd AND
+        SRIYMD    = :sriymd    AND
+        KNSFLG    not in( 'E','M')
+    	FOR READ ONLY ;
+
+    EXEC SQL OPEN c_selCmt ;
+    while( 1 ) {
+        EXEC SQL FETCH c_selCmt INTO
+                    :skkacmt1 , 
+					:skkacmt2 , 
+					:knssu , 
+					:knssueda ;
+        if ( SQLCODE == 100 ) {
+            break;
+        }
+		if(atoi(skkacmt1) == 101 || atoi(skkacmt2) == 101){
+			if(atoi(kkacmt1) == 104 || atoi(kkacmt1) == 105){	
+				if(atoi(kkacmt2) == 104 || atoi(kkacmt2) == 105){	
+					// セットする場所が無いため、何もしない
+				}
+				else{
+					strcpy(kkacmt2,"0101");
+				}
+			}
+			else{
+				strcpy(kkacmt1,"0101");
+			}
+		}
+
+    	EXEC SQL UPDATE KEKKA
+
+		SET KKACMT1 = :kkacmt1,
+			KKACMT2 = :kkacmt2,
+			KESSEIFLG = :kesseiflg
+
+    	WHERE
+			KNTNO = :kntno AND
+			KNSGRP = :knsgrp AND
+			KMKCD = :kmkcd AND
+			KNSKISYMD = :knskisymd AND
+			SRIYMD = :sriymd	AND
+			KNSSU  = :knssu AND
+			KNSSUEDA = :knssueda AND
+			KNSFLG not in( 'E','M');
+	}
+
+    EXEC SQL CLOSE c_selCmt;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+// ADD 2006/08/14 S.Ueda 乳び・溶血チェック <<
+
+/******************************************************************************
+ * ZdbKekkaUpdateKnsFlg()
+ *    KEKKA 検査フラグ更新
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ *    ADD 2006-08-31 Nagata 新規追加
+ *    ADD 2006-09-01 Nagata 新規追加 'H'→'X'にするのみ
+ ******************************************************************************/
+long ZdbKekkaUpdateKnsFlg( Kekka* pKey )
+{
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KEKKA
+	SET	KNSFLG = 'X'
+
+    WHERE
+		KNTNO = :kntno AND
+		KNSGRP = :knsgrp AND
+		KMKCD = :kmkcd AND
+		KNSKISYMD = :knskisymd AND
+		SRIYMD = :sriymd	AND
+		KESSEIFLG != '2' AND
+		KNSFLG = 'H';
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+// ADD E.Osada 2006-09-12
+/******************************************************************************
+ * updKkaYsn()
+ *    KEKKA 検査フラグ更新
+ * ■引数
+ *    [I]  Kekka* pKey       取得するレコードのキー
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long updKkaYsn( Kekka* pKey )
+{
+    if( !ZbmlMapStructToHost( (char*)pKey, KekkaIraiArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KEKKA
+	SET KNSFLG = 'X'
+    WHERE
+		KNTNO     = :kntno      AND
+		KNSGRP    = :knsgrp     AND
+		KMKCD     = :kmkcd      AND
+		KNSSU     = :knssu      AND
+		KKAYSNFLG = '1'         AND
+		KNSSUEDA  = :knssueda   AND
+		KNSFLG    = 'A'         AND
+		KANRENFLG = '2'			AND
+		RENJICFLG != '2'		AND
+		SOUKN1FLG != '2'		AND
+		KISYAKFLG != '2'		AND
+		BUNKKUFLG != '2'		AND
+		PER100FLG != '2'		AND
+		YOBIFLG01 != '2'		AND
+		NBKMKCD   = '       '   AND
+		KNSKISYMD = :knskisymd  AND
+		SRIYMD    = :sriymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

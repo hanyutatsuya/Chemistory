@@ -1,0 +1,245 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：LD105_db.sqc                                                 */
+/* 　概　　　要：                                                             */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2019/01/15                    新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "LD105.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+// <<   情報      >>
+sqlint32	rec_cnt ;
+
+struct {
+	char	kjnsriymd[10+1];	// 1 基準処理日
+	char	iriendflg[1+1];		// 2 依頼ＥＮＤフラグ
+	char	bchendflg[1+1];		// 3 分注ＥＮＤフラグ
+	char	unyflg[1+1];		// 4 運用フラグ
+} sqlSYSKNR;
+
+struct {
+        char    utkymd[10+1];
+        char    irino[11+1];
+        char    kmkcd[7+1];
+        char    sriymd[10+1];
+        char    kntno[13+1];
+        char    chkmj[4+1];
+        char    stzrcd[4+1];
+        char    kmkrs[16+1];
+        char    oyakmkcd[7+1];
+        char    seccd[2+1];
+        char    bkfkkbn[1+1];
+        char    knsjslbcd[3+1];
+        char    kkajkcd[1+1];
+        char    pncrgflg[1+1];
+        char    kkaksflg[1+1];
+        char    kkassflg[1+1];
+        char    knskka1[12+1];
+        char    knskka2[24+1];
+        char    knskka2kbn[2+1];
+        char    kkahskcd[3+1];
+        char    kkacmt1[5+1];
+        char    kkacmt2[5+1];
+        char    ijkbnm[1+1];
+        char    ijkbnf[1+1];
+        char    ijkbnn[1+1];
+        char    sdi[3+1];
+        char    hkkki[24+1];
+        char    hkkkiknj[24+1];
+        char    kjno[3+1];
+        char    smpcd[7+1];
+        short   knsseq;
+        char    ksndh[26+1];
+        char    trkdh[26+1];
+} sqlOTHERKKA;
+
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+/******************************************************************************/
+/*  関 数 名　：sFncSelSysKnr()							*/
+/*  機能概要　：システム管理マスタ情報検索					*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：        検査開始日                                              */
+/*　 第２引数 ：        属性チェック情報検索結果格納構造体                      */
+/*　 第３引数 ：        検索データ件数                                          */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int                                                             */
+/******************************************************************************/
+int
+sFncSelSysKnr ( precSYSKNR )
+my_stSYSKNR     *precSYSKNR ;
+{
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*      カーソル定義 */
+	EXEC SQL DECLARE c1 CURSOR FOR
+	SELECT
+		kjnsriymd
+		, iriendflg
+		, bchendflg
+		, unyflg
+	FROM	sysknrmst
+	FOR READ ONLY
+	;
+
+	/*      検索 */
+	EXEC SQL OPEN c1 ;
+
+	memset ( &sqlSYSKNR, '\0', sizeof ( sqlSYSKNR ) ) ;
+	EXEC SQL FETCH c1 INTO
+			:sqlSYSKNR ;
+
+	if ( SQLCODE == 100 ) {
+		return ( -1 ) ;
+	}
+
+	memcpy ( precSYSKNR, &sqlSYSKNR, sizeof ( sqlSYSKNR ) ) ;
+
+	EXEC SQL CLOSE c1;
+
+	return ( 0 ) ;
+error:
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelSysKnr", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+		     "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+	return ( sqlca.sqlcode ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKekka()							*/
+/*  機能概要　：属性情報情報							*/
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日						*/
+/*  出　　力　：                                                              */
+/*  復帰情報　：int								*/
+/*		 0	正常							*/
+/*		 2	デッドロック						*/
+/*		-1	異常							*/
+/******************************************************************************/
+int
+sFncInsKekka ( db_kka )
+my_stDbOTHERKKA	*db_kka ;
+{
+	int	sqlerrcode;
+
+	/* ホスト変数へのセット */
+	memcpy( &sqlOTHERKKA, db_kka, sizeof( my_stDbOTHERKKA ));
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/*	変数初期化	*/
+	rec_cnt = 0 ;
+
+	/*	カーソル定義 */
+	EXEC SQL INSERT INTO OTHERKKA
+		( utkymd
+		, irino
+		, kmkcd
+		, sriymd
+		, kntno
+		, chkmj
+		, stzrcd
+		, kmkrs
+		, oyakmkcd
+		, seccd
+		, bkfkkbn
+		, knsjslbcd
+		, kkajkcd
+		, pncrgflg
+		, kkaksflg
+		, kkassflg
+		, knskka1
+		, knskka2
+		, knskka2kbn
+		, kkahskcd
+		, kkacmt1
+		, kkacmt2
+		, ijkbnm
+		, ijkbnf
+		, ijkbnn
+		, sdi
+		, hkkki
+		, hkkkiknj
+		, kjno
+		, smpcd
+		, knsseq
+		, ksndh
+		, trkdh
+		)
+	VALUES 
+		( :sqlOTHERKKA.utkymd
+		, :sqlOTHERKKA.irino
+		, :sqlOTHERKKA.kmkcd
+		, :sqlOTHERKKA.sriymd
+		, :sqlOTHERKKA.kntno
+		, :sqlOTHERKKA.chkmj
+		, :sqlOTHERKKA.stzrcd
+		, :sqlOTHERKKA.kmkrs
+		, :sqlOTHERKKA.oyakmkcd
+		, :sqlOTHERKKA.seccd
+		, :sqlOTHERKKA.bkfkkbn
+		, :sqlOTHERKKA.knsjslbcd
+		, :sqlOTHERKKA.kkajkcd
+		, :sqlOTHERKKA.pncrgflg
+		, :sqlOTHERKKA.kkaksflg
+		, :sqlOTHERKKA.kkassflg
+		, :sqlOTHERKKA.knskka1
+		, :sqlOTHERKKA.knskka2
+		, :sqlOTHERKKA.knskka2kbn
+		, :sqlOTHERKKA.kkahskcd
+		, :sqlOTHERKKA.kkacmt1
+		, :sqlOTHERKKA.kkacmt2
+		, :sqlOTHERKKA.ijkbnm
+		, :sqlOTHERKKA.ijkbnf
+		, :sqlOTHERKKA.ijkbnn
+		, :sqlOTHERKKA.sdi
+		, :sqlOTHERKKA.hkkki
+		, :sqlOTHERKKA.hkkkiknj
+		, :sqlOTHERKKA.kjno
+		, :sqlOTHERKKA.smpcd
+		, :sqlOTHERKKA.knsseq
+		, CURRENT TIMESTAMP
+		, CURRENT TIMESTAMP	
+	)
+	;
+
+	EXEC SQL COMMIT;
+
+	return ( 0 ) ;
+error:
+	
+	EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+	sqlerrcode = sqlca.sqlcode;
+
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKekka", __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+				    "SQLCODE:%ld SQLSTATE:%5.5s", sqlca.sqlcode, sqlca.sqlstate ) ;
+	EXEC SQL ROLLBACK;
+
+	return ( sqlerrcode ) ; 
+}
+
+/** End of File *********************************************************/

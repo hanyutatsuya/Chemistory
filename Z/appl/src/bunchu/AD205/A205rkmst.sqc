@@ -1,0 +1,150 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Rkmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2008-01-07                    Create(新フロンティア対応)
+ *  4.01     2009-02-10     K.Ameno        緊急SUN EOSL対応        
+ *                                         AD105を複製して作成
+**********************************************************************/
+#include <stdio.h>
+
+#include "A205rkmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    smpcd[8];
+	char    rksbt;
+	char    rknm[21];
+	short   rkknhsu;
+	short   trrcksu;
+	char    filskdir[129];
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Rkmst
+
+BmlDMMInfo	RkmstArray[] = {
+	DMM_SSTRING( smpcd ),
+	DMM_SCHAR( rksbt ),
+	DMM_SSTRING( rknm ),
+	DMM_SSHORT( rkknhsu ),
+	DMM_SSHORT( trrcksu ),
+	DMM_SSTRING( filskdir ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * A205rkmstSelectKey()
+ *    RKMST レコードKey条件取得
+ * ■引数
+ *    [I]  Rkmst* pKey       取得するレコードのキー
+ *    [O]  Rkmst** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long A205rkmstSelectKey( Rkmst* pKey, Rkmst** arrayOut, int* numOut )
+{
+    Rkmst*      array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, RkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		SMPCD,
+		RKSBT,
+		RKNM,
+		RKKNHSU,
+		TRRCKSU,
+		FILSKDIR,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        RKMST
+    WHERE
+		SMPCD = :smpcd AND
+		KAIYMD <= :kaiymd AND
+		HAIYMD >= :kaiymd 
+		FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Rkmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:smpcd,
+			:rksbt,
+			:rknm,
+			:rkknhsu,
+			:trrcksu,
+			:filskdir,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Rkmst*)ZbmlRealloc( array,
+                                    sizeof( Rkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Rkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, RkmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

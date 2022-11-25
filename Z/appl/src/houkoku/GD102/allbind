@@ -1,0 +1,8 @@
+#!/bin/bash -
+
+db2 connect to $1 user $2 using $3
+
+db2 bind GD102Hkkknri.bnd
+
+db2 terminate
+

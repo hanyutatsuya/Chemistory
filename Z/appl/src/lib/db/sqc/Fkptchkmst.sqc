@@ -1,0 +1,425 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Fkptchkmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Fkptchkmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knsgrp[17];
+	char    oyakmkcd[8];
+	char    chk1;
+	char    chk2;
+	char    chk3;
+	char    chk4;
+	char    chk5;
+	char    chk6;
+	char    chk7;
+	char    chk8;
+	char    chk9;
+	char    chk10;
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Fkptchkmst
+
+BmlDMMInfo	FkptchkmstArray[] = {
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( oyakmkcd ),
+	DMM_SCHAR( chk1 ),
+	DMM_SCHAR( chk2 ),
+	DMM_SCHAR( chk3 ),
+	DMM_SCHAR( chk4 ),
+	DMM_SCHAR( chk5 ),
+	DMM_SCHAR( chk6 ),
+	DMM_SCHAR( chk7 ),
+	DMM_SCHAR( chk8 ),
+	DMM_SCHAR( chk9 ),
+	DMM_SCHAR( chk10 ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbFkptchkmstSelectAll()
+ *    FKPTCHKMST レコード全件取得
+ * ■引数
+ *    [O]  Fkptchkmst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbFkptchkmstSelectAll( Fkptchkmst** arrayOut, int* numOut )
+{
+    Fkptchkmst* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSGRP,
+		OYAKMKCD,
+		CHK1,
+		CHK2,
+		CHK3,
+		CHK4,
+		CHK5,
+		CHK6,
+		CHK7,
+		CHK8,
+		CHK9,
+		CHK10,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        FKPTCHKMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Fkptchkmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knsgrp,
+			:oyakmkcd,
+			:chk1,
+			:chk2,
+			:chk3,
+			:chk4,
+			:chk5,
+			:chk6,
+			:chk7,
+			:chk8,
+			:chk9,
+			:chk10,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Fkptchkmst*)ZbmlRealloc( array,
+                                    sizeof( Fkptchkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Fkptchkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, FkptchkmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbFkptchkmstSelectKey()
+ *    FKPTCHKMST レコードKey条件取得
+ * ■引数
+ *    [I]  Fkptchkmst* pKey     取得するレコードのキー
+ *    [O]  Fkptchkmst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbFkptchkmstSelectKey( Fkptchkmst* pKey, Fkptchkmst** arrayOut, int* numOut )
+{
+    Fkptchkmst* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, FkptchkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSGRP,
+		OYAKMKCD,
+		CHK1,
+		CHK2,
+		CHK3,
+		CHK4,
+		CHK5,
+		CHK6,
+		CHK7,
+		CHK8,
+		CHK9,
+		CHK10,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        FKPTCHKMST
+    WHERE
+		KNSGRP = :knsgrp AND
+		OYAKMKCD = :oyakmkcd AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Fkptchkmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knsgrp,
+			:oyakmkcd,
+			:chk1,
+			:chk2,
+			:chk3,
+			:chk4,
+			:chk5,
+			:chk6,
+			:chk7,
+			:chk8,
+			:chk9,
+			:chk10,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Fkptchkmst*)ZbmlRealloc( array,
+                                    sizeof( Fkptchkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Fkptchkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, FkptchkmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbFkptchkmstInsert()
+ *    FKPTCHKMST レコードを挿入する
+ * ■引数
+ *    [I]  Fkptchkmst* rec      挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbFkptchkmstInsert( Fkptchkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, FkptchkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO FKPTCHKMST
+    (
+		KNSGRP,
+		OYAKMKCD,
+		CHK1,
+		CHK2,
+		CHK3,
+		CHK4,
+		CHK5,
+		CHK6,
+		CHK7,
+		CHK8,
+		CHK9,
+		CHK10,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:knsgrp,
+		:oyakmkcd,
+		:chk1,
+		:chk2,
+		:chk3,
+		:chk4,
+		:chk5,
+		:chk6,
+		:chk7,
+		:chk8,
+		:chk9,
+		:chk10,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbFkptchkmstUpdate()
+ *    FKPTCHKMST レコードを更新する
+ * ■引数
+ *    [I]  Fkptchkmst* rec      更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbFkptchkmstUpdate( Fkptchkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, FkptchkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE FKPTCHKMST
+    SET (
+		CHK1,
+		CHK2,
+		CHK3,
+		CHK4,
+		CHK5,
+		CHK6,
+		CHK7,
+		CHK8,
+		CHK9,
+		CHK10,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:chk1,
+		:chk2,
+		:chk3,
+		:chk4,
+		:chk5,
+		:chk6,
+		:chk7,
+		:chk8,
+		:chk9,
+		:chk10,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		KNSGRP = :knsgrp AND
+		OYAKMKCD = :oyakmkcd AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbFkptchkmstDelete()
+ *    FKPTCHKMST レコードを削除する
+ * ■引数
+ *    [I]  Fkptchkmst* rec      削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbFkptchkmstDelete( Fkptchkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, FkptchkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM FKPTCHKMST
+    WHERE
+		KNSGRP = :knsgrp AND
+		OYAKMKCD = :oyakmkcd AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

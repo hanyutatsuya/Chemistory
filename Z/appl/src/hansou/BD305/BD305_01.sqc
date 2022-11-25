@@ -1,0 +1,1074 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：BD305_01.sqc                                                 */
+/* 　概　　　要：ストッカー【供給】                                           */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/01/15     芳賀弘幸       新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "sql.h"
+#include "bmllog.h"
+#include "BD305.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+struct 
+{
+  char knskisymd[11];
+  char sriymd[11];
+  char kntno[14];
+  char kntketflg[2];
+  char knsgrp[17];
+  char kmkcd[8];
+  short knssu;
+  short knssueda;
+  char irihsmkbn[2];
+  char irikbn[2];
+  char ksktkbn[2];
+  char utkymd[11];
+  char irino[12];
+  char iriketflg[2];
+  short zssdino;
+  char sstcd[8];
+  char trid[11];
+  short trpos;
+  char asyrckid[11];
+  short asyrckpos;
+  char oyakmkcd[8];
+  char seccd[3];
+  char bkfkkbn[2];
+  char smpcd[8];
+  char bskkbn[5];
+  char nbkmkcd[8];
+  char zrcd[5];
+  char ysnlbl[3];
+  char kjno[4];
+  char fkhkknohjkbn[2];
+  char tbkjno[4];
+  char tbkjflg[2];
+  char htkfkhms[25];
+  char skflg[2];
+  char tskflg[3];
+  char tktflg[3];
+  char ytiksbr[16];
+  char kkflg[2];
+  char kkiriflg[2];
+  short kkirilotno;
+  char sc[6];
+  char tj[6];
+  char tjtni[2];
+  char sbtkbn[2];
+  char birthday[9];
+  char birthdaykbn[2];
+  char age[4];
+  char agekbn[2];
+  char sstme[9];
+  char ssymd[11];
+  char tntme[5];
+  char tntni[2];
+  char tnryo[6];
+  char tnryotni[2];
+  sqlint32 knsseq;
+  short bthno;
+  char knsjkflg[2];
+  char ksndh[27];
+} sqlKENORDER;
+
+struct 
+{
+  char knskisymd[11];
+  char sriymd[11];
+  char kntno[14];
+  char kntketflg[2];
+  char knsgrp[17];
+  char kmkcd[8];
+  short knssu;
+  short knssueda;
+  char utkymd[11];
+  char irino[12];
+  char iriketflg[2];
+  short zssdino;
+  char trid[11];
+  short trpos;
+  char asyrckid[11];
+  short asyrckpos;
+  char bskkbn[5];
+  char nbkmkcd[8];
+  char renjicflg[2];
+  char soukn1flg[2];
+  char kanrenflg[2];
+  char bunkkuflg[2];
+  char kesseiflg[2];
+  char rirekiflg[2];
+  char syougoflg[2];
+  char keisanflg[2];
+  char per100flg[2];
+  char tousekflg[2];
+  char kisyakflg[2];
+  char kouseiflg[2];
+  char syoungflg[2];
+  char soukn2flg[2];
+  char fukaptflg[2];
+  char yobiflg01[2];
+  char tobiflg02[2];
+  char yobiflg03[2];
+  char yobiflg04[2];
+  char yobiflg05[2];
+  struct
+  {
+    short length;
+    char  data[256];
+  } renjicpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } soukn1para;
+  struct
+  {
+    short length;
+    char  data[256];
+  } kanrenpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } bunkkupara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } kesseipara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } rirekipara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } syougopara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } keisanpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } per100para;
+  struct
+  {
+    short length;
+    char  data[256];
+  } tousekpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } kisyakpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } kouseipara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } syoungpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } soukn2para;
+  struct
+  {
+    short length;
+    char  data[256];
+  } fukaptpara;
+  struct
+  {
+    short length;
+    char  data[256];
+  } yobipara01;
+  struct
+  {
+    short length;
+    char  data[256];
+  } yobipara02;
+  struct
+  {
+    short length;
+    char  data[256];
+  } yobipara03;
+  struct
+  {
+    short length;
+    char  data[256];
+  } yobipara04;
+  struct
+  {
+    short length;
+    char  data[256];
+  } yobipara05;
+  char ksndh[27];
+} sqlREALCHK;
+
+char	sel_knskisymd[11];
+char	sel_trid[11];
+short	from;
+short	to;
+char	sel_asyrckid[11];
+short	sel_asyrckpos;
+
+char	upd_trid[11];
+char	upd_asyrckid[11];
+short	rIdx;
+char	rakitjhossi[7] ;
+char	upd_instkno[11] ;
+
+
+
+struct
+{
+  char knskisymd[11];
+  char sriymd[11];
+  char kntno[14];
+  char kntketflg[2];
+  char knndh[27];
+  char utkymd[11];
+  char irino[12];
+  char iriketflg[2];
+  short zssdino;
+  char trid[11];
+  short trpos;
+  char asyrckid[11];
+  short asyrckpos;
+  char rakitjho[2];
+  char rakitjhossi[7];
+  char ksndh[27];
+  char trkdh[27];
+} sqlKENPOS;
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：sFncUpdKENORDER()		 									  */
+/*  機能概要　：検査オーダー情報更新【過渡期】				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	アッセイラックＩＤ										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdKENORDER( pSel_knskisymd, pSel_trid, pFrom, pTo, pUpd_asyrckid, prIdx )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+int		 pFrom ;
+int		 pTo ;
+char	*pUpd_asyrckid ;
+int		 prIdx ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	from = pFrom ;
+	to   = pTo ;
+
+	//	更新値
+	strcpy ( upd_asyrckid, pUpd_asyrckid ) ;
+	rIdx = prIdx ;
+	
+	/***
+	 ***	検査オーダー情報更新
+	 ***	【過渡期】
+	 ***		更新項目
+	 ***			アッセイラックＩＤ
+	 ***			アッセイラックポジション
+	 ***			検査状況フラグ
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			トレーＩＤ
+	 ***			トレーポジション
+	 ***			
+	 ***/
+	EXEC SQL UPDATE KENORDER
+		  SET  ASYRCKID  = :upd_asyrckid
+			  ,ASYRCKPOS = TRPOS - ( 5 * :rIdx )
+			  ,KNSJKFLG  = '1'
+			  ,KSNDH	 = CURRENT_TIMESTAMP
+		WHERE  KNSKISYMD = :sel_knskisymd
+	  	  AND  TRID      = :sel_trid
+	  	  AND  TRPOS     BETWEEN  :from AND :to 
+	  	  AND  KNSJKFLG  = ' ' ;
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdKENORDER", 
+				 __LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDERK] CLM[ASYRCKID='%s' ASYRCKPOS=TRPOS-(5*%d) KNSJKFLG='1' KNSJKFLGKSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s' TRID='%s' AND TRPOS %d-%d]", sqlca.sqlcode, sqlca.sqlstate, pUpd_asyrckid, prIdx, pSel_knskisymd, pSel_trid, pFrom, pTo ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncUpdREALCHK()		 									  */
+/*  機能概要　：即時チェック情報更新【過渡期】				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	アッセイラックＩＤ										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdREALCHK( pSel_knskisymd, pSel_trid, pFrom, pTo, pUpd_asyrckid, prIdx )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+int		 pFrom ;
+int		 pTo ;
+char	*pUpd_asyrckid ;
+int		 prIdx ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	from = pFrom ;
+	to   = pTo ;
+
+	//	更新値
+	strcpy ( upd_asyrckid, pUpd_asyrckid ) ;
+
+	/***
+	 ***    カーソル定義
+	 ***/
+	EXEC SQL DECLARE c_updRc CURSOR FOR
+	SELECT   R.KNSKISYMD
+			,R.SRIYMD 
+			,R.KNTNO
+			,R.KNSGRP
+			,R.KMKCD
+			,R.KNSSU
+			,R.KNSSUEDA
+	  FROM   REALCHK R, KENORDER O
+	 WHERE   R.KNSKISYMD = O.KNSKISYMD
+	   AND   R.SRIYMD    = O.SRIYMD
+	   AND   R.KNTNO     = O.KNTNO
+	   AND   R.KNSGRP    = O.KNSGRP
+	   AND   R.KMKCD     = O.KMKCD
+	   AND   R.KNSSU     = O.KNSSU
+	   AND   R.KNSSUEDA  = O.KNSSUEDA
+	   AND   O.KNSJKFLG  = '1'
+	   AND   R.KNSKISYMD = :sel_knskisymd
+	   AND   R.TRID      = :sel_trid
+	   AND   R.TRPOS     BETWEEN  :from AND :to 
+	FOR READ ONLY ;
+
+	/***
+	 ***	即時チェック情報更新
+	 ***	【過渡期】
+	 ***		更新項目
+	 ***			アッセイラックＩＤ
+	 ***			アッセイラックポジション
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			トレーＩＤ
+	 ***			トレーポジション
+	 ***			
+	 ***/
+    EXEC SQL OPEN c_updRc ;
+    while( 1 ) {
+        EXEC SQL FETCH c_updRc INTO 
+					  :sqlREALCHK.knskisymd
+					, :sqlREALCHK.sriymd
+					, :sqlREALCHK.kntno
+					, :sqlREALCHK.knsgrp
+					, :sqlREALCHK.kmkcd
+					, :sqlREALCHK.knssu
+					, :sqlREALCHK.knssueda ;
+        if ( SQLCODE == 100 ) {
+        	break;
+		}
+		EXEC SQL UPDATE REALCHK
+		  	  SET  ASYRCKID   = :upd_asyrckid
+			  	  ,ASYRCKPOS  = TRPOS - ( 5 * :rIdx )
+			  	  ,KSNDH	  = CURRENT_TIMESTAMP
+			WHERE  KNSKISYMD  = :sqlREALCHK.knskisymd
+		  	  AND  SRIYMD     = :sqlREALCHK.sriymd
+		  	  AND  KNTNO      = :sqlREALCHK.kntno
+		  	  AND  KNSGRP     = :sqlREALCHK.knsgrp
+		  	  AND  KMKCD      = :sqlREALCHK.kmkcd
+		  	  AND  KNSSU      = :sqlREALCHK.knssu
+		  	  AND  KNSSUEDA   = :sqlREALCHK.knssueda
+		  	  AND  KNSKISYMD  = :sel_knskisymd
+	  	  	  AND  TRID       = :sel_trid
+	  	  	  AND  TRPOS      BETWEEN  :from AND :to ;
+    }
+
+    EXEC SQL CLOSE c_updRc;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdREALCHK", 
+				 __LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[REALCHK] CLM[ASYRCKID='%s' ASYRCKPOS=TRPOS-(5*%d) KNSJKFLGKSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s' TRID='%s' AND TRPOS %d-%d]", sqlca.sqlcode, sqlca.sqlstate, pUpd_asyrckid, prIdx, pSel_knskisymd, pSel_trid, pFrom, pTo ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKENPOS()			 									  */
+/*  機能概要　：検体ポジション情報追加【過渡期】			  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	詳細情報												  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncInsKENPOS( pSel_knskisymd, pSel_trid, pFrom, pTo, pRakitjhossi )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+int		 pFrom ;
+int		 pTo ;
+char	*pRakitjhossi ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	from = pFrom ;
+	to   = pTo ;
+
+	//	設定値
+	strcpy ( rakitjhossi, pRakitjhossi ) ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+    EXEC SQL DECLARE c_insKp CURSOR FOR
+	SELECT   A.KNSKISYMD
+			,A.SRIYMD
+			,A.KNTNO
+			,A.KNTKETFLG
+			,CURRENT_TIMESTAMP
+			,A.UTKYMD
+			,A.IRINO
+			,A.IRIKETFLG
+			,A.ZSSDINO
+			,A.TRID
+			,A.TRPOS
+			,A.ASYRCKID
+			,A.ASYRCKPOS
+			,'A'
+			,:rakitjhossi
+			,CURRENT_TIMESTAMP
+			,CURRENT_TIMESTAMP
+	  FROM   (   SELECT  KNSKISYMD
+				   		,SRIYMD
+				   		,KNTNO
+				   		,KNTKETFLG
+				   		,UTKYMD
+				   		,IRINO
+				   		,IRIKETFLG
+				   		,ZSSDINO
+				   		,TRID
+				   		,TRPOS
+				   		,ASYRCKID
+				   		,ASYRCKPOS
+			  	  FROM   KENORDER
+			 	 WHERE  KNSKISYMD = :sel_knskisymd
+		  	   	   AND  TRID      = :sel_trid
+		  	   	   AND  TRPOS     BETWEEN :from AND :to 
+	  	  	   	   AND  KNSJKFLG  = '1' 
+			 	GROUP BY  KNSKISYMD
+					  	 ,SRIYMD
+					  	 ,KNTNO
+				      	 ,KNTKETFLG
+				      	 ,UTKYMD
+				      	 ,IRINO
+				      	 ,IRIKETFLG
+				      	 ,ZSSDINO
+				      	 ,TRID
+				      	 ,TRPOS
+				      	 ,ASYRCKID
+				      	 ,ASYRCKPOS
+			 ) AS A 
+	 FOR READ ONLY ;
+
+	/***
+	 ***	検体ポジション情報追加
+	 ***/
+    EXEC SQL OPEN c_insKp ;
+    while( 1 ) {
+        EXEC SQL FETCH c_insKp INTO :sqlKENPOS ;
+        if ( SQLCODE == 100 ) {
+        	break;
+		}
+		EXEC SQL INSERT INTO KENPOS VALUES ( :sqlKENPOS ) ;
+    }
+
+    EXEC SQL CLOSE c_insKp ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKENPOS", 
+				 __LINE__, EXEFLG_INS, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENPOS] SELECT FROM KENORDER KNSKISYMD='%s' AND TRID='%s' AND TRPOS %d-%d]", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd, pSel_trid, pFrom, pTo ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncSelKENORDER_REALCHK()									  */
+/*  機能概要　：検査オーダー情報・即時チェック情報検索		  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	検査オーダー情報検索結果格納構造体						  */
+/*　 第６引数 ：	即時チェック情報検索結果格納構造体						  */
+/*　 第７引数 ：	検索データ件数											  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncSelKENORDER_REALCHK ( pSel_knskisymd, pSel_trid, pFrom, pTo, precKENORDER, precREALCHK, precCnt )
+char					*pSel_knskisymd ;
+char					*pSel_trid ;
+int						 pFrom ;
+int						 pTo ;
+struct my_stKENORDER   **precKENORDER ;
+struct my_stREALCHK	   **precREALCHK ;
+int						*precCnt ;
+{
+	int						 irecCnt ;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	irecCnt = *precCnt ;
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	from = pFrom ;
+	to   = pTo ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT  O.*
+           ,R.*
+      FROM  KENORDER O, REALCHK R
+     WHERE  O.KNSKISYMD = R.KNSKISYMD
+       AND	O.SRIYMD    = R.SRIYMD
+       AND	O.KNTNO     = R.KNTNO
+       AND	O.KNSGRP    = R.KNSGRP
+       AND	O.KMKCD     = R.KMKCD
+       AND	O.KNSSU     = R.KNSSU
+       AND	O.KNSSUEDA  = R.KNSSUEDA 
+	   AND  O.KNSKISYMD = :sel_knskisymd
+	   AND  O.TRID      = :sel_trid
+	   AND  O.TRPOS     BETWEEN :from AND :to 
+	   AND  O.KNSJKFLG  = '1' 
+	 ORDER BY O.ASYRCKID, O.ASYRCKPOS, O.KMKCD 
+	 FOR READ ONLY ;
+
+
+	/***
+	 ***	検索
+	 ***/
+    EXEC SQL OPEN c1 ;
+    while( 1 ) {
+        EXEC SQL FETCH c1 INTO
+			:sqlKENORDER,
+			:sqlREALCHK ;
+
+        if ( SQLCODE == 100 ) {
+        	break;
+		}
+		*precKENORDER = ( struct my_stKENORDER * ) realloc ( *precKENORDER, sizeof ( struct my_stKENORDER ) * ( irecCnt + 1 ) ) ;
+		if ( precKENORDER == NULL ) {
+			return ( -1 ) ;
+		}
+		*precREALCHK =  ( struct my_stREALCHK * ) realloc ( *precREALCHK, sizeof ( struct my_stREALCHK ) * ( irecCnt + 1 ) ) ;
+		if ( precREALCHK == NULL ) {
+			return ( -1 ) ;
+		}
+		memcpy ( &(*precKENORDER)[irecCnt], &sqlKENORDER, sizeof ( sqlKENORDER ) ) ;
+		memcpy ( &(*precREALCHK)[irecCnt],  &sqlREALCHK,  sizeof ( sqlREALCHK ) ) ;
+		irecCnt ++ ;
+    }
+
+    EXEC SQL CLOSE c1;
+
+	*precCnt = irecCnt ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelKENORDER_REALCHK", 
+				 __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDER,REALCHK] CLM[ALL] WHERE[KNSKISYMD='%s' AND TRID='%s' AND TRPOS %d-%d]", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd, pSel_trid, pFrom, pTo ) ;
+	return ( -1 ) ;
+}
+/******************************************************************************/
+/*  関 数 名　：sFncUpdKENORDER_NXT()	 									  */
+/*  機能概要　：検査オーダー情報更新【次期】				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	アッセイラックＩＤ										  */
+/*　 第３引数 ：	トレーＩＤ												  */
+/*　 第４引数 ：	ラックインデックス										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdKENORDER_NXT( pSel_knskisymd, pSel_asyrckid, pUpd_trid, prIdx )
+char	*pSel_knskisymd ;
+char	*pSel_asyrckid ;
+char	*pUpd_trid ;
+int		 prIdx ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	//	更新値
+	strcpy ( upd_trid, pUpd_trid ) ;
+	rIdx = prIdx ;
+	
+	/***
+	 ***	検査オーダー情報更新
+	 ***	【次期】
+	 ***		更新項目
+	 ***			トレーＩＤ
+	 ***			トレーポジション
+	 ***			検査状況フラグ
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			アッセイラックＩＤ
+	 ***			
+	 ***/
+	EXEC SQL UPDATE KENORDER
+		  SET  TRID      = :upd_trid
+			  ,TRPOS     = ASYRCKPOS + ( 5 * :rIdx )
+			  ,KNSJKFLG  = '1'
+			  ,KSNDH	 = CURRENT_TIMESTAMP
+		WHERE  KNSKISYMD = :sel_knskisymd
+	  	  AND  ASYRCKID  = :sel_asyrckid
+	  	  AND  KNSJKFLG  = ' ' ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdKENORDER_NXT", 
+				 __LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDER] CLM[TRID='%s' TRPOS=ASYRCKPOS+(5*%d) KNSJKFLG='1' KSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pUpd_trid, prIdx, pUpd_trid, prIdx, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncUpdREALCHK_NXT()	 									  */
+/*  機能概要　：即時チェック情報更新【次期】				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	アッセイラックＩＤ										  */
+/*　 第３引数 ：	トレーＩＤ												  */
+/*　 第４引数 ：	ラックインデックス										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncUpdREALCHK_NXT( pSel_knskisymd, pSel_asyrckid, pUpd_trid, prIdx )
+char	*pSel_knskisymd ;
+char	*pSel_asyrckid ;
+char	*pUpd_trid ;
+int		 prIdx ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	//	更新値
+	strcpy ( upd_trid, pUpd_trid ) ;
+	rIdx = prIdx ;
+
+	/***
+	 ***	即時チェック情報更新
+	 ***	【次期】
+	 ***		更新項目
+	 ***			トレーＩＤ
+	 ***			トレーポジション
+	 ***			検査状況フラグ
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			アッセイラックＩＤ
+	 ***			
+	 ***/
+	EXEC SQL UPDATE REALCHK R
+		  SET  R.TRID  = :upd_trid
+			  ,R.TRPOS = ASYRCKPOS + ( 5 * :rIdx )
+			  ,R.KSNDH = CURRENT_TIMESTAMP
+		WHERE  EXISTS 
+				( SELECT  * 
+					FROM  KENORDER O
+		   		   WHERE  O.KNSKISYMD = R.KNSKISYMD
+					 AND  O.SRIYMD    = R.SRIYMD
+					 AND  O.KNTNO     = R.KNTNO
+					 AND  O.KNSGRP    = R.KNSGRP
+					 AND  O.KMKCD     = R.KMKCD
+					 AND  O.KNSSU     = R.KNSSU
+					 AND  O.KNSSUEDA  = R.KNSSUEDA
+	  	  			 AND  O.KNSJKFLG  = '1'
+		  			 AND  R.KNSKISYMD  = :sel_knskisymd
+	  	  			 AND  R.ASYRCKID   = :sel_asyrckid  
+			  	) ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdREALCHK_NXT", 
+				 __LINE__, EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[REALCHK] CLM[TRID='%s' TRPOS=ASYRCKPOS+(5*%d) KSNDH=CURRENT_TIMESTAMP] WHERE[KNSKISYMD='%s' ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pUpd_trid, prIdx, pUpd_trid, prIdx, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsKENPOS_NXT()		 									  */
+/*  機能概要　：検体ポジション情報追加【次期】				  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	アッセイラックＩＤ										  */
+/*　 第３引数 ：	トレーＩＤ												  */
+/*　 第４引数 ：	ラックインデックス										  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncInsKENPOS_NXT( pSel_knskisymd, pSel_asyrckid, pRakitjhossi )
+char	*pSel_knskisymd ;
+char	*pSel_asyrckid ;
+char	*pRakitjhossi ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	//	設定値
+	strcpy ( rakitjhossi, pRakitjhossi ) ;
+
+	/***
+	 ***	検体ポジション情報追加
+	 ***/
+	EXEC SQL 
+		INSERT INTO KENPOS ( 
+			SELECT  A.KNSKISYMD
+				   ,A.SRIYMD
+				   ,A.KNTNO
+				   ,A.KNTKETFLG
+				   ,CURRENT_TIMESTAMP
+				   ,A.UTKYMD
+				   ,A.IRINO
+				   ,A.IRIKETFLG
+				   ,A.ZSSDINO
+				   ,A.TRID
+				   ,A.TRPOS
+				   ,A.ASYRCKID
+				   ,A.ASYRCKPOS
+				   ,'A'
+				   ,:rakitjhossi
+				   ,CURRENT_TIMESTAMP
+				   ,CURRENT_TIMESTAMP
+			 FROM   (   SELECT  KNSKISYMD
+				   			   ,SRIYMD
+				   			   ,KNTNO
+				   			   ,KNTKETFLG
+				   			   ,UTKYMD
+				   			   ,IRINO
+				   			   ,IRIKETFLG
+				   			   ,ZSSDINO
+				   			   ,TRID
+				   			   ,TRPOS
+				   			   ,ASYRCKID
+				   			   ,ASYRCKPOS
+			  			  FROM  KENORDER
+			 			 WHERE  KNSKISYMD = :sel_knskisymd
+	  	  	   			   AND  ASYRCKID  = :sel_asyrckid
+	           			   AND  KNSJKFLG  = '1' 
+			 			 GROUP BY  KNSKISYMD
+					  			  ,SRIYMD
+					  			  ,KNTNO
+				      			  ,KNTKETFLG
+				      			  ,UTKYMD
+				      			  ,IRINO
+				      			  ,IRIKETFLG
+				      			  ,ZSSDINO
+				      			  ,TRID
+				      			  ,TRPOS
+				      			  ,ASYRCKID
+				      			  ,ASYRCKPOS
+					) AS A 
+		) ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncInsKENPOS_NXT", 
+				 __LINE__, EXEFLG_INS, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENPOS] SELECT FROM KENORDER KNSKISYMD='%s' ASYRCKID='%s'", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( -1 ) ;
+}
+
+/******************************************************************************/
+/*  関 数 名　：sFncSelKENORDER_REALCHK_NXT()								  */
+/*  機能概要　：検査オーダー情報・即時チェック情報検索		  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	トレーポジションＦＲＯＭ								  */
+/*　 第４引数 ：	トレーポジションＴＯ									  */
+/*　 第５引数 ：	検査オーダー情報検索結果格納構造体						  */
+/*　 第６引数 ：	即時チェック情報検索結果格納構造体						  */
+/*　 第７引数 ：	検索データ件数											  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+int
+sFncSelKENORDER_REALCHK_NXT( pSel_knskisymd, pSel_asyrckid, precKENORDER, precREALCHK, precCnt)
+char					*pSel_knskisymd ;
+char					*pSel_asyrckid ;
+struct my_stKENORDER   **precKENORDER ;
+struct my_stREALCHK	   **precREALCHK ;
+int						*precCnt ;
+{
+	struct my_stKENORDER	 *recKENORDER ;
+	struct my_stREALCHK		 *recREALCHK ;
+
+	int						 irecCnt ;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	irecCnt = *precCnt ;
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_asyrckid,  pSel_asyrckid ) ;
+
+	/***
+	 ***	カーソル定義
+	 ***/
+    EXEC SQL DECLARE c1_nxt CURSOR FOR
+    SELECT  O.*
+           ,R.*
+      FROM  KENORDER O, REALCHK R
+     WHERE  O.KNSKISYMD = R.KNSKISYMD
+       AND	O.SRIYMD    = R.SRIYMD
+       AND	O.KNTNO     = R.KNTNO
+       AND	O.KNSGRP    = R.KNSGRP
+       AND	O.KMKCD     = R.KMKCD
+       AND	O.KNSSU     = R.KNSSU
+       AND	O.KNSSUEDA  = R.KNSSUEDA 
+	   AND  O.KNSKISYMD = :sel_knskisymd
+	   AND  O.ASYRCKID  = :sel_asyrckid 
+	   AND  O.KNSJKFLG  = '1'
+	 ORDER BY O.ASYRCKID, O.ASYRCKPOS, O.KMKCD 
+	FOR READ ONLY ;
+
+	/***
+	 ***	検索
+	 ***/
+    EXEC SQL OPEN c1_nxt;
+    while( 1 ) {
+        EXEC SQL FETCH c1_nxt INTO
+			:sqlKENORDER,
+			:sqlREALCHK ;
+
+        if ( SQLCODE == 100 ) {
+        	break;
+		}
+		*precKENORDER = ( struct my_stKENORDER * ) realloc ( *precKENORDER, sizeof ( struct my_stKENORDER ) * ( irecCnt + 1 ) ) ;
+		if ( precKENORDER == NULL ) {
+			return ( -1 ) ;
+		}
+		*precREALCHK =  ( struct my_stREALCHK * ) realloc ( *precREALCHK, sizeof ( struct my_stREALCHK ) * ( irecCnt + 1 ) ) ;
+		if ( precREALCHK == NULL ) {
+			return ( -1 ) ;
+		}
+		memcpy ( &(*precKENORDER)[irecCnt], &sqlKENORDER, sizeof ( sqlKENORDER ) ) ;
+		memcpy ( &(*precREALCHK)[irecCnt],  &sqlREALCHK,  sizeof ( sqlREALCHK ) ) ;
+		irecCnt ++ ;
+    }
+
+    EXEC SQL CLOSE c1_nxt ;
+
+	*precCnt = irecCnt ;
+
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncSelKENORDER_REALCHK_NXT", 
+				 __LINE__, EXEFLG_SEL, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[KENORDER,REALCHK] CLM[ALL] WHERE[KNSKISYMD='%s' AND ASYRCKID='%s']", sqlca.sqlcode, sqlca.sqlstate, pSel_knskisymd, pSel_asyrckid ) ;
+	return ( -1 ) ;
+}
+
+
+/******************************************************************************/
+/*  関 数 名　：sFncUpdTRAYKNRI()		 									  */
+/*  機能概要　：トレー管理情報更新							  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	検査開始日												  */
+/*　 第２引数 ：	トレーＩＤ												  */
+/*　 第３引数 ：	供給日時												  */
+/*　 第４引数 ：	ストッカーＮＯ											  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/******************************************************************************/
+/*
+sFncUpdTRAYKNRI( pSel_knskisymd, pSel_trid, pUpd_instkdh, pUpd_instkno )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+char	*pUpd_instkdh ;
+char	*pUpd_instkno ;
+*/
+int
+sFncUpdTRAYKNRI( pSel_knskisymd, pSel_trid, pUpd_instkno )
+char	*pSel_knskisymd ;
+char	*pSel_trid ;
+char	*pUpd_instkno ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	//	検索キー
+	strcpy ( sel_knskisymd, pSel_knskisymd ) ;
+	strcpy ( sel_trid,      pSel_trid ) ;
+	strcpy ( upd_instkno,   pUpd_instkno ) ;
+
+	/***
+	 ***	トレー管理情報更新
+	 ***		更新項目
+	 ***			供給日時
+	 ***			供給ストッカーＮＯ（取得できないためブランク）
+	 ***			供給回数
+	 ***		検索条件
+	 ***			検査開始日
+	 ***			トレーＩＤ
+	 ***/
+	EXEC SQL UPDATE TRAYKNRI
+		  SET  INSTKDH   = CURRENT_TIMESTAMP
+			  ,INSTKNO   = :upd_instkno
+			  ,INSTKSU   = INSTKSU + 1
+			  ,KSNDH     = CURRENT_TIMESTAMP
+		WHERE  KNSKISYMD  = :sel_knskisymd
+	  	  AND  TRID       = :sel_trid ;
+	return ( 0 ) ;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+	sFncPutLog ( TRCKIND_ERROR, __FILE__, "sFncUpdTRAYKNRI", __LINE__,
+			 	 EXEFLG_UPD, MYAPP_LOG_ERRCODE_NON,
+			 	 "SQLCODE:%ld SQLSTATE:%5.5s TBL[TRAYKNRI] CLM[INSTKDH=TIMESTAMP,INSTKNO='%s',INSTKSU=+1] WHERE[KNSKISYMD='%s' AND TRID='%s']", sqlca.sqlcode, sqlca.sqlstate, pUpd_instkno, pSel_knskisymd, pSel_trid ) ;
+	return ( -1 ) ;
+}
+/** End of File *********************************************************/

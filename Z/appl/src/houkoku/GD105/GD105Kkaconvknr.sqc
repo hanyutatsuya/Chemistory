@@ -1,0 +1,266 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名：GD105Kkaconvknr.sqc
+ *     機能概要  ：結果変換管理情報アクセス関数(報告処理)
+ *
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2009-05-11                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+#include "GD105Kkaconvknr.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+#include "bmllog.h"
+
+#define	RETRY			3		// リトライ回数
+#define	ERR_LOCK		-911	// デッドロック時エラーコード
+#define	LOCK_WAIT_SEC	5		// スリープ単位：秒
+
+#define	ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char		knskisymd[10+1];	/* 検査開始日     */
+	char		sriymd[10+1];		/* 処理日         */
+	char		kntno[13+1];		/* 検体No         */
+	char		knsgrp[16+1];		/* 検査グループ   */
+	char		kmkcd[7+1];			/* 項目コード     */
+	short		knssu;				/* 検査回数       */
+	short		hkksu;				/* 報告回数       */
+	char		sstcd[7+1];			/* 施設コード     */
+	sqlint32	no;					/* No             */
+	char		utkymd[10+1];		/* 受付日         */
+	char		irino[11+1];		/* 依頼書No       */
+	char		knskka1[12+1];		/* 検査結果１     */
+	char		knskka2[24+1];		/* 検査結果２     */
+	char		knskka2kbn[2+1];	/* 検査結果２区分 */
+	char		kkahskcd[3+1];		/* 検査結果補足   */
+	char		skkka[24+1];		/* 照会結果       */
+	char		sbtkbn;				/* 性別区分       */
+	char		age[3+1];			/* 年齢           */
+	char		agekbn;				/* 年齢区分       */
+	char		sc[5+1];			/* 身長           */
+	char		tj[5+1];			/* 体重           */
+	char		tjtni;				/* 体重区分       */
+	char		tntme[4+1];			/* 蓄尿時間       */
+	char		tntni;				/* 蓄尿時間区分   */
+	char		tnryo[5+1];			/* 蓄尿量         */
+	char		tnryotni;			/* 蓄尿量区分     */
+	char		hnktntid[8+1];		/* 変更担当者ＩＤ */
+	char		ksndh[26+1];		/* 情報更新日時   */
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kkaconvknr
+
+BmlDMMInfo	KkaconvknrArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( hkksu ),
+	DMM_SSTRING( sstcd ),
+	DMM_SLONG( no ),
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SSTRING( knskka1 ),
+	DMM_SSTRING( knskka2 ),
+	DMM_SSTRING( knskka2kbn ),
+	DMM_SSTRING( kkahskcd ),
+	DMM_SSTRING( skkka ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_SSTRING( sc ),
+	DMM_SSTRING( tj ),
+	DMM_SCHAR( tjtni ),
+	DMM_SSTRING( tntme ),
+	DMM_SCHAR( tntni ),
+	DMM_SSTRING( tnryo ),
+	DMM_SCHAR( tnryotni ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * dGD105InsKkaconvknr()
+ *    KKACONVKNR インサート処理
+ * ■引数
+ *    [I]    Kkaconvknr** arrayIn   取得レコード配列格納領域
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL(0)      正常終了
+ *           HRC_NULL_POINTER(-3)   パラメータエラー
+ *           HRC_INVALID_VALUE(-1)  設定値不正
+ *           HRC_SQL_ERR(-2)        DBエラー
+ ******************************************************************************/
+long dGD105InsKkaconvknr( Kkaconvknr* arrayIn )
+{
+#ifdef _DEBUG
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				 "● dGD105InsKkaconvknr 入った" ) ;
+#endif
+
+	if( !arrayIn ) {
+		return HRC_NULL_POINTER;
+	}
+
+	if( !ZbmlMapStructToHost( (char*)arrayIn, KkaconvknrArray ) ) {
+		return HRC_INVALID_VALUE;
+	}
+
+#ifdef _DEBUG
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knskisymd  = [%s]", knskisymd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    sriymd     = [%s]", sriymd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    kntno      = [%s]", kntno ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knsgrp     = [%s]", knsgrp ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    kmkcd      = [%s]", kmkcd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knssu      = [%d]", knssu ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    hkksu      = [%d]", hkksu ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    sstcd      = [%s]", sstcd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    no         = [%d]", no ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    utkymd     = [%s]", utkymd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    irino      = [%s]", irino ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knskka1    = [%s]", knskka1 ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knskka2    = [%s]", knskka2 ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    knskka2kbn = [%s]", knskka2kbn ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    kkahskcd   = [%s]", kkahskcd ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    skkka      = [%s]", skkka ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    sbtkbn     = [%c]", sbtkbn ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    age        = [%s]", age ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    agekbn     = [%c]", agekbn ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    sc         = [%s]", sc ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tj         = [%s]", tj ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tjtni      = [%c]", tjtni ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tntme      = [%s]", tntme ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tntni      = [%c]", tntni ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tnryo      = [%s]", tnryo ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    tnryotni   = [%c]", tnryotni ) ;
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				"    hnktntid   = [%s]", hnktntid ) ;
+#endif
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KKACONVKNR
+    (
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		HKKSU,
+		SSTCD,
+		NO,
+		UTKYMD,
+		IRINO,
+		KNSKKA1,
+		KNSKKA2,
+		KNSKKA2KBN,
+		KKAHSKCD,
+		SKKKA,
+		SBTKBN,
+		AGE,
+		AGEKBN,
+		SC,
+		TJ,
+		TJTNI,
+		TNTME,
+		TNTNI,
+		TNRYO,
+		TNRYOTNI,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:sriymd,
+		:kntno,
+		:knsgrp,
+		:kmkcd,
+		:knssu,
+		:hkksu,
+		:sstcd,
+		:no,
+		:utkymd,
+		:irino,
+		:knskka1,
+		:knskka2,
+		:knskka2kbn,
+		:kkahskcd,
+		:skkka,
+		:sbtkbn,
+		:age,
+		:agekbn,
+		:sc,
+		:tj,
+		:tjtni,
+		:tntme,
+		:tntni,
+		:tnryo,
+		:tnryotni,
+		:hnktntid,
+		CURRENT TIMESTAMP
+    );
+
+#ifdef _DEBUG
+	sFncPutLog ( TRCKIND_DEBUG, __FILE__, "dGD105InsKkaconvknr", __LINE__, EXEFLG_INS, "020",
+				 "dGD105InsKkaconvknr 出る" ) ;
+#endif
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+
+}
+
+/** End of File *********************************************************/

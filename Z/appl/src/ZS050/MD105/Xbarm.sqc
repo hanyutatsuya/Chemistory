@@ -1,0 +1,134 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Xbarm.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2007-06-27     waj            Create
+ * --------------------------------------------------------------------
+ *	Ver.	 Date			Name		   History
+ * --------------------------------------------------------------------
+ *	2.00	2008/09/18		K.Ameno		   X-M対応初版
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Xbarm.h"
+#include "Kekka.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------*/
+/* DBラップ変数定義 */
+EXEC SQL BEGIN DECLARE SECTION;
+	char	    knskisymd[11];
+	char		bskkbn[5];
+	char		bskgok[7];
+	char		kmkcd[8];
+	sqlint32	pltno;
+	char		xbarmjtkbn;
+	char		xbarmjkflg;
+EXEC SQL END DECLARE SECTION;
+
+
+/******************************************************************************
+ * ZdbXbarmJtkbnUpdateZenkai(pKey, stat)
+ *    前回XBARM状態更新
+ * ■引数
+ *    [I]  Kekka* pKey       更新するレコードのキー
+ *    [I]  char   stat       取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXbarmJtkbnUpdateZenkai(Kekka* pKey, char stat)
+{
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+	strcpy(knskisymd, pKey->knskisymd);
+	strcpy(bskkbn,    pKey->bskkbn);
+	strcpy(bskgok,    pKey->bskgok);
+	strcpy(kmkcd,     pKey->kmkcd);
+	pltno      = pKey->pltno - 1;
+	xbarmjtkbn = stat;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+	EXEC SQL UPDATE XBARM
+	SET XBARMJTKBN = :xbarmjtkbn
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		BSKKBN    = :bskkbn AND
+		BSKGOK    = :bskgok AND
+		KMKCD     = :kmkcd AND
+		PLTNO     = :pltno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbXbarmJkflgUpdateZenkai(pKey, stat)
+ *    前回XBARM確定フラグ更新
+ * ■引数
+ *    [I]  Kekka* pKey       更新するレコードのキー
+ *    [I]  char   stat       更新する値
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbXbarmJkflgUpdateZenkai(Kekka* pKey, char stat)
+{
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+	strcpy(knskisymd, pKey->knskisymd);
+	strcpy(bskkbn,    pKey->bskkbn);
+	strcpy(bskgok,    pKey->bskgok);
+	strcpy(kmkcd,     pKey->kmkcd);
+	pltno      = pKey->pltno - 1;
+	xbarmjkflg = stat;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+	EXEC SQL UPDATE XBARM
+	SET XBARMJKFLG = :xbarmjkflg
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		BSKKBN    = :bskkbn AND
+		BSKGOK    = :bskgok AND
+		KMKCD     = :kmkcd AND
+		PLTNO     = :pltno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}

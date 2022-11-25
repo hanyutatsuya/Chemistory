@@ -1,0 +1,282 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： F101ctrlkka.sqc
+ *     機能概要  ：コントロール結果情報の入出力
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-27                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+
+#include "F101ctrlkka.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+//INTEC ADD
+#include "FD101IjouChk.h"
+
+#define ALLOC_UNIT      1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+struct sqlCtrlkka {
+    char    	knskisymd[11];
+    char    	bskkbn[5];
+    char    	bskgok[7];
+    char    	kmkcd[8];
+    char    	nbkmkcd[8];
+    sqlint32    ctrlno;
+    char    	ctrlsbt[21];
+    short   	ctrlsbteda;
+    short		ctrljti;
+    char    	chkzmflg;
+} recCtrlkka;
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT  Ctrlkka
+
+/*
+BmlDMMInfo  CtrlkkaArray[] = {
+    DMM_SDATE( knskisymd ),
+    DMM_SSTRING( bskkbn ),
+    DMM_SSTRING( bskgok ),
+    DMM_SSTRING( kmkcd ),
+    DMM_SSTRING( nbkmkcd ),
+    DMM_SLONG( ctrlno ),
+    DMM_SSTRING( ctrlsbt ),
+    DMM_SSHORT( ctrlsbteda ),
+    DMM_SSHORT( ctrljti ),
+    DMM_SCHAR( chkzmflg ),
+    DMM_NULL
+};
+*/
+
+/******************************************************************************
+ * FCtrlkkkaSelectByKey()
+ *    コントロール結果情報テーブルの校正日時を更新
+ * ■引数
+ *    [O]  Ctrlkka** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ *	  [I]  int  fetchCnt		取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FCtrlkkaSelectByKey(Ctrlkka** arrayOut, int* numOut, int fetchCnt)
+{
+    Ctrlkka*    array = NULL;
+    int         num = 0;
+
+//INTEC ADD トレースログ出力
+    mcrPutTrace(&stEnv, TRCKIND_TRACE, "FCtrlkkaSelectByKey", ""
+					, MYAPP_LOG_ERRCODE_NON, "Start Function.");
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+             KNSKISYMD
+            ,BSKKBN
+            ,BSKGOK
+            ,KMKCD
+            ,NBKMKCD
+            ,CTRLNO
+            ,CTRLSBT
+            ,CTRLSBTEDA
+            ,CTRLJTI
+            ,CHKZMFLG
+    FROM    CTRLKKA
+    WHERE   CHKZMFLG    = '0'
+    ORDER BY
+			KSNDH				/* 1.01 INTEC ADD   */
+/* 1.01 INTEC DELL
+DEL          KNSKISYMD
+DEL         ,BSKKBN
+DEL         ,BSKGOK
+DEL         ,CTRLNO
+DEL         ,KMKCD
+DEL         ,NBKMKCD
+DEL         ,CTRLSBT
+DEL         ,CTRLSBTEDA
+*/
+    FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Ctrlkka* rec;
+/*
+        EXEC SQL FETCH c1 INTO
+             :knskisymd
+            ,:bskkbn
+            ,:bskgok
+            ,:kmkcd
+            ,:nbkmkcd
+            ,:ctrlno
+            ,:ctrlsbt
+            ,:ctrlsbteda
+            ,:ctrljti
+            ,:chkzmflg;
+*/
+		EXEC SQL FETCH c1 INTO :recCtrlkka;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Ctrlkka*)ZbmlRealloc( array,
+                                    sizeof( Ctrlkka ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Ctrlkka ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+/*
+        ZbmlMapHostToStruct( (char*)rec, CtrlkkaArray );
+*/
+
+		memcpy(rec, &recCtrlkka, sizeof(recCtrlkka));
+
+        if( num == fetchCnt ){
+        	break;
+        }
+    }
+
+/*INTEC DEBUG STA */
+    char    buf[256];
+    sprintf( buf, "num [%d] fetchCnt[%d] \n", num, fetchCnt );
+    mcrPutTrace(&stEnv, TRCKIND_DEBUG, "FCtrlkkaSelectByKey", ""
+                        , MYAPP_LOG_ERRCODE_NON, buf);
+/*INTEC DEBUG END */
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+
+/******************************************************************************
+ * FCtrlUpdate()
+ *    コントロール結果情報テーブルを更新
+ * ■引数
+ *    [I]  Ctrlkka* rec         更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long FCtrlUpdate( Ctrlkka* rec )
+{
+
+//INTEC ADD トレースログ出力
+    mcrPutTrace(&stEnv, TRCKIND_TRACE, "FCtrlUpdate", ""
+					, MYAPP_LOG_ERRCODE_NON, "Start Function.");
+
+    if( !rec )
+        return HRC_NULL_POINTER;
+/*
+DEL   if( !ZbmlMapStructToHost( (char*)rec, CtrlkkaArray ) )
+DEL     return HRC_INVALID_VALUE;
+*/
+
+	memcpy(&recCtrlkka, rec, sizeof(recCtrlkka));
+
+/*INTEC DEBUG STA */
+/*
+DEL	memset( &recCtrlkka, '\0', sizeof( recCtrlkka ));
+DEL strcpy(	recCtrlkka.knskisymd,	rec->knskisymd );
+DEL strcpy(	recCtrlkka.bskkbn,		rec->bskkbn );
+DEL strcpy(	recCtrlkka.bskgok,		rec->bskgok );
+DEL strcpy(	recCtrlkka.kmkcd,		rec->kmkcd );
+DEL strcpy(	recCtrlkka.nbkmkcd,		rec->nbkmkcd );
+DEL recCtrlkka.ctrlno				= rec->ctrlno;
+DEL strcpy(	recCtrlkka.ctrlsbt,		rec->ctrlsbt );
+DEL recCtrlkka.ctrlsbteda			= rec->ctrlsbteda;
+DEL recCtrlkka.ctrljti				= rec->ctrljti;
+DEL recCtrlkka.chkzmflg				= rec->chkzmflg;
+*/
+    char    buf[512];
+	memset( buf, '\0', sizeof( buf ));
+    sprintf( buf, "upd flg[%c] where ymd[%s] kbn[%s]"
+				 " gok[%s] kmk[%s] no[%d] "
+				 " sbt[%s] eda[%d]\n"
+		,recCtrlkka.chkzmflg	,recCtrlkka.knskisymd	, recCtrlkka.bskkbn
+		,recCtrlkka.bskgok		, recCtrlkka.kmkcd		, recCtrlkka.ctrlno
+		, recCtrlkka.ctrlsbt	, recCtrlkka.ctrlsbteda );
+    mcrPutTrace(&stEnv, TRCKIND_DEBUG, "FCtrlkkaSelectByKey", ""
+                        , MYAPP_LOG_ERRCODE_NON, buf);
+
+/*INTEC DEBUG END */
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+/*
+DEL EXEC SQL UPDATE CTRLKKA
+DEL SET
+DEL          CHKZMFLG   = :chkzmflg
+DEL         ,KSNDH      = CURRENT TIMESTAMP
+DEL WHERE   KNSKISYMD   = :knskisymd
+DEL AND     BSKKBN      = :bskkbn
+DEL AND     BSKGOK      = :bskgok
+DEL AND     KMKCD       = :kmkcd
+DEL AND     CTRLNO      = :ctrlno
+DEL AND     CTRLSBT     = :ctrlsbt
+DEL AND     CTRLSBTEDA  = :ctrlsbteda
+DEL AND     CHKZMFLG    = '0'
+DEL ;
+*/
+    EXEC SQL UPDATE CTRLKKA
+    SET
+             CHKZMFLG   = :recCtrlkka.chkzmflg
+            ,KSNDH      = CURRENT TIMESTAMP
+    WHERE   KNSKISYMD   = :recCtrlkka.knskisymd
+    AND     BSKKBN      = :recCtrlkka.bskkbn
+    AND     BSKGOK      = :recCtrlkka.bskgok
+    AND     KMKCD       = :recCtrlkka.kmkcd
+    AND     CTRLNO      = :recCtrlkka.ctrlno
+    AND     CTRLSBT     = :recCtrlkka.ctrlsbt
+    AND     CTRLSBTEDA  = :recCtrlkka.ctrlsbteda
+    AND     CHKZMFLG    = '0'
+    ;
+
+    return sqlca.sqlcode;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

@@ -1,0 +1,311 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： A205realchk.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "A205realchk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    sriymd[11];
+	char    kntno[14];
+	char    kntketflg;
+	char    knsgrp[17];
+	char    kmkcd[8];
+	short   knssu;
+	short   knssueda;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    trid[11];
+	short   trpos;
+	char    asyrckid[11];
+	short   asyrckpos;
+	char    bskkbn[5];
+	char    nbkmkcd[8];
+	char    renjicflg;
+	char    soukn1flg;
+	char    kanrenflg;
+	char    bunkkuflg;
+	char    kesseiflg;
+	char    rirekiflg;
+	char    syougoflg;
+	char    keisanflg;
+	char    per100flg;
+	char    tousekflg;
+	char    kisyakflg;
+	char    kouseiflg;
+	char    syoungflg;
+	char    soukn2flg;
+	char    fukaptflg;
+	char    yobiflg01;
+	char    tobiflg02;
+	char    yobiflg03;
+	char    yobiflg04;
+	char    yobiflg05;
+	char    renjicpara[257];
+	char    soukn1para[257];
+	char    kanrenpara[257];
+	char    bunkkupara[257];
+	char    kesseipara[257];
+	char    rirekipara[257];
+	char    syougopara[257];
+	char    keisanpara[257];
+	char    per100para[257];
+	char    tousekpara[257];
+	char    kisyakpara[257];
+	char    kouseipara[257];
+	char    syoungpara[257];
+	char    soukn2para[257];
+	char    fukaptpara[257];
+	char    yobipara01[257];
+	char    yobipara02[257];
+	char    yobipara03[257];
+	char    yobipara04[257];
+	char    yobipara05[257];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Realchk
+
+BmlDMMInfo	RealchkArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SDATE( sriymd ),
+	DMM_SSTRING( kntno ),
+	DMM_SCHAR( kntketflg ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SSHORT( knssu ),
+	DMM_SSHORT( knssueda ),
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( trid ),
+	DMM_SSHORT( trpos ),
+	DMM_SSTRING( asyrckid ),
+	DMM_SSHORT( asyrckpos ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( nbkmkcd ),
+	DMM_SCHAR( renjicflg ),
+	DMM_SCHAR( soukn1flg ),
+	DMM_SCHAR( kanrenflg ),
+	DMM_SCHAR( bunkkuflg ),
+	DMM_SCHAR( kesseiflg ),
+	DMM_SCHAR( rirekiflg ),
+	DMM_SCHAR( syougoflg ),
+	DMM_SCHAR( keisanflg ),
+	DMM_SCHAR( per100flg ),
+	DMM_SCHAR( tousekflg ),
+	DMM_SCHAR( kisyakflg ),
+	DMM_SCHAR( kouseiflg ),
+	DMM_SCHAR( syoungflg ),
+	DMM_SCHAR( soukn2flg ),
+	DMM_SCHAR( fukaptflg ),
+	DMM_SCHAR( yobiflg01 ),
+	DMM_SCHAR( tobiflg02 ),
+	DMM_SCHAR( yobiflg03 ),
+	DMM_SCHAR( yobiflg04 ),
+	DMM_SCHAR( yobiflg05 ),
+	DMM_SSTRING( renjicpara ),
+	DMM_SSTRING( soukn1para ),
+	DMM_SSTRING( kanrenpara ),
+	DMM_SSTRING( bunkkupara ),
+	DMM_SSTRING( kesseipara ),
+	DMM_SSTRING( rirekipara ),
+	DMM_SSTRING( syougopara ),
+	DMM_SSTRING( keisanpara ),
+	DMM_SSTRING( per100para ),
+	DMM_SSTRING( tousekpara ),
+	DMM_SSTRING( kisyakpara ),
+	DMM_SSTRING( kouseipara ),
+	DMM_SSTRING( syoungpara ),
+	DMM_SSTRING( soukn2para ),
+	DMM_SSTRING( fukaptpara ),
+	DMM_SSTRING( yobipara01 ),
+	DMM_SSTRING( yobipara02 ),
+	DMM_SSTRING( yobipara03 ),
+	DMM_SSTRING( yobipara04 ),
+	DMM_SSTRING( yobipara05 ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ABunRealInsert()
+ *    REALCHK レコードを挿入する
+ * ■引数
+ *    [I]  Realchk* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunRealInsert( Realchk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, RealchkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO REALCHK
+    (
+		KNSKISYMD,
+		SRIYMD,
+		KNTNO,
+		KNTKETFLG,
+		KNSGRP,
+		KMKCD,
+		KNSSU,
+		KNSSUEDA,
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		TRID,
+		TRPOS,
+		ASYRCKID,
+		ASYRCKPOS,
+		BSKKBN,
+		NBKMKCD,
+		RENJICFLG,
+		SOUKN1FLG,
+		KANRENFLG,
+		BUNKKUFLG,
+		KESSEIFLG,
+		RIREKIFLG,
+		SYOUGOFLG,
+		KEISANFLG,
+		PER100FLG,
+		TOUSEKFLG,
+		KISYAKFLG,
+		KOUSEIFLG,
+		SYOUNGFLG,
+		SOUKN2FLG,
+		FUKAPTFLG,
+		YOBIFLG01,
+		TOBIFLG02,
+		YOBIFLG03,
+		YOBIFLG04,
+		YOBIFLG05,
+		RENJICPARA,
+		SOUKN1PARA,
+		KANRENPARA,
+		BUNKKUPARA,
+		KESSEIPARA,
+		RIREKIPARA,
+		SYOUGOPARA,
+		KEISANPARA,
+		PER100PARA,
+		TOUSEKPARA,
+		KISYAKPARA,
+		KOUSEIPARA,
+		SYOUNGPARA,
+		SOUKN2PARA,
+		FUKAPTPARA,
+		YOBIPARA01,
+		YOBIPARA02,
+		YOBIPARA03,
+		YOBIPARA04,
+		YOBIPARA05,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:sriymd,
+		:kntno,
+		:kntketflg,
+		:knsgrp,
+		:kmkcd,
+		:knssu,
+		:knssueda,
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:trid,
+		:trpos,
+		:asyrckid,
+		:asyrckpos,
+		:bskkbn,
+		:nbkmkcd,
+		:renjicflg,
+		:soukn1flg,
+		:kanrenflg,
+		:bunkkuflg,
+		:kesseiflg,
+		:rirekiflg,
+		:syougoflg,
+		:keisanflg,
+		:per100flg,
+		:tousekflg,
+		:kisyakflg,
+		:kouseiflg,
+		:syoungflg,
+		:soukn2flg,
+		:fukaptflg,
+		:yobiflg01,
+		:tobiflg02,
+		:yobiflg03,
+		:yobiflg04,
+		:yobiflg05,
+		:renjicpara,
+		:soukn1para,
+		:kanrenpara,
+		:bunkkupara,
+		:kesseipara,
+		:rirekipara,
+		:syougopara,
+		:keisanpara,
+		:per100para,
+		:tousekpara,
+		:kisyakpara,
+		:kouseipara,
+		:syoungpara,
+		:soukn2para,
+		:fukaptpara,
+		:yobipara01,
+		:yobipara02,
+		:yobipara03,
+		:yobipara04,
+		:yobipara05,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

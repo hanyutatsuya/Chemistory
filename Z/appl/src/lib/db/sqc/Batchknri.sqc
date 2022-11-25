@@ -1,0 +1,369 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Batchknri.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Batchknri.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    bskkbn[11];
+	char    bsklne[11];
+	char    bskgok[6];
+	char    bskmjno[6];
+	char    knsgrp[11];
+	sqlint32  bthno;
+	char    lotno[11];
+	char    bthjkflg;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Batchknri
+
+BmlDMMInfo	BatchknriArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( bskkbn ),
+	DMM_SSTRING( bsklne ),
+	DMM_SSTRING( bskgok ),
+	DMM_SSTRING( bskmjno ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SLONG( bthno ),
+	DMM_SSTRING( lotno ),
+	DMM_SCHAR( bthjkflg ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbBatchknriSelectAll()
+ *    BATCHKNRI レコード全件取得
+ * ■引数
+ *    [O]  Batchknri** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBatchknriSelectAll( Batchknri** arrayOut, int* numOut )
+{
+    Batchknri*  array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		KNSGRP,
+		BTHNO,
+		LOTNO,
+		BTHJKFLG,
+		KSNDH
+    FROM
+        BATCHKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Batchknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskmjno,
+			:knsgrp,
+			:bthno,
+			:lotno,
+			:bthjkflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Batchknri*)ZbmlRealloc( array,
+                                    sizeof( Batchknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Batchknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BatchknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbBatchknriSelectKey()
+ *    BATCHKNRI レコードKey条件取得
+ * ■引数
+ *    [I]  Batchknri* pKey      取得するレコードのキー
+ *    [O]  Batchknri** arrayOut 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBatchknriSelectKey( Batchknri* pKey, Batchknri** arrayOut, int* numOut )
+{
+    Batchknri*  array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, BatchknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		KNSGRP,
+		BTHNO,
+		LOTNO,
+		BTHJKFLG,
+		KSNDH
+    FROM
+        BATCHKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		BSKKBN = :bskkbn AND
+		BSKLNE = :bsklne AND
+		BSKGOK = :bskgok AND
+		BSKMJNO = :bskmjno AND
+		KNSGRP         = :knsgrp         AND
+		BTHNO = :bthno FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Batchknri* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:bskkbn,
+			:bsklne,
+			:bskgok,
+			:bskmjno,
+			:knsgrp,
+			:bthno,
+			:lotno,
+			:bthjkflg,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Batchknri*)ZbmlRealloc( array,
+                                    sizeof( Batchknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Batchknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, BatchknriArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBatchknriInsert()
+ *    BATCHKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Batchknri* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBatchknriInsert( Batchknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BatchknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO BATCHKNRI
+    (
+		KNSKISYMD,
+		BSKKBN,
+		BSKLNE,
+		BSKGOK,
+		BSKMJNO,
+		KNSGRP,
+		BTHNO,
+		LOTNO,
+		BTHJKFLG,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:bskkbn,
+		:bsklne,
+		:bskgok,
+		:bskmjno,
+		:knsgrp,
+		:bthno,
+		:lotno,
+		:bthjkflg,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBatchknriUpdate()
+ *    BATCHKNRI レコードを更新する
+ * ■引数
+ *    [I]  Batchknri* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBatchknriUpdate( Batchknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BatchknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE BATCHKNRI
+    SET (
+		LOTNO,
+		BTHJKFLG,
+		KSNDH
+    ) = (
+		:lotno,
+		:bthjkflg,
+		:ksndh
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		BSKKBN = :bskkbn AND
+		BSKLNE = :bsklne AND
+		BSKGOK = :bskgok AND
+		BSKMJNO = :bskmjno AND
+		KNSGRP         = :knsgrp         AND
+		BTHNO = :bthno;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbBatchknriDelete()
+ *    BATCHKNRI レコードを削除する
+ * ■引数
+ *    [I]  Batchknri* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbBatchknriDelete( Batchknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, BatchknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM BATCHKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		BSKKBN = :bskkbn AND
+		BSKLNE = :bsklne AND
+		BSKGOK = :bskgok AND
+		BSKMJNO = :bskmjno AND
+		KNSGRP         = :knsgrp         AND
+		BTHNO = :bthno;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

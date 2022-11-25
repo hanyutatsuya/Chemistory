@@ -1,0 +1,421 @@
+操作ログのみ
+----------------------------------------------------------------------------------------------------
+kea00sys@kea00apk:~> ssh kea00dbk -l db2inst1
+The authenticity of host 'kea00dbk (10.1.41.144)' can't be established.
+ECDSA key fingerprint is SHA256:b24JUdW7e09tWB/y4RLYng2xYvrC+UmbDum1wtJajUE.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'kea00dbk' (ECDSA) to the list of known hosts.
+Password:
+Last failed login: Wed Nov 24 12:33:49 JST 2021 from 10.1.41.19 on ssh:notty
+There was 1 failed login attempt since the last successful login.
+Last login: Mon Oct  4 12:09:39 2021 from 10.1.41.19
+db2inst1@kea00dbk:~> db2
+(c) Copyright IBM Corporation 1993,2007
+DB2 クライアント 11.1.4.4 コマンド行プロセッサー
+
+コマンド・プロンプトからデータベース・マネージャーのコマンド、および SQL
+ステートメントを呼び出せます。 例:
+    db2 => connect to sample
+    db2 => bind sample.bnd
+
+一般ヘルプには ? をタイプしてください。
+コマンドのヘルプには ? command をタイプしてください。 command
+には、データベース・マネージャー・コマンドの
+最初のいくつかのキーワードを入力します。 例:
+ ? CATALOG DATABASE は CATALOG DATABASE コマンドのヘルプです。
+ ? CATALOG          は全 CATALOG コマンドのヘルプです。
+
+db2 対話モードを抜けるには、コマンド・プロンプトで QUIT とタイプしてください。
+対話モード以外では、すべてのコマンドに接頭語 'db2' を付ける必要があります。
+現在のコマンド・オプションの設定をリストするには、 LIST COMMAND OPTIONS
+とタイプしてください。
+
+詳細は、「オンライン・リファレンス」を参照してください。
+
+db2 => list database directory
+
+ システム・データベース・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+データベース 1 項目:
+
+ データベース別名                     = KEA00DBN
+ データベース名                       = KEA00DBN
+ ノード名                             = IA20
+ データベース・リリース・レベル       = 14.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+データベース 2 項目:
+
+ データベース別名                     = SAMPLE
+ データベース名                       = SAMPLE
+ ローカル・データベース・ディレクトリー = /home/db2inst1
+ データベース・リリース・レベル       = 14.00
+ コメント                       =
+ ディレクトリー項目タイプ             = 間接
+ カタログ・データベース・パーティション番号 = 0
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+db2 => terminate
+DB20000I  TERMINATE コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> db2 connect to kea00dbn user db2inst1 using db2inst1
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXX8664 11.1.4.4
+ SQL 許可 ID            = DB2INST1
+ ローカル・データベース別名 = KEA00DBN
+
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE,
+>  AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  1 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~> db2 flush event monitor DB2DETAILDEADLOCK
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> db2 set event monitor db2detaildeadlock state=0
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE,
+ AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  0 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~> db2 drop event monitor db2detaildeadlock
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> cd /db2dbf/data
+db2inst1@kea00dbk:/db2dbf/data
+db2inst1@kea00dbk:/db2dbf/data> su
+パスワード:
+kea00dbk:/db2dbf/data/ # mkdir evlog
+kea00dbk:/db2dbf/data/ # chmod a+wrx evlog
+kea00dbk:/db2dbf/data/ # exit
+db2inst1@kea00dbk:/db2dbf/data> cd
+db2inst1@kea00dbk:~> db2evmon -path /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock > /db2
+dbf/data/evlog/eventlog_20211203
+
+Reading /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock/00000000.evt ...
+db2inst1@kea00dbk:~> ls -a /db2dbf/data/evlog
+.  ..  eventlog_20211203
+db2inst1@kea00dbk:~> ls -la /db2dbf/data/evlog
+合計 1352
+drwxrwxrwx 2 root     root        4096 12月  3 11:28 .
+drwxr-xr-x 7 kea00dbt db2iadm1    4096 12月  3 11:26 ..
+-rw-r--r-- 1 db2inst1 db2iadm1 1375278 12月  3 11:29 eventlog_20211203
+db2inst1@kea00dbk:~> cd /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> ls -la
+合計 600
+drwxr-x--- 2 kea00dbt db2iadm1   4096  1月 18  2019 .
+drwxr-x--- 3 kea00dbt db2iadm1   4096  1月 18  2019 ..
+-rw-r--r-- 1 kea00dbt db2iadm1 594237 12月  3 11:13 00000000.evt
+-rw-r----- 1 kea00dbt db2iadm1     43  1月 18  2019 db2event.ctl
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> su
+パスワード:
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # rm *.*
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # ls -la
+合計 8
+drwxr-x--- 2 kea00dbt db2iadm1 4096 12月  3 11:30 .
+drwxr-x--- 3 kea00dbt db2iadm1 4096  1月 18  2019 ..
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # exit
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> cd
+db2inst1@kea00dbk:~> db2 "create event monitor db2detaildeadlock for deadlocks with details write to file 'db2detaildead
+lock' maxfiles 50 maxfilesize 512 buffersize 17 blocked append AUTOSTART"
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE(evmonname) as EVENT_MON_STATE,
+MAXFILES, MAXFILESIZE,BUFFERSIZE from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE MAXFILES    MAXFILESIZE BUFFERSIZE
+-------------------- --------------- ----------- ----------- -----------
+DB2DETAILDEADLOCK                  0          50         512          17
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~> db2 set event monitor db2detaildeadlock state=1
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> cd /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> ls -la
+合計 16
+drwxr-x--- 2 kea00dbt db2iadm1 4096 12月  3 11:34 .
+drwxr-x--- 3 kea00dbt db2iadm1 4096  1月 18  2019 ..
+-rw-r--r-- 1 kea00dbt db2iadm1  288 12月  3 11:34 00000000.evt
+-rw-r----- 1 kea00dbt db2iadm1   43 12月  3 11:34 db2event.ctl
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> db2 "select substr (evm
+onname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE, AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  1 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> 
+
+
+
+----------------------------------------------------------------------------------------------------
+操作説明つき
+1.イベントモニター停止
+
+①インスタンスユーザーに切替
+su - db2inst1
+
+ケミストリーテストＤＢ区画へログイン
+kea00sys@kea00apk:~> ssh kea00dbk -l db2inst1
+The authenticity of host 'kea00dbk (10.1.41.144)' can't be established.
+ECDSA key fingerprint is SHA256:b24JUdW7e09tWB/y4RLYng2xYvrC+UmbDum1wtJajUE.
+Are you sure you want to continue connecting (yes/no)? yes
+Warning: Permanently added 'kea00dbk' (ECDSA) to the list of known hosts.
+Password:
+Last failed login: Wed Nov 24 12:33:49 JST 2021 from 10.1.41.19 on ssh:notty
+There was 1 failed login attempt since the last successful login.
+Last login: Mon Oct  4 12:09:39 2021 from 10.1.41.19
+db2inst1@kea00dbk:~>
+
+②DBに接続
+db2 connect to bseedb
+
+db2inst1@kea00dbk:~> db2
+(c) Copyright IBM Corporation 1993,2007
+DB2 クライアント 11.1.4.4 コマンド行プロセッサー
+
+コマンド・プロンプトからデータベース・マネージャーのコマンド、および SQL
+ステートメントを呼び出せます。 例:
+    db2 => connect to sample
+    db2 => bind sample.bnd
+
+一般ヘルプには ? をタイプしてください。
+コマンドのヘルプには ? command をタイプしてください。 command
+には、データベース・マネージャー・コマンドの
+最初のいくつかのキーワードを入力します。 例:
+ ? CATALOG DATABASE は CATALOG DATABASE コマンドのヘルプです。
+ ? CATALOG          は全 CATALOG コマンドのヘルプです。
+
+db2 対話モードを抜けるには、コマンド・プロンプトで QUIT とタイプしてください。
+対話モード以外では、すべてのコマンドに接頭語 'db2' を付ける必要があります。
+現在のコマンド・オプションの設定をリストするには、 LIST COMMAND OPTIONS
+とタイプしてください。
+
+詳細は、「オンライン・リファレンス」を参照してください。
+
+db2 => list database directory
+
+ システム・データベース・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+データベース 1 項目:
+
+ データベース別名                     = KEA00DBN
+ データベース名                       = KEA00DBN
+ ノード名                             = IA20
+ データベース・リリース・レベル       = 14.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+データベース 2 項目:
+
+ データベース別名                     = SAMPLE
+ データベース名                       = SAMPLE
+ ローカル・データベース・ディレクトリー = /home/db2inst1
+ データベース・リリース・レベル       = 14.00
+ コメント                       =
+ ディレクトリー項目タイプ             = 間接
+ カタログ・データベース・パーティション番号 = 0
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+db2 => terminate
+DB20000I  TERMINATE コマンドが正常に完了しました。
+db2inst1@kea00dbk:~> db2 connect to kea00dbn user db2inst1 using db2inst1
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXX8664 11.1.4.4
+ SQL 許可 ID            = DB2INST1
+ ローカル・データベース別名 = KEA00DBN
+
+db2inst1@kea00dbk:~>
+
+③イベントモニターが起動していることを確認
+db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE, AUTOSTART  from syscat.eventmonitors"
+→STATEが1であることを確認
+→対象行が出力されない(0 レコードが選択されました。と表示される場合)は次ページのイベントログ削除以降を実施する。
+
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE,
+ AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  1 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~>
+
+
+④バッファから未記録のログを出力(③でSTATEが0であった場合は実施しない)
+db2 flush event monitor DB2DETAILDEADLOCK
+
+db2inst1@kea00dbk:~> db2 flush event monitor DB2DETAILDEADLOCK
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~>
+
+⑤イベントモニター停止(③でSTATEが0であった場合は実施しない)
+db2 set event monitor db2detaildeadlock state=0
+
+db2inst1@kea00dbk:~> db2 set event monitor db2detaildeadlock state=0
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~>
+
+⑥イベントモニターが停止していることを確認
+db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE, AUTOSTART  from syscat.eventmonitors"
+→STATEが0であることを確認
+
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE,
+ AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  0 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~>
+
+⑦イベントモニター削除
+db2 drop event monitor db2detaildeadlock
+
+db2inst1@kea00dbk:~> db2 drop event monitor db2detaildeadlock
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~>
+
+
+2.イベントログ削除
+※「webdb」部分はサーバごとに適宜読み替える
+
+①イベントログの退避(必要に応じて実施)
+※ 出力先(output filename)は任意のディレクトおよびファイル名で問題ありません。
+db2evmon -path /db2dbf/data/webdb/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock > [output filename]
+
+db2inst1@kea00dbk:~> cd /db2dbf/data
+db2inst1@kea00dbk:/db2dbf/data
+db2inst1@kea00dbk:/db2dbf/data> su
+パスワード:
+kea00dbk:/db2dbf/data/ # mkdir evlog
+kea00dbk:/db2dbf/data/ # chmod a+wrx evlog
+kea00dbk:/db2dbf/data/ # exit
+db2inst1@kea00dbk:/db2dbf/data> cd
+db2inst1@kea00dbk:~> db2evmon -path /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock > /db2dbf/data/evlog/eventlog_20211203
+Reading /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock/00000000.evt ...
+db2inst1@kea00dbk:~> ls -a /db2dbf/data/evlog
+.  ..  eventlog_20211203
+db2inst1@kea00dbk:~> ls -la /db2dbf/data/evlog
+合計 1352
+drwxrwxrwx 2 root     root        4096 12月  3 11:28 .
+drwxr-xr-x 7 kea00dbt db2iadm1    4096 12月  3 11:26 ..
+-rw-r--r-- 1 db2inst1 db2iadm1 1375278 12月  3 11:29 eventlog_20211203
+db2inst1@kea00dbk:~>
+
+②イベントログの削除
+cd /db2dbf/data/webdb/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+rm *.*
+ls -l
+
+db2inst1@kea00dbk:~> cd /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> ls -la
+合計 600
+drwxr-x--- 2 kea00dbt db2iadm1   4096  1月 18  2019 .
+drwxr-x--- 3 kea00dbt db2iadm1   4096  1月 18  2019 ..
+-rw-r--r-- 1 kea00dbt db2iadm1 594237 12月  3 11:13 00000000.evt
+-rw-r----- 1 kea00dbt db2iadm1     43  1月 18  2019 db2event.ctl
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> su
+パスワード:
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # rm *.*
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # ls -la
+合計 8
+drwxr-x--- 2 kea00dbt db2iadm1 4096 12月  3 11:30 .
+drwxr-x--- 3 kea00dbt db2iadm1 4096  1月 18  2019 ..
+kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock # exit
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> cd
+db2inst1@kea00dbk:~>
+
+3.イベントモニター作成
+①イベントモニター作成
+db2 "create event monitor db2detaildeadlock for deadlocks with details write to file 'db2detaildeadlock' maxfiles 50 maxfilesize 512 buffersize 17 blocked append AUTOSTART"
+
+db2inst1@kea00dbk:~> db2 "create event monitor db2detaildeadlock for deadlocks with details write to file 'db2detaildead
+lock' maxfiles 50 maxfilesize 512 buffersize 17 blocked append AUTOSTART"
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~>
+
+②イベントモニター設定確認
+db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE(evmonname) as EVENT_MON_STATE, MAXFILES, MAXFILESIZE,BUFFERSIZE from syscat.eventmonitors"
+→maxfiles 50、maxfilesize 512、buffersize 17であることを確認
+
+db2inst1@kea00dbk:~> db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE(evmonname) as EVENT_MON_STATE,
+MAXFILES, MAXFILESIZE,BUFFERSIZE from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE MAXFILES    MAXFILESIZE BUFFERSIZE
+-------------------- --------------- ----------- ----------- -----------
+DB2DETAILDEADLOCK                  0          50         512          17
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:~>
+
+③イベントモニター起動
+db2 set event monitor db2detaildeadlock state=1
+
+db2inst1@kea00dbk:~> db2 set event monitor db2detaildeadlock state=1
+DB20000I  SQL コマンドが正常に完了しました。
+db2inst1@kea00dbk:~>
+
+
+④イベントモニターログが作成されていることを確認
+cd /db2dbf/data/webdb/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+ls -l
+※APサーバーでDB2にログインするとログが出力される
+
+db2inst1@kea00dbk:~> cd /db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> ls -la
+合計 16
+drwxr-x--- 2 kea00dbt db2iadm1 4096 12月  3 11:34 .
+drwxr-x--- 3 kea00dbt db2iadm1 4096  1月 18  2019 ..
+-rw-r--r-- 1 kea00dbt db2iadm1  288 12月  3 11:34 00000000.evt
+-rw-r----- 1 kea00dbt db2iadm1   43 12月  3 11:34 db2event.ctl
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock>
+
+
+⑤イベントモニターが起動していることを確認
+db2 "select substr (evmonname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE, AUTOSTART  from syscat.eventmonitors"
+→STATEが1であることを確認
+→AUTOSTARTがYとなっていることを確認
+
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock> db2 "select substr (evm
+onname, 1, 20) as EVMONNAME, EVENT_MON_STATE (evmonname) as EVENT_MON_STATE, AUTOSTART  from syscat.eventmonitors"
+
+EVMONNAME            EVENT_MON_STATE AUTOSTART
+-------------------- --------------- ---------
+DB2DETAILDEADLOCK                  1 Y
+
+  1 レコードが選択されました。
+
+db2inst1@kea00dbk:/db2dbf/data/kea00dbt/NODE0000/SQL00001/MEMBER0000/db2event/db2detaildeadlock>
+
+

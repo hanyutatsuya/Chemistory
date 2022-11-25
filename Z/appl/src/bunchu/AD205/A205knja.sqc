@@ -1,0 +1,520 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： A205knja.sqc
+ *     機能概要  ：患者情報アクセス関数(分注展開処理)
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-13                    Create
+ **********************************************************************/
+
+/********************************************************************/
+/*  インクルード宣言                                                */
+/********************************************************************/
+#include <stdio.h>
+#include "A205knja.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+// add 20070521 waj ロック対応
+#include "bmllog.h"
+#define RETRY			3
+#define	ERR_LOCK		-911
+#define	LOCK_WAIT_SEC	5   // 単位：秒
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    sstcd[8];
+	char    subsstcd[5];
+	char    cdkbn1[3];
+	char    cdkbn2[3];
+	char    irimkey[41];
+	char    srkcd[4];
+	char    srknm[31];
+	char    tticd[9];
+	char    ttinm[41];
+	char    gpcd[9];
+	char    gpnm[41];
+	char    skicd[9];
+	char    skinm[41];
+	char    krtno[41];
+	char    knjid[16];
+	char    knjnmn[61];
+	char    knjnmk[31];
+	char    knjnmkey[61];
+	char    sc[6];
+	char    tj[6];
+	char    tjtni;
+	char    sbtkbn;
+	char    birthday[9];
+	char    birthdaykbn;
+	char    age[4];
+	char    agekbn;
+	char    btcd[11];
+	char    btnm[31];
+	char    utkcmtcd1[3];
+	char    utkcmtcd2[3];
+	char    utkcmtcd3[3];
+	char    utkcmtfr1[71];
+	char    utkcmtfr2[71];
+	char    utkcmtfrflg;
+	char    ngkbn;
+	char    nsssu[3];
+	char    hkncd;
+	char    ktshsu[3];
+	char    iniriymd[11];
+	char    zssflg;
+	char    kkiriflg;
+	char    hknskbn;
+	char    utkkbn;
+	char    nekbn;
+	char    inknskbn;
+	char    utkjkkbn;
+	char    krflg;
+	char    fdhhkkflg;
+	char    utkdh[9];
+	char    mutkymd[11];
+	char    mirino[12];
+	char    knsjslbcd1[4];
+	char    knsjslbcd2[4];
+	char    knsjslbcd3[4];
+	char    knsjslbcd4[4];
+	char    ymhkkflg;
+	char    hkkkbdh[9];
+	char    ecd[4];
+	char    shcd[3];
+	char    sstssnmj[41];
+	char    sstssnmn[41];
+	char    sstrsj[21];
+	char    sstrsn[21];
+	char    sstsbt[3];
+	char    ttsstflg;
+	char    rucd[3];
+	short   irikmksu;
+	char    bmskn[51];
+	char    irinrsbt[3];
+	char    irihsmkbn;
+	char    caresstflg;
+	char    tktyflg;
+	char    apkntino[14];
+	char    sdnm[21];
+	char    bko1[21];
+	char    bko2[21];
+	char    bko3[21];
+	char    zstrdh[27];
+	char    zsssdh[27];
+	char    stlzsssdh[27];
+	char    stlzsssip[16];
+	char    stlzssssyaid[9];
+	char    ksndh[27];
+	char    oyasstcd[8];
+	char    trkdh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Kanjya
+
+BmlDMMInfo	KanjyaArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( sstcd ),
+	DMM_SSTRING( subsstcd ),
+	DMM_SSTRING( cdkbn1 ),
+	DMM_SSTRING( cdkbn2 ),
+	DMM_SSTRING( irimkey ),
+	DMM_SSTRING( srkcd ),
+	DMM_SSTRING( srknm ),
+	DMM_SSTRING( tticd ),
+	DMM_SSTRING( ttinm ),
+	DMM_SSTRING( gpcd ),
+	DMM_SSTRING( gpnm ),
+	DMM_SSTRING( skicd ),
+	DMM_SSTRING( skinm ),
+	DMM_SSTRING( krtno ),
+	DMM_SSTRING( knjid ),
+	DMM_SSTRING( knjnmn ),
+	DMM_SSTRING( knjnmk ),
+	DMM_SSTRING( knjnmkey ),
+	DMM_SSTRING( sc ),
+	DMM_SSTRING( tj ),
+	DMM_SCHAR( tjtni ),
+	DMM_SCHAR( sbtkbn ),
+	DMM_SSTRING( birthday ),
+	DMM_SCHAR( birthdaykbn ),
+	DMM_SSTRING( age ),
+	DMM_SCHAR( agekbn ),
+	DMM_SSTRING( btcd ),
+	DMM_SSTRING( btnm ),
+	DMM_SSTRING( utkcmtcd1 ),
+	DMM_SSTRING( utkcmtcd2 ),
+	DMM_SSTRING( utkcmtcd3 ),
+	DMM_SSTRING( utkcmtfr1 ),
+	DMM_SSTRING( utkcmtfr2 ),
+	DMM_SCHAR( utkcmtfrflg ),
+	DMM_SCHAR( ngkbn ),
+	DMM_SSTRING( nsssu ),
+	DMM_SCHAR( hkncd ),
+	DMM_SSTRING( ktshsu ),
+	DMM_SDATE( iniriymd ),
+	DMM_SCHAR( zssflg ),
+	DMM_SCHAR( kkiriflg ),
+	DMM_SCHAR( hknskbn ),
+	DMM_SCHAR( utkkbn ),
+	DMM_SCHAR( nekbn ),
+	DMM_SCHAR( inknskbn ),
+	DMM_SCHAR( utkjkkbn ),
+	DMM_SCHAR( krflg ),
+	DMM_SCHAR( fdhhkkflg ),
+	DMM_STIME( utkdh ),
+	DMM_SDATE( mutkymd ),
+	DMM_SSTRING( mirino ),
+	DMM_SSTRING( knsjslbcd1 ),
+	DMM_SSTRING( knsjslbcd2 ),
+	DMM_SSTRING( knsjslbcd3 ),
+	DMM_SSTRING( knsjslbcd4 ),
+	DMM_SCHAR( ymhkkflg ),
+	DMM_STIME( hkkkbdh ),
+	DMM_SSTRING( ecd ),
+	DMM_SSTRING( shcd ),
+	DMM_SSTRING( sstssnmj ),
+	DMM_SSTRING( sstssnmn ),
+	DMM_SSTRING( sstrsj ),
+	DMM_SSTRING( sstrsn ),
+	DMM_SSTRING( sstsbt ),
+	DMM_SCHAR( ttsstflg ),
+	DMM_SSTRING( rucd ),
+	DMM_SSHORT( irikmksu ),
+	DMM_SSTRING( bmskn ),
+	DMM_SSTRING( irinrsbt ),
+	DMM_SCHAR( irihsmkbn ),
+	DMM_SCHAR( caresstflg ),
+	DMM_SCHAR( tktyflg ),
+	DMM_SSTRING( apkntino ),
+	DMM_SSTRING( sdnm ),
+	DMM_SSTRING( bko1 ),
+	DMM_SSTRING( bko2 ),
+	DMM_SSTRING( bko3 ),
+	DMM_STIMESTAMP( zstrdh ),
+	DMM_STIMESTAMP( zsssdh ),
+	DMM_STIMESTAMP( stlzsssdh ),
+	DMM_SSTRING( stlzsssip ),
+	DMM_SSTRING( stlzssssyaid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_SSTRING( oyasstcd ),
+	DMM_STIMESTAMP( trkdh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ABunKnjSel()
+ *    KANJYA レコードKey条件取得
+ * ■引数
+ *    [I]  Kanjya* pKey       取得するレコードのキー
+ *    [O]  Kanjya** arrayOut    取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ABunKnjSel( Kanjya* pKey, Kanjya** arrayOut, int* numOut )
+{
+    Kanjya*     array = NULL;
+    int         num = 0;
+    // add 20070521 waj ロック対応
+	int			error = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KanjyaArray ) )
+        return HRC_INVALID_VALUE;
+/*** ameno ***/
+	sFncPutLog ( TRCKIND_WARNING, __FILE__, "ABunKnjSel", __LINE__,
+		EXEFLG_NON, "00000000",
+		"患者SELECT 受付日(%s) 依頼書No(%s)", utkymd, irino );
+/*** ameno ***/
+
+    // del 20070521 waj リトライを行うため割込みを禁止する
+    //                  FETCHでエラーが発生するとCLOSEが実行されない
+    // EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    // add 20070521 waj リトライ用ループ設定
+    int i;
+    for (i = 0; i <= RETRY; i++) {
+		error = 0;
+
+	    EXEC SQL DECLARE c1 CURSOR FOR
+	    SELECT
+			UTKYMD,
+			IRINO,
+			IRIKETFLG,
+			ZSSDINO,
+			SSTCD,
+			SUBSSTCD,
+			CDKBN1,
+			CDKBN2,
+			IRIMKEY,
+			SRKCD,
+			SRKNM,
+			TTICD,
+			TTINM,
+			GPCD,
+			GPNM,
+			SKICD,
+			SKINM,
+			KRTNO,
+			KNJID,
+			KNJNMN,
+			KNJNMK,
+			KNJNMKEY,
+			SC,
+			TJ,
+			TJTNI,
+			SBTKBN,
+			BIRTHDAY,
+			BIRTHDAYKBN,
+			AGE,
+			AGEKBN,
+			BTCD,
+			BTNM,
+			UTKCMTCD1,
+			UTKCMTCD2,
+			UTKCMTCD3,
+			UTKCMTFR1,
+			UTKCMTFR2,
+			UTKCMTFRFLG,
+			NGKBN,
+			NSSSU,
+			HKNCD,
+			KTSHSU,
+			INIRIYMD,
+			ZSSFLG,
+			KKIRIFLG,
+			HKNSKBN,
+			UTKKBN,
+			NEKBN,
+			INKNSKBN,
+			UTKJKKBN,
+			KRFLG,
+			FDHHKKFLG,
+			UTKDH,
+			MUTKYMD,
+			MIRINO,
+			KNSJSLBCD1,
+			KNSJSLBCD2,
+			KNSJSLBCD3,
+			KNSJSLBCD4,
+			YMHKKFLG,
+			HKKKBDH,
+			ECD,
+			SHCD,
+			SSTSSNMJ,
+			SSTSSNMN,
+			SSTRSJ,
+			SSTRSN,
+			SSTSBT,
+			TTSSTFLG,
+			RUCD,
+			IRIKMKSU,
+			BMSKN,
+			IRINRSBT,
+			IRIHSMKBN,
+			CARESSTFLG,
+			TKTYFLG,
+			APKNTINO,
+			SDNM,
+			BKO1,
+			BKO2,
+			BKO3,
+			ZSTRDH,
+			ZSSSDH,
+			STLZSSSDH,
+			STLZSSSIP,
+			STLZSSSSYAID,
+			KSNDH,
+			OYASSTCD,
+			TRKDH
+	    FROM
+	        KANJYA
+	    WHERE
+			IRINO = :irino AND
+			UTKYMD = :utkymd
+			ORDER BY ZSSDINO DESC FOR READ ONLY;
+	
+	    EXEC SQL OPEN c1;
+	
+	    while( 1 ) {
+	        Kanjya* rec;
+	
+	        EXEC SQL FETCH c1 INTO
+				:utkymd,
+				:irino,
+				:iriketflg,
+				:zssdino,
+				:sstcd,
+				:subsstcd,
+				:cdkbn1,
+				:cdkbn2,
+				:irimkey,
+				:srkcd,
+				:srknm,
+				:tticd,
+				:ttinm,
+				:gpcd,
+				:gpnm,
+				:skicd,
+				:skinm,
+				:krtno,
+				:knjid,
+				:knjnmn,
+				:knjnmk,
+				:knjnmkey,
+				:sc,
+				:tj,
+				:tjtni,
+				:sbtkbn,
+				:birthday,
+				:birthdaykbn,
+				:age,
+				:agekbn,
+				:btcd,
+				:btnm,
+				:utkcmtcd1,
+				:utkcmtcd2,
+				:utkcmtcd3,
+				:utkcmtfr1,
+				:utkcmtfr2,
+				:utkcmtfrflg,
+				:ngkbn,
+				:nsssu,
+				:hkncd,
+				:ktshsu,
+				:iniriymd,
+				:zssflg,
+				:kkiriflg,
+				:hknskbn,
+				:utkkbn,
+				:nekbn,
+				:inknskbn,
+				:utkjkkbn,
+				:krflg,
+				:fdhhkkflg,
+				:utkdh,
+				:mutkymd,
+				:mirino,
+				:knsjslbcd1,
+				:knsjslbcd2,
+				:knsjslbcd3,
+				:knsjslbcd4,
+				:ymhkkflg,
+				:hkkkbdh,
+				:ecd,
+				:shcd,
+				:sstssnmj,
+				:sstssnmn,
+				:sstrsj,
+				:sstrsn,
+				:sstsbt,
+				:ttsstflg,
+				:rucd,
+				:irikmksu,
+				:bmskn,
+				:irinrsbt,
+				:irihsmkbn,
+				:caresstflg,
+				:tktyflg,
+				:apkntino,
+				:sdnm,
+				:bko1,
+				:bko2,
+				:bko3,
+				:zstrdh,
+				:zsssdh,
+				:stlzsssdh,
+				:stlzsssip,
+				:stlzssssyaid,
+				:ksndh,
+				:oyasstcd,
+				:trkdh;
+	
+	        if( SQLCODE == 100 )
+	            break;
+	
+            // add 20070521 waj ロック時のリトライ対応
+            if (sqlca.sqlcode < 0) {
+                // エラー発生時は領域解放してブレイク
+                if (array != NULL) {
+                    ZbmlFree(array);
+                    array = NULL;
+                    num   = 0;
+                }
+				error = sqlca.sqlcode;
+				sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunKnjSel", __LINE__,
+							 EXEFLG_NON, "020", "DBエラー発生 [sqlcode : %d]", sqlca.sqlcode ) ;
+                break;
+            }
+
+	        if( num % ALLOC_UNIT == 0 ) {
+	            array = (Kanjya*)ZbmlRealloc( array,
+	                                    sizeof( Kanjya ) * ( num + ALLOC_UNIT ) );
+	            memset( array + num, 0, sizeof( Kanjya ) * ALLOC_UNIT );
+	        }
+	
+	        rec = array + num++;
+	        ZbmlMapHostToStruct( (char*)rec, KanjyaArray );
+	    }
+	
+	    EXEC SQL CLOSE c1;
+	
+        // add 20070521 waj ロック時のリトライ対応
+        //                  ロックの場合はリトライ、ロック以外のエラーはデータ無しで終了
+        //                  リトライは５秒待ってから
+        if (error == ERR_LOCK) {
+			sFncPutLog ( TRCKIND_ERROR, __FILE__, "ABunKnjSel", __LINE__,
+						 EXEFLG_NON, "020", "ロックによるリトライ[%d]回目", i ) ;
+            sleep(LOCK_WAIT_SEC);
+            continue;
+        }
+
+	    *arrayOut = array;
+	    *numOut   = num;
+	
+	    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+    // add 20070521 waj リトライ用ループ終端
+    }
+
+    // add 20070521 waj リトライしてもエラーの場合、データ無しで終了
+	*arrayOut = NULL;
+	*numOut   = 0;
+	return HRC_SQL_NOT_FOUND;
+
+// del 20070521 waj リトライを行うため割込みを禁止する
+// error:
+//     EXEC SQL WHENEVER SQLERROR CONTINUE;
+//     return sqlca.sqlcode;
+}
+
+/** End of File *********************************************************/

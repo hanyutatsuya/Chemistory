@@ -1,0 +1,314 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Asyscdlmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Asyscdlmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knsgrp[17];
+	char    asystartymd[11];
+	char    asyendymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Asyscdlmst
+
+BmlDMMInfo	AsyscdlmstArray[] = {
+	DMM_SSTRING( knsgrp ),
+	DMM_SDATE( asystartymd ),
+	DMM_SDATE( asyendymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbAsyscdlmstSelectAll()
+ *    ASYSCDLMST レコード全件取得
+ * ■引数
+ *    [O]  Asyscdlmst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyscdlmstSelectAll( Asyscdlmst** arrayOut, int* numOut )
+{
+    Asyscdlmst* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSGRP,
+		ASYSTARTYMD,
+		ASYENDYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        ASYSCDLMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Asyscdlmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knsgrp,
+			:asystartymd,
+			:asyendymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Asyscdlmst*)ZbmlRealloc( array,
+                                    sizeof( Asyscdlmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Asyscdlmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, AsyscdlmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbAsyscdlmstSelectKey()
+ *    ASYSCDLMST レコードKey条件取得
+ * ■引数
+ *    [I]  Asyscdlmst* pKey     取得するレコードのキー
+ *    [O]  Asyscdlmst** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyscdlmstSelectKey( Asyscdlmst* pKey, Asyscdlmst** arrayOut, int* numOut )
+{
+    Asyscdlmst* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, AsyscdlmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSGRP,
+		ASYSTARTYMD,
+		ASYENDYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        ASYSCDLMST
+    WHERE
+		KNSGRP = :knsgrp AND
+		ASYSTARTYMD = :asystartymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Asyscdlmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knsgrp,
+			:asystartymd,
+			:asyendymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Asyscdlmst*)ZbmlRealloc( array,
+                                    sizeof( Asyscdlmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Asyscdlmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, AsyscdlmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyscdlmstInsert()
+ *    ASYSCDLMST レコードを挿入する
+ * ■引数
+ *    [I]  Asyscdlmst* rec      挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyscdlmstInsert( Asyscdlmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyscdlmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO ASYSCDLMST
+    (
+		KNSGRP,
+		ASYSTARTYMD,
+		ASYENDYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:knsgrp,
+		:asystartymd,
+		:asyendymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyscdlmstUpdate()
+ *    ASYSCDLMST レコードを更新する
+ * ■引数
+ *    [I]  Asyscdlmst* rec      更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyscdlmstUpdate( Asyscdlmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyscdlmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE ASYSCDLMST
+    SET (
+		ASYENDYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:asyendymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		KNSGRP = :knsgrp AND
+		ASYSTARTYMD = :asystartymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbAsyscdlmstDelete()
+ *    ASYSCDLMST レコードを削除する
+ * ■引数
+ *    [I]  Asyscdlmst* rec      削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbAsyscdlmstDelete( Asyscdlmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, AsyscdlmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM ASYSCDLMST
+    WHERE
+		KNSGRP = :knsgrp AND
+		ASYSTARTYMD = :asystartymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

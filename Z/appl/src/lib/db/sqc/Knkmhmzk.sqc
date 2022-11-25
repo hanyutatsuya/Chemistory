@@ -1,0 +1,576 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Knkmhmzk.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-02-21                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Knkmhmzk.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    utkymd[11];
+	char    irino[12];
+	char    iriketflg;
+	short   zssdino;
+	char    kmkcd[8];
+	char    sriymd1[11];
+	char    kntno1[14];
+	char    knt1ketflg;
+	char    knsgslbcd1[4];
+	short   kntzssdino1;
+	char    sriymd2[11];
+	char    kntno2[14];
+	char    knt2ketflg;
+	char    knsgslbcd2[4];
+	short   kntzssdino2;
+	char    sriymd3[11];
+	char    kntno3[14];
+	char    knt3ketflg;
+	char    knsgslbcd3[4];
+	short   kntzssdino3;
+	char    sriymd4[11];
+	char    kntno4[14];
+	char    knt4ketflg;
+	char    knsgslbcd4[4];
+	short   kntzssdino4;
+	char    sriymd5[11];
+	char    kntno5[14];
+	char    knt5ketflg;
+	char    knsgslbcd5[4];
+	short   kntzssdino5;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Knkmhmzk
+
+BmlDMMInfo	KnkmhmzkArray[] = {
+	DMM_SDATE( utkymd ),
+	DMM_SSTRING( irino ),
+	DMM_SCHAR( iriketflg ),
+	DMM_SSHORT( zssdino ),
+	DMM_SSTRING( kmkcd ),
+	DMM_SDATE( sriymd1 ),
+	DMM_SSTRING( kntno1 ),
+	DMM_SCHAR( knt1ketflg ),
+	DMM_SSTRING( knsgslbcd1 ),
+	DMM_SSHORT( kntzssdino1 ),
+	DMM_SDATE( sriymd2 ),
+	DMM_SSTRING( kntno2 ),
+	DMM_SCHAR( knt2ketflg ),
+	DMM_SSTRING( knsgslbcd2 ),
+	DMM_SSHORT( kntzssdino2 ),
+	DMM_SDATE( sriymd3 ),
+	DMM_SSTRING( kntno3 ),
+	DMM_SCHAR( knt3ketflg ),
+	DMM_SSTRING( knsgslbcd3 ),
+	DMM_SSHORT( kntzssdino3 ),
+	DMM_SDATE( sriymd4 ),
+	DMM_SSTRING( kntno4 ),
+	DMM_SCHAR( knt4ketflg ),
+	DMM_SSTRING( knsgslbcd4 ),
+	DMM_SSHORT( kntzssdino4 ),
+	DMM_SDATE( sriymd5 ),
+	DMM_SSTRING( kntno5 ),
+	DMM_SCHAR( knt5ketflg ),
+	DMM_SSTRING( knsgslbcd5 ),
+	DMM_SSHORT( kntzssdino5 ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKnkmhmzkSelectAll()
+ *    KNKMHMZK レコード全件取得
+ * ■引数
+ *    [O]  Knkmhmzk** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkmhmzkSelectAll( Knkmhmzk** arrayOut, int* numOut )
+{
+    Knkmhmzk*   array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KMKCD,
+		SRIYMD1,
+		KNTNO1,
+		KNT1KETFLG,
+		KNSGSLBCD1,
+		KNTZSSDINO1,
+		SRIYMD2,
+		KNTNO2,
+		KNT2KETFLG,
+		KNSGSLBCD2,
+		KNTZSSDINO2,
+		SRIYMD3,
+		KNTNO3,
+		KNT3KETFLG,
+		KNSGSLBCD3,
+		KNTZSSDINO3,
+		SRIYMD4,
+		KNTNO4,
+		KNT4KETFLG,
+		KNSGSLBCD4,
+		KNTZSSDINO4,
+		SRIYMD5,
+		KNTNO5,
+		KNT5KETFLG,
+		KNSGSLBCD5,
+		KNTZSSDINO5,
+		KSNDH
+    FROM
+        KNKMHMZK FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Knkmhmzk* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:kmkcd,
+			:sriymd1,
+			:kntno1,
+			:knt1ketflg,
+			:knsgslbcd1,
+			:kntzssdino1,
+			:sriymd2,
+			:kntno2,
+			:knt2ketflg,
+			:knsgslbcd2,
+			:kntzssdino2,
+			:sriymd3,
+			:kntno3,
+			:knt3ketflg,
+			:knsgslbcd3,
+			:kntzssdino3,
+			:sriymd4,
+			:kntno4,
+			:knt4ketflg,
+			:knsgslbcd4,
+			:kntzssdino4,
+			:sriymd5,
+			:kntno5,
+			:knt5ketflg,
+			:knsgslbcd5,
+			:kntzssdino5,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knkmhmzk*)ZbmlRealloc( array,
+                                    sizeof( Knkmhmzk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knkmhmzk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnkmhmzkArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKnkmhmzkSelectKey()
+ *    KNKMHMZK レコードKey条件取得
+ * ■引数
+ *    [I]  Knkmhmzk* pKey       取得するレコードのキー
+ *    [O]  Knkmhmzk** arrayOut  取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkmhmzkSelectKey( Knkmhmzk* pKey, Knkmhmzk** arrayOut, int* numOut )
+{
+    Knkmhmzk*   array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KnkmhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KMKCD,
+		SRIYMD1,
+		KNTNO1,
+		KNT1KETFLG,
+		KNSGSLBCD1,
+		KNTZSSDINO1,
+		SRIYMD2,
+		KNTNO2,
+		KNT2KETFLG,
+		KNSGSLBCD2,
+		KNTZSSDINO2,
+		SRIYMD3,
+		KNTNO3,
+		KNT3KETFLG,
+		KNSGSLBCD3,
+		KNTZSSDINO3,
+		SRIYMD4,
+		KNTNO4,
+		KNT4KETFLG,
+		KNSGSLBCD4,
+		KNTZSSDINO4,
+		SRIYMD5,
+		KNTNO5,
+		KNT5KETFLG,
+		KNSGSLBCD5,
+		KNTZSSDINO5,
+		KSNDH
+    FROM
+        KNKMHMZK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KMKCD = :kmkcd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Knkmhmzk* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:utkymd,
+			:irino,
+			:iriketflg,
+			:zssdino,
+			:kmkcd,
+			:sriymd1,
+			:kntno1,
+			:knt1ketflg,
+			:knsgslbcd1,
+			:kntzssdino1,
+			:sriymd2,
+			:kntno2,
+			:knt2ketflg,
+			:knsgslbcd2,
+			:kntzssdino2,
+			:sriymd3,
+			:kntno3,
+			:knt3ketflg,
+			:knsgslbcd3,
+			:kntzssdino3,
+			:sriymd4,
+			:kntno4,
+			:knt4ketflg,
+			:knsgslbcd4,
+			:kntzssdino4,
+			:sriymd5,
+			:kntno5,
+			:knt5ketflg,
+			:knsgslbcd5,
+			:kntzssdino5,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knkmhmzk*)ZbmlRealloc( array,
+                                    sizeof( Knkmhmzk ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knkmhmzk ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnkmhmzkArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkmhmzkInsert()
+ *    KNKMHMZK レコードを挿入する
+ * ■引数
+ *    [I]  Knkmhmzk* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkmhmzkInsert( Knkmhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkmhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KNKMHMZK
+    (
+		UTKYMD,
+		IRINO,
+		IRIKETFLG,
+		ZSSDINO,
+		KMKCD,
+		SRIYMD1,
+		KNTNO1,
+		KNT1KETFLG,
+		KNSGSLBCD1,
+		KNTZSSDINO1,
+		SRIYMD2,
+		KNTNO2,
+		KNT2KETFLG,
+		KNSGSLBCD2,
+		KNTZSSDINO2,
+		SRIYMD3,
+		KNTNO3,
+		KNT3KETFLG,
+		KNSGSLBCD3,
+		KNTZSSDINO3,
+		SRIYMD4,
+		KNTNO4,
+		KNT4KETFLG,
+		KNSGSLBCD4,
+		KNTZSSDINO4,
+		SRIYMD5,
+		KNTNO5,
+		KNT5KETFLG,
+		KNSGSLBCD5,
+		KNTZSSDINO5,
+		KSNDH
+    ) VALUES (
+		:utkymd,
+		:irino,
+		:iriketflg,
+		:zssdino,
+		:kmkcd,
+		:sriymd1,
+		:kntno1,
+		:knt1ketflg,
+		:knsgslbcd1,
+		:kntzssdino1,
+		:sriymd2,
+		:kntno2,
+		:knt2ketflg,
+		:knsgslbcd2,
+		:kntzssdino2,
+		:sriymd3,
+		:kntno3,
+		:knt3ketflg,
+		:knsgslbcd3,
+		:kntzssdino3,
+		:sriymd4,
+		:kntno4,
+		:knt4ketflg,
+		:knsgslbcd4,
+		:kntzssdino4,
+		:sriymd5,
+		:kntno5,
+		:knt5ketflg,
+		:knsgslbcd5,
+		:kntzssdino5,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkmhmzkUpdate()
+ *    KNKMHMZK レコードを更新する
+ * ■引数
+ *    [I]  Knkmhmzk* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkmhmzkUpdate( Knkmhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkmhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KNKMHMZK
+    SET (
+		IRIKETFLG,
+		SRIYMD1,
+		KNTNO1,
+		KNT1KETFLG,
+		KNSGSLBCD1,
+		KNTZSSDINO1,
+		SRIYMD2,
+		KNTNO2,
+		KNT2KETFLG,
+		KNSGSLBCD2,
+		KNTZSSDINO2,
+		SRIYMD3,
+		KNTNO3,
+		KNT3KETFLG,
+		KNSGSLBCD3,
+		KNTZSSDINO3,
+		SRIYMD4,
+		KNTNO4,
+		KNT4KETFLG,
+		KNSGSLBCD4,
+		KNTZSSDINO4,
+		SRIYMD5,
+		KNTNO5,
+		KNT5KETFLG,
+		KNSGSLBCD5,
+		KNTZSSDINO5,
+		KSNDH
+    ) = (
+		:iriketflg,
+		:sriymd1,
+		:kntno1,
+		:knt1ketflg,
+		:knsgslbcd1,
+		:kntzssdino1,
+		:sriymd2,
+		:kntno2,
+		:knt2ketflg,
+		:knsgslbcd2,
+		:kntzssdino2,
+		:sriymd3,
+		:kntno3,
+		:knt3ketflg,
+		:knsgslbcd3,
+		:kntzssdino3,
+		:sriymd4,
+		:kntno4,
+		:knt4ketflg,
+		:knsgslbcd4,
+		:kntzssdino4,
+		:sriymd5,
+		:kntno5,
+		:knt5ketflg,
+		:knsgslbcd5,
+		:kntzssdino5,
+		:ksndh
+    ) WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KMKCD = :kmkcd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnkmhmzkDelete()
+ *    KNKMHMZK レコードを削除する
+ * ■引数
+ *    [I]  Knkmhmzk* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnkmhmzkDelete( Knkmhmzk* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnkmhmzkArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KNKMHMZK
+    WHERE
+		UTKYMD = :utkymd AND
+		IRINO = :irino AND
+		ZSSDINO = :zssdino AND
+		KMKCD = :kmkcd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

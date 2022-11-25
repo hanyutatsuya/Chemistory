@@ -1,0 +1,35 @@
+#!/bin/bash -
+
+kbn=LD104
+seq=1
+db2 connect to $1 user $2 using $3
+
+if [ $? -gt 0 ]; then
+	exit 1
+fi
+
+echo "Åú /bin/rm ./*.bnd"
+/bin/rm ./*.bnd
+for sqc in ./*.sqc; do
+	echo ""
+	echo ""
+	rm_c=`echo $sqc | sed 's/sqc/c/'`
+	echo "Åú /bin/rm $rm_c"
+	/bin/rm $rm_c
+
+	echo "Pre-Compiling $sqc (package:$seq$kbn)..."
+	db2 prep $sqc bindfile using ./$seq$kbn.bnd package using $seq$kbn
+	if [ $? -gt 0 ]; then
+		/bin/rm $rm_c
+		exit 1
+	fi
+	echo "Binding $seq$kbn.bnd ..."
+	db2 bind ./$seq$kbn.bnd
+	if [ $? -gt 0 ]; then
+		exit 1
+	fi
+	seq=$(($seq + 1))
+done
+
+db2 terminate
+

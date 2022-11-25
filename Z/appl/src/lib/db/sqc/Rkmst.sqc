@@ -1,0 +1,364 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Rkmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2008-01-07                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Rkmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    smpcd[8];
+	char    rksbt;
+	char    rknm[21];
+	short   rkknhsu;
+	short   trrcksu;
+	char    filskdir[129];
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Rkmst
+
+BmlDMMInfo	RkmstArray[] = {
+	DMM_SSTRING( smpcd ),
+	DMM_SCHAR( rksbt ),
+	DMM_SSTRING( rknm ),
+	DMM_SSHORT( rkknhsu ),
+	DMM_SSHORT( trrcksu ),
+	DMM_SSTRING( filskdir ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbRkmstSelectAll()
+ *    RKMST レコード全件取得
+ * ■引数
+ *    [O]  Rkmst** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbRkmstSelectAll( Rkmst** arrayOut, int* numOut )
+{
+    Rkmst*      array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		SMPCD,
+		RKSBT,
+		RKNM,
+		RKKNHSU,
+		TRRCKSU,
+		FILSKDIR,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        RKMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Rkmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:smpcd,
+			:rksbt,
+			:rknm,
+			:rkknhsu,
+			:trrcksu,
+			:filskdir,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Rkmst*)ZbmlRealloc( array,
+                                    sizeof( Rkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Rkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, RkmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbRkmstSelectKey()
+ *    RKMST レコードKey条件取得
+ * ■引数
+ *    [I]  Rkmst* pKey       取得するレコードのキー
+ *    [O]  Rkmst** arrayOut     取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbRkmstSelectKey( Rkmst* pKey, Rkmst** arrayOut, int* numOut )
+{
+    Rkmst*      array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, RkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		SMPCD,
+		RKSBT,
+		RKNM,
+		RKKNHSU,
+		TRRCKSU,
+		FILSKDIR,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        RKMST
+    WHERE
+		SMPCD = :smpcd AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Rkmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:smpcd,
+			:rksbt,
+			:rknm,
+			:rkknhsu,
+			:trrcksu,
+			:filskdir,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Rkmst*)ZbmlRealloc( array,
+                                    sizeof( Rkmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Rkmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, RkmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbRkmstInsert()
+ *    RKMST レコードを挿入する
+ * ■引数
+ *    [I]  Rkmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbRkmstInsert( Rkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, RkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO RKMST
+    (
+		SMPCD,
+		RKSBT,
+		RKNM,
+		RKKNHSU,
+		TRRCKSU,
+		FILSKDIR,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:smpcd,
+		:rksbt,
+		:rknm,
+		:rkknhsu,
+		:trrcksu,
+		:filskdir,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbRkmstUpdate()
+ *    RKMST レコードを更新する
+ * ■引数
+ *    [I]  Rkmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbRkmstUpdate( Rkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, RkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE RKMST
+    SET (
+		RKSBT,
+		RKNM,
+		RKKNHSU,
+		TRRCKSU,
+		FILSKDIR,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:rksbt,
+		:rknm,
+		:rkknhsu,
+		:trrcksu,
+		:filskdir,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		SMPCD = :smpcd AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbRkmstDelete()
+ *    RKMST レコードを削除する
+ * ■引数
+ *    [I]  Rkmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbRkmstDelete( Rkmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, RkmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM RKMST
+    WHERE
+		SMPCD = :smpcd AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

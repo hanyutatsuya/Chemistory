@@ -1,0 +1,110 @@
+/******************************************************************************/
+/* 　ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/* 　システム名：次世代システム                                               */
+/* 　ファイル名：ZD101_01.sqc                                                 */
+/* 　概　　　要：ログデータベース出力デーモン							      */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.00     2006/01/15     芳賀弘幸       新規作成                           */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include <stdio.h>
+
+#include "sql.h"
+#include "bml_base.h"
+#include "bmllog.h"
+#include "ZD101.h"
+
+EXEC SQL INCLUDE SQLCA;
+
+/******************************************************************************/
+/* グローバル宣言                                                             */
+/******************************************************************************/
+EXEC SQL BEGIN DECLARE SECTION;
+char	sel_knskisymd[11];
+char	sel_asyrckid[11];
+char	rakitjhossi[7] ;
+
+//	アプリケーションログ情報構造体
+struct 
+{
+  char sydate[11];
+  char sytime[9];
+  char tracekbn[2];
+  char pcname[33];
+  sqlint32 proccessid;
+  char loginid[9];
+  char wkupapp[33];
+  char srcname[33];
+  char funcname[33];
+  sqlint32 getline;
+  char procflg[3];
+  char errcode[9];
+  struct
+  {
+    short length;
+    char  data[1024];
+  } message;
+} sqlAPLLOG ;
+EXEC SQL END DECLARE SECTION;
+
+/******************************************************************************/
+/* 関数宣言                                                                   */
+/******************************************************************************/
+
+/******************************************************************************/
+/*  関 数 名　：sFncInsAPLLOG()			 									  */
+/*  機能概要　：アプリケーションログ情報追加			  	 			      */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：	アプリケーションログ情報構造体							  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：  0		: 成功												  */
+/* 　　　　　　　-1		: 失敗												  */
+/******************************************************************************/
+int
+sFncInsKENPOS ( precAPLLOG )
+struct stcLogAPLLOG *precAPLLOG ;
+{
+
+	EXEC SQL WHENEVER SQLERROR GO TO error;
+
+	/***
+	 ***	変数初期化	
+	 ***/
+	memcpy ( &sqlAPLLOG, precAPLLOG, sizeof ( sqlAPLLOG ) ) ;
+	memcpy ( sqlAPLLOG.sydate, precAPLLOG->sydate, sizeof ( sqlAPLLOG.sydate ) ) ;
+	memcpy ( sqlAPLLOG.sytime, precAPLLOG->sytime, sizeof ( sqlAPLLOG.sytime ) ) ;
+	memcpy ( sqlAPLLOG.tracekbn, precAPLLOG->tracekbn, sizeof ( sqlAPLLOG.tracekbn ) ) ;
+	memcpy ( sqlAPLLOG.pcname, precAPLLOG->pcname, sizeof ( sqlAPLLOG.pcname ) ) ;
+	if ( precAPLLOG->proccessid[0] != '\0' ) {
+		sqlAPLLOG.proccessid = atoi ( precAPLLOG->proccessid ) ;
+	}
+	memcpy ( sqlAPLLOG.loginid, precAPLLOG->loginid, sizeof ( sqlAPLLOG.loginid ) ) ;
+	memcpy ( sqlAPLLOG.wkupapp, precAPLLOG->wkupapp, sizeof ( sqlAPLLOG.wkupapp ) ) ;
+	memcpy ( sqlAPLLOG.srcname, precAPLLOG->srcname, sizeof ( sqlAPLLOG.srcname ) ) ;
+	memcpy ( sqlAPLLOG.funcname, precAPLLOG->funcname, sizeof ( sqlAPLLOG.funcname ) ) ;
+	if ( precAPLLOG->getline[0] != '\0' ) {
+		sqlAPLLOG.getline = atoi ( precAPLLOG->getline ) ;
+	}
+	memcpy ( sqlAPLLOG.procflg, precAPLLOG->procflg, sizeof ( sqlAPLLOG.procflg ) ) ;
+	memcpy ( sqlAPLLOG.errcode, precAPLLOG->errcode, sizeof ( sqlAPLLOG.errcode ) ) ;
+	sqlAPLLOG.message.length = strlen ( precAPLLOG->message ) ;
+	memcpy ( sqlAPLLOG.message.data, precAPLLOG->message, sizeof ( sqlAPLLOG.message.data ) ) ;
+
+
+	/***
+	 ***	検体ポジション情報追加
+	 ***/
+	EXEC SQL INSERT INTO APLLOG VALUES ( :sqlAPLLOG ) ; 
+
+	return ( 0 ) ;
+
+error:
+	return ( -1 ) ;
+}
+/** End of File *********************************************************/

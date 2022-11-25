@@ -1,0 +1,182 @@
+#!/bin/bash -
+
+db2 connect to kea00db user db2inst1 using db2inst1
+if [ $? -gt 0 ]; then
+    exit 1
+fi
+
+date
+echo " "
+echo "MASTER DB RUNSTATS START"
+echo " "
+echo "ASYSCDLMST"
+db2 RUNSTATS ON TABLE DB2INST1.ASYSCDLMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "BNCRYMST"
+db2 RUNSTATS ON TABLE DB2INST1.BNCRYMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "BSCMTMST"
+db2 RUNSTATS ON TABLE DB2INST1.BSCMTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CALCKMKMST"
+db2 RUNSTATS ON TABLE DB2INST1.CALCKMKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CHK100MST"
+db2 RUNSTATS ON TABLE DB2INST1.CHK100MST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CHKSBTMST"
+db2 RUNSTATS ON TABLE DB2INST1.CHKSBTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CMTMST"
+db2 RUNSTATS ON TABLE DB2INST1.CMTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CTRLIJHTMST"
+db2 RUNSTATS ON TABLE DB2INST1.CTRLIJHTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CTRLMST"
+db2 RUNSTATS ON TABLE DB2INST1.CTRLMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "CTRLSBTMST"
+db2 RUNSTATS ON TABLE DB2INST1.CTRLSBTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "DEFPRMST"
+db2 RUNSTATS ON TABLE DB2INST1.DEFPRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "EIGMST"
+db2 RUNSTATS ON TABLE DB2INST1.EIGMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "FKPTCHKMST"
+db2 RUNSTATS ON TABLE DB2INST1.FKPTCHKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "GROUPMST"
+db2 RUNSTATS ON TABLE DB2INST1.GROUPMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "HST_KJNMST"
+db2 RUNSTATS ON TABLE DB2INST1.HST_KJNMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "JDKMKMST"
+db2 RUNSTATS ON TABLE DB2INST1.JDKMKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KGYMDMST"
+db2 RUNSTATS ON TABLE DB2INST1.KGYMDMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KINKMMST"
+db2 RUNSTATS ON TABLE DB2INST1.KINKMMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KJNMST"
+db2 RUNSTATS ON TABLE DB2INST1.KJNMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KKACONVMST"
+db2 RUNSTATS ON TABLE DB2INST1.KKACONVMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KKAFLTMST"
+db2 RUNSTATS ON TABLE DB2INST1.KKAFLTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KKAHSKMST"
+db2 RUNSTATS ON TABLE DB2INST1.KKAHSKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KMKGMST"
+db2 RUNSTATS ON TABLE DB2INST1.KMKGMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KMKMST"
+db2 RUNSTATS ON TABLE DB2INST1.KMKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KNOKGNMST"
+db2 RUNSTATS ON TABLE DB2INST1.KNOKGNMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KNSGMST"
+db2 RUNSTATS ON TABLE DB2INST1.KNSGMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KRKMKMST"
+db2 RUNSTATS ON TABLE DB2INST1.KRKMKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "KSKBRMST"
+db2 RUNSTATS ON TABLE DB2INST1.KSKBRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "LTFKKMKMST"
+db2 RUNSTATS ON TABLE DB2INST1.LTFKKMKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "LTFKSSTMST"
+db2 RUNSTATS ON TABLE DB2INST1.LTFKSSTMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "MECHMST"
+db2 RUNSTATS ON TABLE DB2INST1.MECHMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "MELINEMST"
+db2 RUNSTATS ON TABLE DB2INST1.MELINEMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "MEMST"
+db2 RUNSTATS ON TABLE DB2INST1.MEMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "MESSAGEMST"
+db2 RUNSTATS ON TABLE DB2INST1.MESSAGEMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "ONLMST"
+db2 RUNSTATS ON TABLE DB2INST1.ONLMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "PRCSMST"
+db2 RUNSTATS ON TABLE DB2INST1.PRCSMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "PRTCLMST"
+db2 RUNSTATS ON TABLE DB2INST1.PRTCLMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "QCCTRLMST"
+db2 RUNSTATS ON TABLE DB2INST1.QCCTRLMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "QCMECHMST"
+db2 RUNSTATS ON TABLE DB2INST1.QCMECHMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RKMST"
+db2 RUNSTATS ON TABLE DB2INST1.RKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RNGCHKMST"
+db2 RUNSTATS ON TABLE DB2INST1.RNGCHKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "RRKCHKMST"
+db2 RUNSTATS ON TABLE DB2INST1.RRKCHKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SECMST"
+db2 RUNSTATS ON TABLE DB2INST1.SECMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SKCHKMST"
+db2 RUNSTATS ON TABLE DB2INST1.SKCHKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SKRYMST"
+db2 RUNSTATS ON TABLE DB2INST1.SKRYMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SSTKJMST"
+db2 RUNSTATS ON TABLE DB2INST1.SSTKJMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SSTSRMST"
+db2 RUNSTATS ON TABLE DB2INST1.SSTSRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "STDMST"
+db2 RUNSTATS ON TABLE DB2INST1.STDMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "SYSKNRMST"
+db2 RUNSTATS ON TABLE DB2INST1.SYSKNRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "TRMST"
+db2 RUNSTATS ON TABLE DB2INST1.TRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "TSCHKMST"
+db2 RUNSTATS ON TABLE DB2INST1.TSCHKMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "USERMST"
+db2 RUNSTATS ON TABLE DB2INST1.USERMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "XBARMMST"
+db2 RUNSTATS ON TABLE DB2INST1.XBARMMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "XEERRMST"
+db2 RUNSTATS ON TABLE DB2INST1.XEERRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "ZAIRMST"
+db2 RUNSTATS ON TABLE DB2INST1.ZAIRMST WITH DISTRIBUTION and detailed indexes all;
+echo " "
+echo "MASTER DB RUNSTATS END"
+echo " "
+date
+echo " "
+
+db2 terminate;

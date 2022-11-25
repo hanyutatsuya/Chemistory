@@ -1,0 +1,365 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Prcsmst.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-04-11                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Prcsmst.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	short   pgid;
+	char    prno[11];
+	char    lmname[21];
+	char    krknsgrp[11];
+	short   lmtype;
+	char    wsname[17];
+	char    kaiymd[11];
+	char    haiymd[11];
+	char    hnktntid[9];
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Prcsmst
+
+BmlDMMInfo	PrcsmstArray[] = {
+	DMM_SSHORT( pgid ),
+	DMM_SSTRING( prno ),
+	DMM_SSTRING( lmname ),
+	DMM_SSTRING( krknsgrp ),
+	DMM_SSHORT( lmtype ),
+	DMM_SSTRING( wsname ),
+	DMM_SDATE( kaiymd ),
+	DMM_SDATE( haiymd ),
+	DMM_SSTRING( hnktntid ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbPrcsmstSelectAll()
+ *    PRCSMST レコード全件取得
+ * ■引数
+ *    [O]  Prcsmst** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbPrcsmstSelectAll( Prcsmst** arrayOut, int* numOut )
+{
+    Prcsmst*    array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		PGID,
+		PRNO,
+		LMNAME,
+		KRKNSGRP,
+		LMTYPE,
+		WSNAME,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        PRCSMST FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Prcsmst* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:pgid,
+			:prno,
+			:lmname,
+			:krknsgrp,
+			:lmtype,
+			:wsname,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Prcsmst*)ZbmlRealloc( array,
+                                    sizeof( Prcsmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Prcsmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, PrcsmstArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbPrcsmstSelectKey()
+ *    PRCSMST レコードKey条件取得
+ * ■引数
+ *    [I]  Prcsmst* pKey       取得するレコードのキー
+ *    [O]  Prcsmst** arrayOut   取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbPrcsmstSelectKey( Prcsmst* pKey, Prcsmst** arrayOut, int* numOut )
+{
+    Prcsmst*    array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, PrcsmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		PGID,
+		PRNO,
+		LMNAME,
+		KRKNSGRP,
+		LMTYPE,
+		WSNAME,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    FROM
+        PRCSMST
+    WHERE
+		PGID         = :pgid         AND
+		PRNO = :prno AND
+		KAIYMD <= :kaiymd FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Prcsmst* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:pgid,
+			:prno,
+			:lmname,
+			:krknsgrp,
+			:lmtype,
+			:wsname,
+			:kaiymd,
+			:haiymd,
+			:hnktntid,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Prcsmst*)ZbmlRealloc( array,
+                                    sizeof( Prcsmst ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Prcsmst ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, PrcsmstArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbPrcsmstInsert()
+ *    PRCSMST レコードを挿入する
+ * ■引数
+ *    [I]  Prcsmst* rec       挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbPrcsmstInsert( Prcsmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, PrcsmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO PRCSMST
+    (
+		PGID,
+		PRNO,
+		LMNAME,
+		KRKNSGRP,
+		LMTYPE,
+		WSNAME,
+		KAIYMD,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) VALUES (
+		:pgid,
+		:prno,
+		:lmname,
+		:krknsgrp,
+		:lmtype,
+		:wsname,
+		:kaiymd,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbPrcsmstUpdate()
+ *    PRCSMST レコードを更新する
+ * ■引数
+ *    [I]  Prcsmst* rec       更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbPrcsmstUpdate( Prcsmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, PrcsmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE PRCSMST
+    SET (
+		LMNAME,
+		KRKNSGRP,
+		LMTYPE,
+		WSNAME,
+		HAIYMD,
+		HNKTNTID,
+		KSNDH
+    ) = (
+		:lmname,
+		:krknsgrp,
+		:lmtype,
+		:wsname,
+		:haiymd,
+		:hnktntid,
+		:ksndh
+    ) WHERE
+		PGID         = :pgid         AND
+		PRNO = :prno AND
+		KAIYMD = :kaiymd;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbPrcsmstDelete()
+ *    PRCSMST レコードを削除する
+ * ■引数
+ *    [I]  Prcsmst* rec       削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbPrcsmstDelete( Prcsmst* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, PrcsmstArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM PRCSMST
+    WHERE
+		PGID         = :pgid         AND
+		PRNO = :prno AND
+		KAIYMD = :kaiymd;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

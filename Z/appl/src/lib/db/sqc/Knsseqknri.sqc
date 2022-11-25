@@ -1,0 +1,345 @@
+/**********************************************************************
+ *
+ *     ＢＭＬ様向け検査システム
+ *
+ *     システム名：次世代
+ *     ファイル名： Knsseqknri.sqc
+ *     機能概要  ：
+ **********************************************************************/
+
+/**********************************************************************
+ *  Ver.     Date           Name           History
+ * --------------------------------------------------------------------
+ *  1.00     2006-03-23                    Create
+ **********************************************************************/
+#include <stdio.h>
+
+#include "Knsseqknri.h"
+#include "bml_misc.h"
+#include "bml_db.h"
+#include "bml_dmm.h"
+
+#define ALLOC_UNIT		1
+
+EXEC SQL INCLUDE SQLCA;
+
+/*--------------------------------------
+// DBラップ変数定義
+*/
+EXEC SQL BEGIN DECLARE SECTION;
+	char    knskisymd[11];
+	char    knsgrp[17];
+	char    traykbn;
+	char    wssbt[11];
+	sqlint32  wsno;
+	sqlint32  knsseqmax;
+	sqlint32  sytrymax;
+	char    ksndh[27];
+EXEC SQL END DECLARE SECTION;
+
+
+/*--------------------------------------
+// DMM定義
+*/
+#define DMM_STRUCT	Knsseqknri
+
+BmlDMMInfo	KnsseqknriArray[] = {
+	DMM_SDATE( knskisymd ),
+	DMM_SSTRING( knsgrp ),
+	DMM_SCHAR( traykbn ),
+	DMM_SSTRING( wssbt ),
+	DMM_SLONG( wsno ),
+	DMM_SLONG( knsseqmax ),
+	DMM_SLONG( sytrymax ),
+	DMM_STIMESTAMP( ksndh ),
+	DMM_NULL
+};
+
+/******************************************************************************
+ * ZdbKnsseqknriSelectAll()
+ *    KNSSEQKNRI レコード全件取得
+ * ■引数
+ *    [O]  Knsseqknri** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnsseqknriSelectAll( Knsseqknri** arrayOut, int* numOut )
+{
+    Knsseqknri* array = NULL;
+    int         num = 0;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c1 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		KNSGRP,
+		TRAYKBN,
+		WSSBT,
+		WSNO,
+		KNSSEQMAX,
+		SYTRYMAX,
+		KSNDH
+    FROM
+        KNSSEQKNRI FOR READ ONLY;
+
+    EXEC SQL OPEN c1;
+
+    while( 1 ) {
+        Knsseqknri* rec;
+
+        EXEC SQL FETCH c1 INTO
+			:knskisymd,
+			:knsgrp,
+			:traykbn,
+			:wssbt,
+			:wsno,
+			:knsseqmax,
+			:sytrymax,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knsseqknri*)ZbmlRealloc( array,
+                                    sizeof( Knsseqknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knsseqknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnsseqknriArray );
+    }
+
+    EXEC SQL CLOSE c1;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/******************************************************************************
+ * ZdbKnsseqknriSelectKey()
+ *    KNSSEQKNRI レコードKey条件取得
+ * ■引数
+ *    [I]  Knsseqknri* pKey     取得するレコードのキー
+ *    [O]  Knsseqknri** arrayOu 取得レコード配列格納領域
+ *    [O]  int* numOut          取得件数
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了（レコードあり）
+ *           HRC_SQL_NOT_FOUND  レコードなし
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnsseqknriSelectKey( Knsseqknri* pKey, Knsseqknri** arrayOut, int* numOut )
+{
+    Knsseqknri* array = NULL;
+    int         num = 0;
+
+    if( !pKey )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)pKey, KnsseqknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DECLARE c2 CURSOR FOR
+    SELECT
+		KNSKISYMD,
+		KNSGRP,
+		TRAYKBN,
+		WSSBT,
+		WSNO,
+		KNSSEQMAX,
+		SYTRYMAX,
+		KSNDH
+    FROM
+        KNSSEQKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		TRAYKBN = :traykbn FOR READ ONLY;
+
+    EXEC SQL OPEN c2;
+
+    while( 1 ) {
+        Knsseqknri* rec;
+
+        EXEC SQL FETCH c2 INTO
+			:knskisymd,
+			:knsgrp,
+			:traykbn,
+			:wssbt,
+			:wsno,
+			:knsseqmax,
+			:sytrymax,
+			:ksndh;
+
+        if( SQLCODE == 100 )
+            break;
+
+        if( num % ALLOC_UNIT == 0 ) {
+            array = (Knsseqknri*)ZbmlRealloc( array,
+                                    sizeof( Knsseqknri ) * ( num + ALLOC_UNIT ) );
+            memset( array + num, 0, sizeof( Knsseqknri ) * ALLOC_UNIT );
+        }
+
+        rec = array + num++;
+        ZbmlMapHostToStruct( (char*)rec, KnsseqknriArray );
+    }
+
+    EXEC SQL CLOSE c2;
+
+    *arrayOut = array;
+    *numOut   = num;
+
+    return num ? HRC_SQL_NORMAL : HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnsseqknriInsert()
+ *    KNSSEQKNRI レコードを挿入する
+ * ■引数
+ *    [I]  Knsseqknri* rec      挿入レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnsseqknriInsert( Knsseqknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnsseqknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL INSERT INTO KNSSEQKNRI
+    (
+		KNSKISYMD,
+		KNSGRP,
+		TRAYKBN,
+		WSSBT,
+		WSNO,
+		KNSSEQMAX,
+		SYTRYMAX,
+		KSNDH
+    ) VALUES (
+		:knskisymd,
+		:knsgrp,
+		:traykbn,
+		:wssbt,
+		:wsno,
+		:knsseqmax,
+		:sytrymax,
+		CURRENT TIMESTAMP
+    );
+
+    return HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnsseqknriUpdate()
+ *    KNSSEQKNRI レコードを更新する
+ * ■引数
+ *    [I]  Knsseqknri* rec      更新対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnsseqknriUpdate( Knsseqknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnsseqknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER NOT FOUND GO TO notfound;
+    EXEC SQL WHENEVER SQLERROR  GO TO error;
+
+    EXEC SQL UPDATE KNSSEQKNRI
+    SET (
+		WSSBT,
+		WSNO,
+		KNSSEQMAX,
+		SYTRYMAX,
+		KSNDH
+    ) = (
+		:wssbt,
+		:wsno,
+		:knsseqmax,
+		:sytrymax,
+		CURRENT TIMESTAMP
+    ) WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		TRAYKBN = :traykbn;
+
+    return HRC_SQL_NORMAL;
+
+notfound:
+    EXEC SQL WHENEVER NOT FOUND CONTINUE;
+    return HRC_SQL_NOT_FOUND;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+
+/******************************************************************************
+ * ZdbKnsseqknriDelete()
+ *    KNSSEQKNRI レコードを削除する
+ * ■引数
+ *    [I]  Knsseqknri* rec      削除対象レコード
+ * ■戻り値
+ *    (long) HRC_SQL_NORMAL     正常終了
+ *           HRC_SQL_NOT_FOUND  対象レコードなし
+ *           HRC_NULL_POINTER   パラメータエラー
+ *           HRC_INVALID_VALUE  設定値不正
+ *           HRC_SQL_ERR        DBエラー
+ ******************************************************************************/
+long ZdbKnsseqknriDelete( Knsseqknri* rec )
+{
+    if( !rec )
+        return HRC_NULL_POINTER;
+
+    if( !ZbmlMapStructToHost( (char*)rec, KnsseqknriArray ) )
+        return HRC_INVALID_VALUE;
+
+    EXEC SQL WHENEVER SQLERROR GO TO error;
+
+    EXEC SQL DELETE FROM KNSSEQKNRI
+    WHERE
+		KNSKISYMD = :knskisymd AND
+		KNSGRP         = :knsgrp         AND
+		TRAYKBN = :traykbn;
+
+    return SQLCODE == 100 ? HRC_SQL_NOT_FOUND : HRC_SQL_NORMAL;
+
+error:
+    EXEC SQL WHENEVER SQLERROR CONTINUE;
+    return sqlca.sqlcode;
+}
+/** End of File *********************************************************/

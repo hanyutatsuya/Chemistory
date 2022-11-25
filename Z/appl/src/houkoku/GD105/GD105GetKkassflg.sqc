@@ -1,0 +1,101 @@
+/******************************************************************************/
+/*   ＢＭＬ様向け検査システム                                                 */
+/*                                                                            */
+/*   システム名：次世代システム                                               */
+/*   ファイル名：GD105GetKkassflg.sqc                                         */
+/*   概      要：結果修正フラグＭＡＸ取得                                     */
+/*   OS        ：SUSE LINUX Enterprise Server 9 (s390x)                       */
+/*                 - Kernel 2.6.5-7.139-s390x (2).                            */
+/*   言語      ：DB2/C                                                        */
+/******************************************************************************/
+/*  Ver.     日付           名前           修正内容                           */
+/* -------------------------------------------------------------------------- */
+/*  1.11     2006/08/29     INTEC.INC      CREATE                             */
+/******************************************************************************/
+
+/******************************************************************************/
+/* インクルード宣言                                                           */
+/******************************************************************************/
+#include	<stdio.h>
+#include 	<stdlib.h>
+#include 	<string.h>
+#include	<sqlca.h>
+#include	"bml_base.h"
+#include	"bmllog.h"
+#include	"GD105Kekka.h"
+
+
+/******************************************************************************/
+/*  関 数 名  ：GD105GetKkassflgMax                                           */
+/*  機能概要  ：結果修正フラグＭＡＸ取得                                      */
+/*  入    力  ：                                                              */
+/*   第１引数 ：struct  _Kekka *kek;   :結果情報                              */
+/*   第２引数 ：char cKkassflg[];      :結果修正フラグＭＡＸ                  */
+/*  出    力  ：                                                              */
+/*  復帰情報  ：RTN_OK       正常終了                                         */
+/*            ：RTN_NG       異常終了                                         */
+/******************************************************************************/
+int		GD105GetKkassflgMax( kek, cKkassflg )
+Kekka		*kek;
+char		cKkassflg[];
+{
+	int		ret;
+	struct	sqlca			sqlca;
+
+EXEC SQL BEGIN DECLARE SECTION;
+	char	hst_kkassflg[1+1];
+	char	hst_knskisymd[10+1];
+	char	hst_sriymd[10+1];
+	char	hst_kntno[13+1];
+	char	hst_knsgrp[16+1];
+	char	hst_kmkcd[7+1];
+EXEC SQL END DECLARE SECTION;
+
+	/* 初期処理	*/
+	//トレースログ
+#ifdef _TRACE
+	sFncPutLog( TRCKIND_TRACE, __FILE__, "GD105GetKkassflgMax", __LINE__, EXEFLG_NON, "00000000",
+				"Start Function");
+#endif
+
+	// ホスト変数へのキー項目セット
+	memset( hst_kkassflg,	'\0',	sizeof( hst_kkassflg ));
+	strcpy( hst_knskisymd,	kek->knskisymd );
+	strcpy( hst_sriymd,		kek->sriymd );
+	strcpy( hst_kntno,		kek->kntno );
+	strcpy( hst_knsgrp,		kek->knsgrp );
+	strcpy( hst_kmkcd,		kek->kmkcd );
+
+EXEC SQL SELECT	MAX( kkassflg )
+	INTO	:hst_kkassflg
+	FROM	kekka
+	WHERE	knskisymd	=	:hst_knskisymd
+	AND		sriymd		=	:hst_sriymd
+	AND		kntno		=	:hst_kntno
+	AND		knsgrp		=	:hst_knsgrp
+	AND		kmkcd		=	:hst_kmkcd
+	;
+
+	if ( sqlca.sqlcode == 0 ) {		/* OK */
+/* del 20070613 waj 速度アップ
+		sFncPutLog( TRCKIND_DEBUG, __FILE__, "GD105GetKkassflgMax", __LINE__,
+					EXEFLG_SEL, "020",
+					"KKASSFLG MAX[%s-%s-%s-%s-%s][%s]", 
+					hst_knskisymd, hst_sriymd, hst_kntno,
+					hst_knsgrp, hst_kmkcd, hst_kkassflg );
+*/
+		strcpy( cKkassflg,	hst_kkassflg );
+		ret = RTN_OK;
+	} else {
+		// ERROR
+		sFncPutLog( TRCKIND_WARNING, __FILE__, "GD105GetKkassflgMax", __LINE__,
+					EXEFLG_SEL, "020",
+					"KKASSFLG MAX SELECT ERROR [%d] [%s-%s-%s-%s-%s][%s]", 
+					sqlca.sqlcode,
+					hst_knskisymd, hst_sriymd, hst_kntno,
+					hst_knsgrp, hst_kmkcd, hst_kkassflg );
+		ret = RTN_NG;
+	}
+	return( ret );
+}
+/** End of File ***************************************************************/
