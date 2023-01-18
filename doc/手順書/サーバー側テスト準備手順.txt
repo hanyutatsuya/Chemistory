@@ -1,0 +1,91 @@
+kea00apkにkea00sysでログイン
+
+マスタ更新
+kea00apaにkea00sys,teratermでログイン
+cd /apdata/oldday/
+直近のバックアップフォルダに移動
+cd YYYY-MM-DD
+ファイルコピー
+scp -p *MST.ixf.gz 10.1.42.147:/apdata/work/mst
+kea00sys
+
+kea00apkにkea00sys,teratermでログイン
+cd /apdata/work/mst
+rm -f *ixf
+gzip -d *
+import_mst.sh
+
+検査日[    -  -  ]設定
+kea00apkにkea00sys,teratermでログイン
+cd /home/kea00sys/tst
+./sriymd YYYY-MM-DD
+
+テスト機データ削除,SEQ初期化,マスタ作成
+cd /home/kea00sys/tst
+./kekadel
+
+proc.sh
+
+● 依頼展開 (AD102)
+1．/apdata/today/online/host/Recv/iri/ の下に依頼ファイル(IRI.data.0001 など)を置く。
+2．AD102 を起動する。
+    ・依頼展開が成功したら、END.IRI.data.0001 等にリネームされる。
+
+● 患者展開 (AD103)
+1．/apdata/today/online/host/Recv/kan/ の下に属性ファイル(KAN.data.0001 など)を置く。
+2．AD103 を起動する。
+    ・患者展開が成功したら、END.KAN.data.0001 等にリネームされる。
+
+● 分注展開 (AD105、AD106)
+1．/apdata/today/online/host/Recv/bun/ の下に分注結果ファイル(BUN.data.0001 など)を置く。
+2．AD105 を起動する。
+    ・分注展開が成功したら、/apdata/today/online/host/Recv/bun/OK/ の下に BUN.data.0001 等が移動される。
+    ・/apdata/today/online/host/Recv/bun/SUMI/OK/ の下に展開された CHK～.dat ファイルが出来ている。
+    ・/apdata/today/file/NSWS/Send/RkInfo/ の下の Multi、Single、Single2 の下に RK_～.dat ファイルが出来る。
+
+● 3ID展開 (AD108)・・省略可
+1．/apdata/today/online/host/Recv/3id/ の下にBUNPOSファイル(POS.data.0001 など)を置く。
+2．AD108 を起動する。
+    ・3ID展開が成功したら、/apdata/today/online/host/Recv/3id/OK/ の下に POS.data.0001 等が移動される。
+
+● ＷＳ出力 (画面・・分注ＮＧもしくは非分注の場合)
+1．該当ＰＣにＺサーバへのネットワークディレクトリ(テスト、本番を間違えないこと)を作成しておく。
+2．分注展開終了後にＷＳ出力画面を起動する。
+3．画面から検索を実行する。３ＩＤ展開を省略した場合は、３ＩＤ未登録を含むのチェックを付けてから検索すること
+4．出力するＷＳを選択して実行ボタンを押下する。
+
+● 供給ストッカ (BD301)
+1．/apdata/today/file/NSWS/Recv/TrRk/ の下にトレーラック情報ファイル(SP01_～.dat など)を置く。
+2．BD301 を起動する。
+    ・成功したら、/apdata/today/file/NSWS/Recv/TrRk/Ok/ の下に SP01_～.dat 等が移動される。
+      また、/apdata/today/file/KEA00/kea00ap/order/ の下に オンライン用のオーダーファイルが作成される。
+
+● オンライン (DD201、DD203、DD204)・・実機を使用する場合
+1．KEA00IAW12(10.1.181.22。以下同様)の /apdata/today/file/KEA00/kea00ap/order の下にオーダーファイルを用意する。
+2．分析機のラインに関して
+3．~/bin/DD201 99 (または ~/bin/DD203 99) を起動する。
+4．/home/kea00sys/work/giji/zouketa/bm_file.sh (labo_file.sh) を起動する。
+    ・/apdata/today/file/KEA00/kea00ap/kekka/Data/ の下に結果ファイル(60000_____005_001226388986.dat など)が出来る。
+    
+●ZS050起動(搬送ラインも起動します。)
+　kea00apaにkea00sysでログイン
+　cd /home/kea00sys/shell/daily
+　./prcZS_onoff.sh -STOP
+　kea00apkにkea00sysでログイン
+　cd /home/kea00sys/shell/daily
+　./prcZS_onoff.sh -START
+　戻す場合は逆の順序で実行
+　
+● 結果登録 (DD401)
+1．/apdata/today/file/KEA00/kea00ap/kekka/Data/ の下に結果ファイル(60000_____005_001226388986.dat など)を置く。
+    同様に /apdata/today/file/KEA00/kea00ap/kekka/Index/ の下に結果ファイル( ../Data/ に置いたものと同じでよい)を置く。
+2．DD401 を動かす。
+    ・結果登録が成功したら、/apdata/today/file/KEA00/kea00ap/kekka/Data/out の下に結果ファイルが移動する。
+
+● 報告処理 (GD105)
+
+
+
+
+
+
