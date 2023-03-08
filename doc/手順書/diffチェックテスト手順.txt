@@ -1,0 +1,131 @@
+事前準備
+①マスタ最新化
+kea00apkにkea00sysでログイン
+
+マスタ更新
+
+※※※※※　注意　ここから本番機にログインして作業します　※※※※※※
+1.kea00apaにkea00sys,teratermでログイン
+2.直近のバックアップフォルダに移動
+ > cd /apdata/oldday/
+ > cd YYYY-MM-DD
+3.ファイルコピー
+ > scp -p *MST.ixf.gz 10.1.42.147:/apdata/work/mst
+ > kea00sys
+※※※※※　注意　ここまで本番機にログインして作業します　※※※※※※
+
+マスタimport
+1.kea00apkにkea00sys,teratermでログイン
+ > cd /apdata/work/mst
+ > rm -f *ixf
+ > gzip -d *.gz
+ > ./import_mst.sh
+
+１日分diffチェック
+①検査日[    -  -  ]設定
+kea00apkにkea00sys,teratermでログイン
+ > cd /home/kea00sys/tst
+ > ./sriymd YYYY-MM-DD
+
+②テスト機データ削除,SEQ初期化,マスタ作成
+ > cd /home/kea00sys/tst
+ > ./kekadel
+
+③データコピー
+1. A.M.9:00過ぎに実施
+ > scp 10.1.42.15:/apdata/today/online/host/Recv/sumi/END.IRI.* /apdata/today/online/host/Recv/iri/
+ > scp 10.1.42.15:/apdata/today/online/host/Recv/sumi/END.KAN.* /apdata/today/online/host/Recv/kan/
+ > scp 10.1.42.15:/apdata/today/online/host/Recv/bun/OK/BUN.* /apdata/today/online/host/Recv/bun/
+ > scp 10.1.42.15:/apdata/today/online/host/Recv/3id/OK/POS.* /apdata/today/online/host/Recv/3id/
+
+ > scp 10.1.42.15:/apdata/today/file/NSWS/Recv/TrRk/Ok/SP* /apdata/today/file/NSWS/Recv/TrRk/
+ > scp -r 10.1.42.15:/apdata/today/file/KEA00/kea00ap/kekka/Data/out /apdata/today/file/KEA00/kea00ap/kekka/Data
+ > cd /apdata/today/file/KEA00/kea00ap/kekka/Data/out
+ > find . -name '*.dat' -exec mv {} ../ \;
+ > cd ..
+ > find . -name '*.dat' -exec touch ../Index/{} \;
+ > 
+
+④データ展開
+1. 患者展開
+ proc.shからAD103 を起動する
+ /apdata/today/online/host/Recv/kan/ の下の属性ファイル(KAN.data.nnnn)が全て展開済(END.KAN.data.nnnn)になるのを待つ。
+
+2. 依頼展開
+ proc.shからAD102 を起動する
+ /apdata/today/online/host/Recv/iri/ の下の依頼ファイル(IRI.data.nnnn)が全て展開済(END.IRI.data.nnnn)になるのを待つ。
+
+3. 分注展開
+ proc.shからAD105 を起動する
+ /apdata/today/online/host/Recv/bun/ の下の分注結果ファイル(BUN.data.nnnn)が全て展開済(/apdata/today/online/host/Recv/bun/OK/に移動される)になるのを待つ。
+ 数時間かかるので注意。
+
+4. 3ID展開
+ proc.shからAD108 を起動する
+ /apdata/today/online/host/Recv/3id/ の下のポジションファイル(POS.data.nnnn)が全て展開済(/apdata/today/online/host/Recv/3id/OK/に移動される)になるのを待つ。
+
+5. 供給ストッカ展開
+ proc.shからBD301 を起動する
+ /apdata/today/file/NSWS/Recv/TrRk/の下の 供給ストッカファイル(SP01_～.dat)が 全て展開済(/apdata/today/file/NSWS/Recv/TrRk/Ok/に移動される)になるのを待つ。
+
+⑤データ退避
+1. ④で起動したプログラムを全て終了する。
+2. データexport
+ > cd
+ > cd tst/export
+ > ./exp_dat.sh
+
+⑥ 結果登録 (変更前)
+1. DD401を変更前ののモジュールにする
+2. proc.shからDD401 を起動する
+   /apdata/today/file/KEA00/kea00ap/kekka/Data/の下の 結果ファイル(～.dat)が 全て展開済(/apdata/today/file/KEA00/kea00ap/kekka/Data/out/に移動される)になるのを待つ。
+
+⑦ 変更前結果export
+1. proc.shからDD401 を終了する
+2. データexport
+ > cd
+ > cd tst/export
+ > ./exp_kekka.sh
+ > cd /apdata/work/export/yyyymmdd (yyyymmddは①で設定した日付)
+ > mv KEKKA.del KEKKA_mae.del
+
+⑧ DBクリア
+1. DBをクリアする
+ > cd
+ > cd tst
+ > ./delete.sh
+
+⑨ データimport
+1. ⑤で待避したデータをimportする
+ > cd
+ > cd tst/export
+ > ./imp_dat.sh
+2. 結果ファイル復元
+ > cd /apdata/today/file/KEA00/kea00ap/kekka/Data/out
+ > find . -name '*.dat' -exec mv {} ../ \;
+ > cd ..
+ > find . -name '*.dat' -exec touch ../Index/{} \;
+ > 
+
+⑩ 結果登録 (変更後)
+1. DD401を変更後のモジュールにする
+2. proc.shからDD401 を起動する
+   /apdata/today/file/KEA00/kea00ap/kekka/Data/の下の 結果ファイル(～.dat)が 全て展開済(/apdata/today/file/KEA00/kea00ap/kekka/Data/out/に移動される)になるのを待つ。
+
+⑪ 変更後結果export
+1. proc.shからDD401 を終了する
+2. データexport
+ > cd
+ > cd tst/export
+ > ./exp_kekka.sh
+ > cd /apdata/work/export/yyyymmdd (yyyymmddは実行時の日付)
+ > mv KEKKA.del KEKKA_ato.del
+
+⑫ 結果比較
+1. 結果exportファイルをsort
+ > cd /apdata/work/export/yyyymmdd (yyyymmddは実行時の日付)
+ > sort -o KEKKA_ato.del KEKKA_ato.del
+ > sort -o KEKKA_mae.del KEKKA_mae.del
+ > diff KEKKA_mae.del KEKKA_ato.del
+ 差異が無いことを確認する
+
