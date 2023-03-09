@@ -37,7 +37,11 @@ kea00apk‚Ékea00sys,teraterm‚ÅƒƒOƒCƒ“
  > scp 10.1.42.15:/apdata/today/online/host/Recv/sumi/END.KAN.* /apdata/today/online/host/Recv/kan/
  > scp 10.1.42.15:/apdata/today/online/host/Recv/bun/OK/BUN.* /apdata/today/online/host/Recv/bun/
  > scp 10.1.42.15:/apdata/today/online/host/Recv/3id/OK/POS.* /apdata/today/online/host/Recv/3id/
-
+ > cd /apdata/today/online/host/Recv/iri
+ > rename 'END.' '' END.*
+ > cd ../kan
+ > rename 'END.' '' END.*
+ > cd
  > scp 10.1.42.15:/apdata/today/file/NSWS/Recv/TrRk/Ok/SP* /apdata/today/file/NSWS/Recv/TrRk/
  > scp -r 10.1.42.15:/apdata/today/file/KEA00/kea00ap/kekka/Data/out /apdata/today/file/KEA00/kea00ap/kekka/Data
  > cd /apdata/today/file/KEA00/kea00ap/kekka/Data/out
