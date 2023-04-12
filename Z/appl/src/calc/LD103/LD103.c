@@ -347,12 +347,12 @@ mainFunction()
 		sprintf( cmd, "sh %s", pAppEnv.cFileGetSH);
 		system( cmd );
 
-                // 対象ファイルの取得
-                file_cnt = scandir( pAppEnv.cInputDir, &namelist, (void*)FileFilter, alphasort);
-                if ( file_cnt < 0){
+		// 対象ファイルの取得
+		file_cnt = scandir( pAppEnv.cInputDir, &namelist, (void*)FileFilter, alphasort);
+		if ( file_cnt < 0){
 			sFncPutLog ( TRCKIND_ERROR, __FILE__, "mainFunction", __LINE__, EXEFLG_NON, MYAPP_LOG_ERRCODE_NON, 
 				     "ファイルの情報取得(scandir)に失敗しました。") ;
-                        break;
+			break;
 		} else if ( file_cnt == 0 ) {
 			sFncPutLog ( TRCKIND_TRACE, __FILE__, "", __LINE__, EXEFLG_NON, MYAPP_LOG_ERRCODE_NON,
 				     "属性修正情報は存在しませんでした。");
@@ -363,7 +363,7 @@ mainFunction()
 			}
 			fclose( fp );
 			continue;
-                }
+		}
 
 		for( i=0; i < file_cnt; i++ ){
 			strcpy( w_filenm, namelist[i]->d_name );

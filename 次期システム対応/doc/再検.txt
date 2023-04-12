@@ -1,8 +1,12 @@
 
-DD201.c
+DD201.c:1515,1830
+
+RealTimeChk ‚Æ OutputKekka‚ÌŠÔ
+
 		for( i=0; i < p->iKekkaNum ;++i ) {
 			/* •Û—¯‚ ‚Â‚©‚¢‚Ìƒtƒ‰ƒO‚Í•Ï‚¦‚È‚¢ */
 			if( p->pKekka[i].knsflg != 'H'){
 				p->pKekka[i].knsflg = 'R';
 			}
 		}
+				fSaiken[iCnt].flg = 2;
