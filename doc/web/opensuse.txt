@@ -1,0 +1,187 @@
+
+openSUSE インストール
+
+openSUSEの無償版は現在Leapという名前で最新版しかダウンロードできない
+2021.5.101時点のバージョンは15.2
+x86_64版のisoイメージをダウンロードしてインストールする
+
+新しいバージョンがリリースされると古いバージョンのupdate等ができなくなる
+新規インストールする場合、公式サイトで新しいバージョンがリリースがリリースされていないか
+確認してからインストールする
+
+インストール
+DB2のinstallにGUIが必要なので汎用デスクトップでインストールする。
+最初はproxyが設定されないのでNTP,パッケージ更新などはできない
+
+インスト－ルの確認時にネットワークの設定をNetworkManagerからwickedへ切り替える
+(yastでネットワーク設定ができるようになる)※openSUSEのみ
+
+yastを使う場合はデスクトップを起動してyast2で
+(yastだとカーソル移動やカラー設定がわかりにくい)
+
+proxy設定
+yastで設定
+または /etc/sysconfig/proxy へ登録
+
+NTP設定
+yastで設定
+または /etc/chrony.conf へ登録
+手動登録の場合は自動起動の設定も行う
+systemctl start chronyd.service
+systemctl enable chronyd.servicey
+
+パッケージインストールはGUIが使えればyast
+CLIならばzypperコマンド
+
+パッケージインストール
+パッケージアップデート
+初回のupdateはめんどくさいのでzypper update で一括更新
+
+vsftpd
+パッケージをインストール
+
+/etc/vsftpd.conf
+anonymous_enable=NO 
+listen=YES
+local_enable=YES
+write_enable=YES
+use_localtime=YES
+ascii_download_enable=YES
+ascii_upload_enable=YES 
+chroot_local_user=YES
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd.chroot_list
+
+/etc/vsftpd.chroot_list 作成
+kikan
+AS400
+
+自動起動
+systemctl start vsftpd
+systemctl enable vsftpd
+
+ファイアウォール設定
+firewall-cmd --add-service=ftp --permanent
+firewall-cmd --reload
+
+sshd
+パッケージをインストール（インストール済みの場合有り）
+インストール済みでも自動起動しないので設定が必要
+
+自動起動
+systemctl start sshd
+systemctl enable sshd
+
+ファイアウォール設定
+firewall-cmd --add-service=ssh --permanent
+firewall-cmd --reload
+
+その他必要なものをinstall
+zypper se xxxx で検索
+zypper in xxxx でインストール
+perl
+gcc
+make
+git
+ftp
+
+logrotate
+初期状態だとlogrotateが有効になっていないのでログファイルが肥大してしまう。
+
+syslog,messagesの設定は
+/etc/logrotate.d/syslog を修正する
+rotate 99 -> 20 (99世代は多すぎるので適当な数にする)
+size +4096k -> +2048k (デフォルトだと4mなので少し小さくする)
+
+その他のログファイルはそれぞれのサービス名のファイルを修正する
+
+logrotateの定期実行
+cronに設定する
+crontab に登録しても良いが、 /etc/cron.daily に logrotateというファイルを作って、
+ファイル内容を
+#! /bin/sh
+
+/usr/sbin/logrotate /etc/logrotate.conf > /dev/null 2>&1
+
+exit 0
+
+とする。
+chmod u+x logrotate
+としておくと、毎日自動実行される。
+
+
+kikanユーザー作成
+uid 1009
+gid 100
+
+DB2install
+
+rootでログイン
+/etc/hosts編集(これをしないとDB2のinstallでエラーになる)
+自ホストのホスト名とＩＰアドレスを/etc/hostsへ登録しておく
+10.1.103.57 ktabcp01
+
+基幹ＤＢサーバーのホスト名とＩＰアドレスも登録しておく
+10.1.49.101     kitgd20h
+10.1.43.11      kitgd20
+10.1.48.71      kidbth
+10.1.41.141     kidbt
+
+express-cの場合
+v11.1_linuxx64_expc.tar.gz
+v11.1_linuxx64_nlpack.tar.gz
+を適当なディレクトリにコピー
+
+tar zxvf v11.1_linuxx64_expc.tar.gz
+cd expc
+tar zxvf ../v11.1_linuxx64_nlpack.tar.gz
+
+tarを展開したディレクトリのdb2setupを実行
+./db2setup -f sysreq
+
+db2clientの場合
+tar zxvf v11.5.5fp1_linuxx64_client.tar.gz
+tarを展開したディレクトリのdb2setupを実行
+typicalインストールだと開発ツールの一部がインストールされないので
+カスタムインストールで実行する。
+インスタンス作成も選択する。
+
+express-c,db2clientともに
+db2inst1ユーザーが作成されれば成功（インストール中にパスワード入力がある）
+作成されない場合はオプションに間違いがあるのでやり直し。
+
+perl用DB2モジュールをインストール
+
+# export DB2_HOME=/opt/ibm/db2/v11.5
+# export DB2LIB=/opt/ibm/db2/v11.5/lib64
+# cpan DBD::DB2
+
+DB2設定
+express-c,db2client共通
+
+db2inst1でログイン
+
+db2 catalog tcpip node KIKNND0 remote kidbt server 50002
+db2 catalog database kikan2db as KIKAN2DB at node KIKNND0
+db2 terminate
+
+バージョン違いによるインストールディレクトリ名の違いを解消するため
+シンボリックリンクを張っておく
+rootでログイン
+cd /opt/ibm/db2
+ln -s V11.5 V11.1
+
+DB2のinstallが終わってGUIが不要になったら
+systemctl set-default multi-user.target
+reboot
+
+GUIに戻すときは
+systemctl set-default graphical.target
+
+文字コード変更 localectl
+localectl set-locale LANG=ja_JP.SJIS
+(文字コード変更は諸々の設定が終わってからが安全)
+
+kikanでログイン
+~/tool/Makefile.in を修正しておく z用 -> IA用へ
+

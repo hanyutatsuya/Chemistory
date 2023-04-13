@@ -1,0 +1,351 @@
+oracle linux 8.7
+Mem 4G
+HDD 200G
+
+最小install
+
+dnf のproxy
+/etc/dnf/dnf.conf へ
+proxy=http://iproxy.bml.co.jp:8080
+を追加
+
+# dnf update
+
+# vi /etc/selinux/config
+SELINUX=disabled     ← enforcing から disabled に変更
+
+# reboot
+
+# dnf -y install wget
+# dnf -y install vsftpd ftp
+
+gcc,make インストール
+# dnf -y group install "Server with GUI"
+# dnf -y group install "Development Tools"
+# dnf -y install man-pages
+
+# dnf -y install git vim
+# dnf -y install chrony
+
+wgetのproxy
+/etc/wgetrc
+の
+#https_proxy=http://...
+#http_proxy=http://...
+#ftp_proxy=http://...
+のコメントアウトを外してproxyのアドレスを記入
+
+ネットワーク情報の確認
+
+TEXTベースGUIツール
+#nmtui
+
+時計合わせ
+/etc/chrony.conf 修正
+
+pool 172.17.8.60 iburst  <- add
+
+# systemctl enable chronyd
+# systemctl start chronyd
+# systemctl status chronyd
+
+タイムゾーン設定
+# timedatectl set-timezone Asia/Tokyo
+確認
+# timedatectl
+
+vsftpdのセットアップ
+
+# vi /etc/vsftpd/vsftpd.conf
+
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_root=public_html
+chroot_local_user=YES
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list
+listen=YES
+listen_ipv6=NO
+pam_service_name=vsftpd
+userlist_enable=YES
+use_localtime=YES
+
+# vi /etc/vsftpd/chroot_list
+
+# systemctl enable vsftpd
+# systemctl start vsftpd
+# systemctl status vsftpd
+
+# firewall-cmd --add-service=ftp --permanent
+# firewall-cmd --reload
+
+apache のインストール
+
+# dnf -y install httpd.x86_64 httpd-devel.x86_64 httpd-filesystem.noarch httpd-manual.noarch httpd-tools.x86_64
+
+httpd 起動
+# systemctl start httpd
+
+httpd 起動確認
+# systemctl status httpd
+
+httpd 自動起動
+# systemctl enable httpd
+
+firewallの許可設定
+
+# firewall-cmd --add-service=http --permanent
+# firewall-cmd --reload
+
+
+apache設定変更
+/etc/httpd/conf/httpd.conf 修正
+
+#ServerName www.example.com:80
+↓
+ServerName oplkin:80
+
+<IfModule dir_module>
+    DirectoryIndex index.html
+</IfModule>
+↓
+<IfModule dir_module>
+    DirectoryIndex index.html index.php
+</IfModule>
+
+/etc/httpd/conf.d/userdir.conf 修正
+
+<IfModule mod_userdir.c>
+    #
+    # UserDir is disabled by default since it can confirm the presence
+    # of a username on the system (depending on home directory
+    # permissions).
+    #
+    UserDir disabled
+
+    #
+    # To enable requests to /~user/ to serve the user's public_html
+    # directory, remove the "UserDir disabled" line above, and uncomment
+    # the following line instead:
+    #
+    #UserDir public_html
+</IfModule>
+↓
+<IfModule mod_userdir.c>
+    #
+    # UserDir is disabled by default since it can confirm the presence
+    # of a username on the system (depending on home directory
+    # permissions).
+    #
+    UserDir enabled
+
+    #
+    # To enable requests to /~user/ to serve the user's public_html
+    # directory, remove the "UserDir disabled" line above, and uncomment
+    # the following line instead:
+    #
+    UserDir public_html
+</IfModule>
+
+<Directory "/home/*/public_html">
+    AllowOverride FileInfo AuthConfig Limit Indexes
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+↓
+<Directory "/home/*/public_html">
+    #AllowOverride FileInfo AuthConfig Limit Indexes
+    AllowOverride None
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+
+
+ホームディレクトリのパーッミション変更
+%cd
+%chmod a+rx .
+
+httpd 自動起動
+# systemctl restart httpd
+起動確認
+# systemctl status httpd
+
+php インストール
+
+# dnf -y install php.x86_64 php-xml.x86_64 php-xmlrpc.x86_64 php-pdo.x86_64 php-pgsql.x86_64
+ php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-json.x86_64 php-mbstring.x86_64
+
+
+php設定変更
+/etc/php.ini 修正
+
+[Date]
+; Defines the default timezone used by the date functions
+; http://php.net/date.timezone
+;date.timezone =
+↓
+[Date]
+; Defines the default timezone used by the date functions
+; http://php.net/date.timezone
+date.timezone = Asia/Tokyo
+
+phpinfoのdateの項に反映される
+
+[Session]
+…
+…
+…
+; Initialize session on request startup.
+; http://php.net/session.auto-start
+session.auto_start = 0
+↓
+[Session]
+…
+…
+…
+; Initialize session on request startup.
+; http://php.net/session.auto-start
+session.auto_start = 1
+
+セッション管理の自動スタート
+
+再起動して反映
+
+
+
+
+
+
+
+
+
+ユーザー作成
+/etc/group
+へグループbmlを追加(ID:1000)
+
+/etc/passwd
+へユーザーkea00sysを追加(ID:1000)
+グループbml
+パスワードkea00sys
+
+# cd /etc
+# vi group
+# vi passwd
+# pwconv
+# passwd kea00sys
+ユーザー kea00sys のパスワードを変更。
+新しいパスワード:
+よくないパスワード: このパスワードは 8 文字未満の文字列です。
+新しいパスワードを再入力してください:
+passwd: すべての認証トークンが正しく更新できました。
+#
+
+ホームディレクトリ作成
+# cd /home
+# mkdir kea00sys
+# chown kea00sys:bml kea00sys
+# chmod a+rx kea00sys
+#
+
+データーベース領域作成
+# cd /home
+# mkdir DataBase
+# chmod a+rwx DataBase
+
+ＤＢユーザー・データーベース作成
+# su - postgres
+$psql
+psql (14.1)
+"help" でヘルプを表示します。\db
+
+
+pgcrypt(暗号化関数) のインストール
+postgres=# create extension pgcrypto;
+CREATE EXTENSION
+postgres=#\q
+$
+
+$ createuser -P -d labo
+新しいロールのためのパスワード:(labolabo)
+もう一度入力してください:
+$ psql
+psql (14.1)
+"help" でヘルプを表示します。
+
+postgres=# \du
+                                               ロール一覧
+ ロール名 |                                     属性                                     | 所属グループ
+----------+------------------------------------------------------------------------------+--------------
+ labo     | DB作成可                                                                     | {}
+ postgres | スーパーユーザー, ロール作成可, DB作成可, レプリケーション可, RLS のバイパス | {}
+
+postgres=# \q
+$ mkdir /home/DataBase/labodisk
+$ psql
+psql (14.1)
+"help" でヘルプを表示します。
+
+postgres=# CREATE TABLESPACE labodisk OWNER labo LOCATION '/home/DataBase/labodisk';
+CREATE TABLESPACE
+postgres=# CREATE DATABASE labo OWNER labo TABLESPACE labodisk;
+CREATE DATABASE
+postgres=# \db
+               テーブル空間一覧
+    名前    |  所有者  |         場所
+------------+----------+----------------------
+ labodisk   | labo     | /home/DataBase/labodisk
+ pg_default | postgres |
+ pg_global  | postgres |
+(3 行)
+
+postgres=# \l
+                                         データベース一覧
+   名前    |  所有者  | エンコーディング |  照合順序   | Ctype(変換演算子) |     アクセス権限
+-----------+----------+------------------+-------------+-------------------+-----------------------
+ labo      | labo     | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       |
+ postgres  | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       |
+ template0 | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       | =c/postgres          +
+           |          |                  |             |                   | postgres=CTc/postgres
+ template1 | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       | =c/postgres          +
+           |          |                  |             |                   | postgres=CTc/postgres
+(4 行)
+
+postgres=# \q
+$exit
+
+
+
+psql
+データーベース一覧
+\l
+ユーザー(role)一覧
+\du
+テーブル一覧
+\dt
+テーブル定義
+\d tablename
+
+
+ＳＱＬコマンドをまとめて実行
+psql < ＳＱＬコマンドファイル名
+psql -f ＳＱＬコマンドファイル名
+
+
+ＤＢバックアップ
+スキーマ＋データ
+pg_dump -f ファイル名 dbname
+
+データのみ
+pg_dump -a -f ファイル名 dbname
+
+
+
+
+バキューム
+$ vacuumdb dbname
+$ vacuumdb -f labo
+
+
+
+
