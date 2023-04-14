@@ -2,7 +2,7 @@ oracle linux 8.7
 Mem 4G
 HDD 200G
 
-最小install
+最小Server GUI使用 でインストール
 
 dnf のproxy
 /etc/dnf/dnf.conf へ
@@ -213,13 +213,6 @@ session.auto_start = 1
 再起動して反映
 
 
-
-
-
-
-
-
-
 ユーザー作成
 /etc/group
 へグループbmlを追加(ID:1000)
@@ -236,7 +229,7 @@ session.auto_start = 1
 # passwd kea00sys
 ユーザー kea00sys のパスワードを変更。
 新しいパスワード:
-よくないパスワード: このパスワードは 8 文字未満の文字列です。
+よくないパスワード: このパスワードには一部に何らかの形でユーザー名が含まれています。
 新しいパスワードを再入力してください:
 passwd: すべての認証トークンが正しく更新できました。
 #
@@ -248,104 +241,60 @@ passwd: すべての認証トークンが正しく更新できました。
 # chmod a+rx kea00sys
 #
 
-データーベース領域作成
-# cd /home
-# mkdir DataBase
-# chmod a+rwx DataBase
+DB2install
 
-ＤＢユーザー・データーベース作成
-# su - postgres
-$psql
-psql (14.1)
-"help" でヘルプを表示します。\db
+rootでログイン
+/etc/hosts編集(これをしないとDB2のinstallでエラーになる)
+自ホストのホスト名とＩＰアドレスを/etc/hostsへ登録しておく
+10.1.103.194 kea00web
+
+ケミストリーのＤＢサーバーのホスト名とＩＰアドレスも登録しておく
+10.1.41.144     kea00dbk
+10.1.49.103     kea00db
 
 
-pgcrypt(暗号化関数) のインストール
-postgres=# create extension pgcrypto;
-CREATE EXTENSION
-postgres=#\q
-$
-
-$ createuser -P -d labo
-新しいロールのためのパスワード:(labolabo)
-もう一度入力してください:
-$ psql
-psql (14.1)
-"help" でヘルプを表示します。
-
-postgres=# \du
-                                               ロール一覧
- ロール名 |                                     属性                                     | 所属グループ
-----------+------------------------------------------------------------------------------+--------------
- labo     | DB作成可                                                                     | {}
- postgres | スーパーユーザー, ロール作成可, DB作成可, レプリケーション可, RLS のバイパス | {}
-
-postgres=# \q
-$ mkdir /home/DataBase/labodisk
-$ psql
-psql (14.1)
-"help" でヘルプを表示します。
-
-postgres=# CREATE TABLESPACE labodisk OWNER labo LOCATION '/home/DataBase/labodisk';
-CREATE TABLESPACE
-postgres=# CREATE DATABASE labo OWNER labo TABLESPACE labodisk;
-CREATE DATABASE
-postgres=# \db
-               テーブル空間一覧
-    名前    |  所有者  |         場所
-------------+----------+----------------------
- labodisk   | labo     | /home/DataBase/labodisk
- pg_default | postgres |
- pg_global  | postgres |
-(3 行)
-
-postgres=# \l
-                                         データベース一覧
-   名前    |  所有者  | エンコーディング |  照合順序   | Ctype(変換演算子) |     アクセス権限
------------+----------+------------------+-------------+-------------------+-----------------------
- labo      | labo     | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       |
- postgres  | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       |
- template0 | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       | =c/postgres          +
-           |          |                  |             |                   | postgres=CTc/postgres
- template1 | postgres | UTF8             | ja_JP.UTF-8 | ja_JP.UTF-8       | =c/postgres          +
-           |          |                  |             |                   | postgres=CTc/postgres
-(4 行)
-
-postgres=# \q
-$exit
+db2clientの場合
+tar zxvf v11.5.5fp1_linuxx64_client.tar.gz
+tarを展開したディレクトリのdb2setupを実行
+typicalインストールだと開発ツールの一部がインストールされないので
+カスタムインストールで実行する。
+インスタンス作成も選択する。
 
 
 
-psql
-データーベース一覧
-\l
-ユーザー(role)一覧
-\du
-テーブル一覧
-\dt
-テーブル定義
-\d tablename
+express-c,db2clientともに
+db2inst1ユーザーが作成されれば成功（インストール中にパスワード入力がある）
+作成されない場合はオプションに間違いがあるのでやり直し。
+
+perl用DB2モジュールをインストール
+
+# dnf -y install perl-App-cpanminus
+# export DB2_HOME=/opt/ibm/db2/v11.5
+# export DB2LIB=/opt/ibm/db2/v11.5/lib64
+# cpan DBD::DB2
+
+unixODBC
+
+# dnf -y install unixODBC.x86_64 unixODBC-devel.x86_64
 
 
-ＳＱＬコマンドをまとめて実行
-psql < ＳＱＬコマンドファイル名
-psql -f ＳＱＬコマンドファイル名
+DB2設定
+express-c,db2client共通
 
+db2inst1でログイン
 
-ＤＢバックアップ
-スキーマ＋データ
-pg_dump -f ファイル名 dbname
+db2 catalog tcpip node KIKNND0 remote kidbt server 50002
+db2 catalog database kikan2db as KIKAN2DB at node KIKNND0
+db2 terminate
 
-データのみ
-pg_dump -a -f ファイル名 dbname
+バージョン違いによるインストールディレクトリ名の違いを解消するため
+シンボリックリンクを張っておく
+rootでログイン
+cd /opt/ibm/db2
+ln -s V11.5 V11.1
 
-
-
-
-バキューム
-$ vacuumdb dbname
-$ vacuumdb -f labo
-
-
+DB2のinstallが終わってGUIが不要になったら
+systemctl set-default multi-user.target
+reboot
 
 

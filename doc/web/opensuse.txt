@@ -1,8 +1,9 @@
 
 openSUSE インストール
+15.4
 
 openSUSEの無償版は現在Leapという名前で最新版しかダウンロードできない
-2021.5.101時点のバージョンは15.2
+2023.4.13時点のバージョンは15.4
 x86_64版のisoイメージをダウンロードしてインストールする
 
 新しいバージョンがリリースされると古いバージョンのupdate等ができなくなる
@@ -12,6 +13,8 @@ x86_64版のisoイメージをダウンロードしてインストールする
 インストール
 DB2のinstallにGUIが必要なので汎用デスクトップでインストールする。
 最初はproxyが設定されないのでNTP,パッケージ更新などはできない
+
+ローカルユーザー作成はスキップする
 
 インスト－ルの確認時にネットワークの設定をNetworkManagerからwickedへ切り替える
 (yastでネットワーク設定ができるようになる)※openSUSEのみ
@@ -53,8 +56,7 @@ chroot_list_enable=YES
 chroot_list_file=/etc/vsftpd.chroot_list
 
 /etc/vsftpd.chroot_list 作成
-kikan
-AS400
+kea00sys
 
 自動起動
 systemctl start vsftpd
