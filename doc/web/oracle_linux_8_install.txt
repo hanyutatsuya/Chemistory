@@ -174,7 +174,7 @@ httpd 自動起動
 php インストール
 
 # dnf -y install php.x86_64 php-xml.x86_64 php-xmlrpc.x86_64 php-pdo.x86_64 php-pgsql.x86_64
- php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-json.x86_64 php-mbstring.x86_64
+ php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-json.x86_64 php-mbstring.x86_64 php-odbc.x86_64
 
 
 php設定変更
@@ -250,7 +250,7 @@ rootでログイン
 
 ケミストリーのＤＢサーバーのホスト名とＩＰアドレスも登録しておく
 10.1.41.144     kea00dbk
-10.1.49.103     kea00db
+10.1.41.65      kea00db
 
 
 db2clientの場合
@@ -266,35 +266,256 @@ express-c,db2clientともに
 db2inst1ユーザーが作成されれば成功（インストール中にパスワード入力がある）
 作成されない場合はオプションに間違いがあるのでやり直し。
 
+proxyをbashに設定
+~/.bashrcを編集
+export https_proxy=http://iproxy.bml.co.jp:8080/
+export http_proxy=http://iproxy.bml.co.jp:8080/
+export ftp_proxy=http://iproxy.bml.co.jp:8080/
+
+を追加
+
 perl用DB2モジュールをインストール
 
 # dnf -y install perl-App-cpanminus
 # export DB2_HOME=/opt/ibm/db2/v11.5
 # export DB2LIB=/opt/ibm/db2/v11.5/lib64
 # cpan DBD::DB2
+Loading internal null logger. Install Log::Log4perl for logging messages
+Reading '/root/.local/share/.cpan/Metadata'
+  Database was generated on Thu, 13 Apr 2023 07:41:01 GMT
+CPAN: LWP::UserAgent loaded ok (v6.34)
+CPAN: Time::HiRes loaded ok (v1.9758)
+Fetching with LWP:
+http://www.cpan.org/authors/01mailrc.txt.gz
+CPAN: YAML loaded ok (v1.24)
+Reading '/root/.local/share/.cpan/sources/authors/01mailrc.txt.gz'
+CPAN: Compress::Zlib loaded ok (v2.081)
+............................................................................DONE
+Fetching with LWP:
+http://www.cpan.org/modules/02packages.details.txt.gz
+Reading '/root/.local/share/.cpan/sources/modules/02packages.details.txt.gz'
+  Database was generated on Mon, 17 Apr 2023 00:17:02 GMT
+..............
+  New CPAN.pm version (v2.34) available.
+  [Currently running version is v2.18]
+  You might want to try
+    install CPAN
+    reload cpan
+  to both upgrade CPAN.pm and run the new version without leaving
+  the current session.
 
-unixODBC
 
-# dnf -y install unixODBC.x86_64 unixODBC-devel.x86_64
+..............................................................DONE
+Fetching with LWP:
+http://www.cpan.org/modules/03modlist.data.gz
+Reading '/root/.local/share/.cpan/sources/modules/03modlist.data.gz'
+DONE
+Writing /root/.local/share/.cpan/Metadata
+Running install for module 'DBD::DB2'
+Fetching with LWP:
+http://www.cpan.org/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz
+CPAN: Digest::SHA loaded ok (v6.02)
+Fetching with LWP:
+http://www.cpan.org/authors/id/R/RO/ROCKETDB/CHECKSUMS
+Checksum for /root/.local/share/.cpan/sources/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz ok
+CPAN: CPAN::Meta::Requirements loaded ok (v2.140)
+CPAN: Parse::CPAN::Meta loaded ok (v2.150010)
+CPAN: CPAN::Meta loaded ok (v2.150010)
+Configuring R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz with Makefile.PL
+
+Configuring DBD::DB2...
+Remember to actually read the README and CAVEATS files!
+
+DB2_HOME environment variable (/opt/ibm/db2/v11.5) not valid.
+Warning: No success on command[/usr/bin/perl Makefile.PL]
+  ROCKETDB/DBD-DB2-1.89.tar.gz
+  /usr/bin/perl Makefile.PL -- NOT OK
 
 
 DB2設定
 express-c,db2client共通
 
 db2inst1でログイン
+$ db2
+db2 => catalog tcpip node KEA00ND1 remote kea00db server 50001
+db2 => catalog database KEA00DB as KEA00DB1 at node KEA00ND1
+db2 => catalog tcpip node KEA00ND0 remote kea00dbk server 50002
+db2 => catalog database KEA00DB as KEA00DB0 at node KEA00ND0
+db2 => terminate
+$
 
-db2 catalog tcpip node KIKNND0 remote kidbt server 50002
-db2 catalog database kikan2db as KIKAN2DB at node KIKNND0
-db2 terminate
+確認
+$ db2
+db2 => list node directory
+
+ ノード・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+ノード 1 項目:
+
+ ノード名                       = KEA00ND0
+ コメント                             =
+ ディレクトリー項目タイプ       = LOCAL
+ プロトコル                     = TCPIP
+ ホスト名                       = kea00dbk
+ サービス名                     = 50002
+
+ノード 2 項目:
+
+ ノード名                       = KEA00ND1
+ コメント                             =
+ ディレクトリー項目タイプ       = LOCAL
+ プロトコル                     = TCPIP
+ ホスト名                       = kea00db
+ サービス名                     = 50001
+
+db2 => list database directory
+
+ システム・データベース・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+データベース 1 項目:
+
+ データベース別名                     = KEA00DB0
+ データベース名                             = KEA00DB
+ ノード名                             = KEA00ND0
+ データベース・リリース・レベル       = 15.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+データベース 2 項目:
+
+ データベース別名                     = KEA00DB1
+ データベース名                             = KEA00DB
+ ノード名                             = KEA00DB
+ データベース・リリース・レベル       = 15.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+db2 => terminate
+$
+
+確認
+
+$ db2 connect to kea00db0 user kea00dbt using kea00dbt
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXZ64 11.1.4.4
+ SQL 許可 ID            = KEA00DBT
+ ローカル・データベース別名 = KEA00DB0
+
+$ db2 terminate
+$
+$ db2 connect to kea00db1 user db2inst1 using db2inst1
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXZ64 11.1.4.4
+ SQL 許可 ID            = DB2INST1
+ ローカル・データベース別名 = KEA00DB1
+
+$ db2 terminate
+$ 
 
 バージョン違いによるインストールディレクトリ名の違いを解消するため
 シンボリックリンクを張っておく
 rootでログイン
-cd /opt/ibm/db2
-ln -s V11.5 V11.1
+# cd /opt/ibm/db2
+# ln -s V11.5 V11.1
+
+~/.bashrc へ以下の行を追加
+# vi .bashrc
+
+# The following three lines have been added by IBM DB2 instance utilities.
+if [ -f /home/db2inst1/sqllib/db2profile ]; then
+    . /home/db2inst1/sqllib/db2profile
+fi
+
+
+unixODBC
+install
+# dnf -y install unixODBC.x86_64 unixODBC-devel.x86_64
+設定
+iniファイルの場所を確認
+# odbcinst -j
+unixODBC 2.3.7
+DRIVERS............: /etc/odbcinst.ini
+SYSTEM DATA SOURCES: /etc/odbc.ini
+FILE DATA SOURCES..: /etc/ODBCDataSources
+USER DATA SOURCES..: /root/.odbc.ini
+SQLULEN Size.......: 8
+SQLLEN Size........: 8
+SQLSETPOSIROW Size.: 8
+#
+/etc/odbcinst.iniへDB2のDriverを登録
+
+# vi /etc/odbcinst.ini
+以下の行を追加
+# DB2 Driver
+[Db2]
+Description = Db2 Driver
+Driver = /home/db2inst1/sqllib/lib/libdb2.so
+#Driver64 = /opt/ibm/db2/V11.5/lib64/libdb2o.so
+fileusage=1
+dontdlclose=1
+
+DSN登録
+
+# vi /etc/odbc.ini
+以下の行を追加
+
+[ODBC Data Sources]
+kea00db0 = TestDB
+kea00db1 = HonbanDB
+
+[kea00db0]
+DESCRIPTION = Test DB
+DRIVER = Db2
+DATABASE = KEA00DB0
+
+[kea00db1]
+DESCRIPTION = Honban DB
+DRIVER = Db2
+DATABASE = KEA00DB1
+
+確認
+# isql -v kea00db0 kea00dbt kea00dbt
++---------------------------------------+
+| Connected!                            |
+|                                       |
+| sql-statement                         |
+| help [tablename]                      |
+| quit                                  |
+|                                       |
++---------------------------------------+
+SQL> quit
+#
+
+# isql -v kea00db1 db2inst1 db2inst1
++---------------------------------------+
+| Connected!                            |
+|                                       |
+| sql-statement                         |
+| help [tablename]                      |
+| quit                                  |
+|                                       |
++---------------------------------------+
+SQL> quit
+#
+
+
 
 DB2のinstallが終わってGUIが不要になったら
-systemctl set-default multi-user.target
-reboot
+# systemctl set-default multi-user.target
+# reboot
 
 
