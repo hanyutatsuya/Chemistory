@@ -13,16 +13,17 @@
 	LaboLogOut("ケミストリー");
 ?>
 
-<!-- BODY background="img/blue_p8b1.gif" -->
-<BODY>
+<BODY background="img/blue_p8b1.gif">
 
 <DIV align=right><A href=mente/sysmente.php STYLE="text-decoration:none;">　</A></DIV>
 
 <?php
 	printf("<center><h1>ケミストリー照会</h1></center>\n");
 
-	printf("<center><h2><A href=master/master.php>マスタ管理</A></h2></center>\n");
-	printf("<DIV align=right><A href=php/phpinfo.php>phpinfo</A></DIV>\n");
+	printf("<center><h2><A href=master/master.php>マスタ照会</A></h2></center>\n");
+	printf("<center><h2><A href=data/data.php>データ照会</A></h2></center>\n");
+	printf("<center><h2><A href=mente/mente.php>メンテナンス</A></h2></center>\n");
+//	printf("<DIV align=right><A href=php/phpinfo.php>phpinfo</A></DIV>\n");
 	printf("<HR>\n");
 
 	try {

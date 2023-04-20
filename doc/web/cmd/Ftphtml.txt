@@ -1,0 +1,24 @@
+open 10.1.103.194 
+kea00sys
+kea00sys
+binary
+prom
+cd public_html
+mput *.php
+cd comm
+lcd comm
+mput *
+cd ../css
+lcd ../css
+mput *
+cd ../master
+lcd ../master
+mput *
+cd ../mente
+lcd ../mente
+mput *
+cd ../php
+lcd ../php
+mput *
+close
+bye

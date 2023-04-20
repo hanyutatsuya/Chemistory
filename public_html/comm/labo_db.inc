@@ -6,41 +6,46 @@ function GetDBConn()
 	$user = "kea00dbt";
 	$pass = "kea00dbt";
 
-	putenv("DB2INSTANCE=db2inst1");
-	putenv("DB2_HOME=/home/db2inst1/sqllib");
-	putenv("DB2LIB=/home/db2inst1/sqllib/lib");
-	putenv("IBM_DB_LIB=/home/db2inst1/sqllib/lib");
-	putenv("IBM_DB_HOME=/home/db2inst1/sqllib");
-	putenv("IBM_DB_INCLUDE=/home/db2inst1/sqllib/include");
-	putenv("IBM_DB_DIR=/home/db2inst1/sqllib");
+//	putenv("DB2INSTANCE=db2inst1");
+//	putenv("DB2_HOME=/home/db2inst1/sqllib");
+//	putenv("DB2LIB=/home/db2inst1/sqllib/lib");
+//	putenv("IBM_DB_LIB=/home/db2inst1/sqllib/lib");
+//	putenv("IBM_DB_HOME=/home/db2inst1/sqllib");
+//	putenv("IBM_DB_INCLUDE=/home/db2inst1/sqllib/include");
+//	putenv("IBM_DB_DIR=/home/db2inst1/sqllib");
 
+	try {
 
-	$dsn = "odbc:KEA00DB0";
-
-	$conn = new PDO($dsn,$user,$pass);
-
-	if (!$conn) {
-		printf("<FONT color=red>\n");
-		printf("<P>ＤＢコネクションエラー</P>\n");
-		printf("</FONT>\n");
-	} else {
-		printf("<FONT color=blue>\n");
-		printf("<P>ＤＢコネクション ＯＫ</P>\n");
-		printf("</FONT>\n");
+		$dsn = "odbc:KEA00DB0";
+	
+		$conn = new PDO($dsn,$user,$pass);
+	
+		if (!$conn) {
+			printf("<FONT color=red>\n");
+			printf("<P>ＤＢコネクションエラー</P>\n");
+			printf("</FONT>\n");
+		} else {
+			printf("<FONT color=blue>\n");
+			printf("<P>ＤＢコネクション ＯＫ</P>\n");
+			printf("</FONT>\n");
+		}
+		$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}
-	$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
-//	$conn = odbc_connect($dsn,$user,$pass);
-
-//	if (!$conn) {
-//		printf("<FONT color=red>\n");
-//		printf("<P>ＤＢコネクションエラー</P>\n");
-//		printf("</FONT>\n");
-//	} else {
-//		printf("<FONT color=blue>\n");
-//		printf("<P>ＤＢコネクション ＯＫ</P>\n");
-//		printf("</FONT>\n");
+//	catch (PDOException $PDOex) {
+//		LaboLogOut(sprintf("PDO:SQLMSG  [%s]",$PDOex->getMessage()));
+//		LaboLogOut(sprintf("PDO:SQLCODE [%s]",$PDOex->getCode()));
 //	}
+//	catch (ODBCException $ODBCex) {
+//		LaboLogOut(sprintf("ODBC:SQLMSG  [%s]",$ODBCex->getMessage()));
+//		LaboLogOut(sprintf("ODBC:SQLCODE [%s]",$ODBCex->getCode()));
+//	}
+	catch (Exception $ex) {
+		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
+		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
+		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
+		printf("ERRCODE [%s]<BR>",$ex->getCode());
+	}
 
 	return($conn);
 }

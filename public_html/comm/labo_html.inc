@@ -89,8 +89,16 @@ function LaboLogOut($msg)
 		rename($logfile,$new_log);
 		}
 
-	$ip = $_SERVER['REMOTE_ADDR'];
-	$page = $_SERVER['SCRIPT_NAME'];
+	if (isset($_SERVER['REMOTE_ADDR'])) {
+		$ip = $_SERVER['REMOTE_ADDR'];
+	} else {
+		$ip = "localhost";
+	}
+	if (isset($_SERVER['SCRIPT_NAME'])) {
+		$page = $_SERVER['SCRIPT_NAME'];
+	} else {
+		$page = "";
+	}
 	$stamp = strftime("%Y/%m/%d %T");
 	
 	$logmsg = sprintf("%s [%s][%s] %s\n",$stamp,$ip,$page,$msg);
