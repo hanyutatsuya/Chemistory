@@ -41,6 +41,8 @@
 #include "OutputCtrlkka.h"
 #include "OutputXbarm.h"
 #include "GetMaster.h"
+// Add 2023.05.23 Hanyu
+#include "kns_common.h"
 
 /**********************************************************************/
 /*  内部関数宣言                                                      */
@@ -109,6 +111,10 @@ static	int		sFncShmDel ( int ) ;
 
 int GetKskRitu(Kskbrmst *key, char *sMax, char *sMin );
 int OutputBunsekiOrder(SOCKET_INF*);
+
+// Add 2023.05.23 Hanyu
+int chkLowDataSaiken( SOCKET_INF *p );
+
 
 /**********************************************************************/
 /*  変数宣言                                                          */
@@ -1836,6 +1842,9 @@ printf("%s %s\n", Now(), __func__);
 				}
 			}
 		}
+		/* 低値データチェック */
+		chkLowDataSaiken(p);
+		
 		/* CSV書き込み */
 		OutputKekka( p );
 		for( iCnt2=0; iCnt2<(p->iKekkaNum); iCnt2++ ) {
@@ -5123,6 +5132,26 @@ int chkDataAlarm( SOCKET_INF *p )
 	}
 	
 	return( iRet );
+}
+
+/******************************************************************************/
+/*  関 数 名　：chkLowDataSaiken()			 								  */
+/*  機能概要　：低値データ再検処理							  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：SOCKET_INF *   	プログラム環境構造体						  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/*	備考      ：ADD Hanyu 2023-05-23										  */
+/******************************************************************************/
+int chkLowDataSaiken( SOCKET_INF *p )
+{
+	int		nRet;
+
+	nRet = KnsLowDataCheck(p->Kekka,p->iKekkaNum);
+
+	return(nRet);
 }
 
 /*	2.00	2008/09/18		K.Ameno		   X-M対応初版 --> */
