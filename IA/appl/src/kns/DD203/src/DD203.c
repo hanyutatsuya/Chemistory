@@ -39,6 +39,8 @@
 #include "OutputKekka.h"
 #include "OutputCtrlkka.h"
 #include "GetMaster.h"
+// Add 2023.05.23 Hanyu
+#include "kns_common.h"
 
 /**********************************************************************/
 /*  内部関数宣言                                                      */
@@ -137,6 +139,10 @@ int GetKskRitu(Kskbrmst *key, char *sMax, char *sMin );
 int OutputXbarm(SOCKET_INF*);                           /* X-M結果出力処理 */
 int R_trim( char* );
 int OutputBunsekiOrder(SOCKET_INF*);
+
+//	低値再検チェック
+// Add 2023.05.23 Hanyu
+int chkLowDataSaiken( SOCKET_INF *p );
 
 /**********************************************************************/
 /*  変数宣言                                                          */
@@ -387,7 +393,7 @@ int GetIniPrm( char* name )
 	BMLPRM * bp;
 	char cNum[4];
 	char str[32];
-	char wrk[100];
+	char wrk[128]; /* 100 -> 128 Mod Hanyu 2023.05.23 */
 	char port[16];
 	int	iCnt;
 	int	iCnt2;
@@ -395,6 +401,7 @@ int GetIniPrm( char* name )
 	int	iWrk;
 	char	wk[16];
 	int iWtimer;    /* ADD E.Osada 2006-08-21 */
+	int		nRet;	/* Add Hanyu 2023.05.23 */
 
 	memset( wrk,0,sizeof(wrk) );
 	printf( "name:%s\n",name );
@@ -522,6 +529,18 @@ int GetIniPrm( char* name )
 		printf("PORT = %d\n",sBunsekiInf[iCnt].iPortNum);
 		printf("号機 = %s\n",sBunsekiInf[iCnt].aGouki);
 	}
+
+	/* 低値再検設定ファイル取得 */
+	/* Add Hanyu 2023.05.23 */
+	ZbmlPrmGetVal(bp, "LowSaikenMstPath", wrk);
+	nRet = KnsParaInit(wrk);
+	if (nRet != PARA_RET_NORMAL) {
+		sprintf(wrk,"設定ファイルReadError[%d]",nRet);
+		sFncSyslog ( TRCKIND_ERROR, "KnsParaInit()", wrk ) ;
+		ZbmlPrmClose(bp);
+		return ( -1 ) ;
+	}
+
 	ZbmlPrmClose(bp);
 	return 0;
 }
@@ -573,6 +592,9 @@ void EndFunction( void )
 	}								/* 009 060418 */
 
 	ZbmlCloseLog();
+
+	KnsParaFree();		/* Add Hanyu 2023.05.23 */
+	return;
 }
 /**********************************************************************/
 /*                                                                    */
@@ -1185,6 +1207,11 @@ int DecodeRcvMessage(SOCKET_INF* p)
 								}
 							}
 						}
+
+						/* 低値データチェック */
+						// Add 2023.05.23 Hanyu
+						chkLowDataSaiken(p);
+
 					}
 					/* CSV書き込み */
 					OutputKekka( p );
@@ -7289,4 +7316,24 @@ int OutputBunsekiOrder(SOCKET_INF* p)
 
 	return RTN_OK;
 
+}
+
+/******************************************************************************/
+/*  関 数 名　：chkLowDataSaiken()			 								  */
+/*  機能概要　：低値データ再検処理							  	 			  */
+/*  入　　力　：                                                              */
+/*　 第１引数 ：SOCKET_INF *   	プログラム環境構造体						  */
+/*  出　　力　：                                                              */
+/*  復帰情報　：int															  */
+/*					 0	正常												  */
+/*					-1	異常												  */
+/*	備考      ：ADD Hanyu 2023-05-23										  */
+/******************************************************************************/
+int chkLowDataSaiken( SOCKET_INF *p )
+{
+	int		nRet;
+
+	nRet = KnsLowDataCheck(p->pKekka,p->iKekkaNum);
+
+	return(nRet);
 }

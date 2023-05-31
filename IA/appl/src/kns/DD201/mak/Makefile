@@ -7,7 +7,7 @@
 #  VER   DATE       HISTORY
 # ----- ---------- -----------------------------------
 #  1.0   06/03/03   A.Yamada Create
-#  2.0   08/12/02   K.Ameno X-M¬–±˛ΩÈ»«
+#  2.0   08/12/02   K.Ameno X-MëŒâûèâî≈
 #
 ######################################################
 CC       = /usr/bin/gcc
@@ -20,8 +20,8 @@ CFLAGS   = -DDEBUG -I$(HOME)/sqllib/include
 #lDFLAGS  = -ldb2 -lbml
 LDFLAGS  = -lbmlcom -lm -lrt
 BMLHOME  = $(HOME)/appl
-MAKEHOME = $(HOME)/appl/src/kns/DD201
-EXE_DIR  = $(HOME)/appl/src/kns/DD201/src
+MAKEHOME = $(HOME)/appl/src/kns/test/DD201
+EXE_DIR  = $(HOME)/appl/src/kns/test/DD201/src
 # EXE_DIR	 = $(HOME)/bin
 LIB_DB_DIR  = $(BMLHOME)/lib
 INC_DB_DIR  = $(BMLHOME)/inc
@@ -35,6 +35,7 @@ FLG_INC = -I$(INC_DB_DIR) -I$(INC_SUB_DIR) -I$(INC_DIR)
 FLG_LIB = -L$(LIB_DB_DIR) -L$(HOME)/sqllib/lib
 ADD_LIB	= \
 	$(LIB_DB_DIR)/libbmlcom.a 
+ADD_OBJ	= $(MAKEHOME)/../../comm/kns_common.o
 
 INCS = \
 	$(INC_DIR)/DD201.h		\
@@ -73,8 +74,8 @@ all : $(TARGET)
 
 $(OBJS) : $(INCS)
 
-$(TARGET) : $(OBJS) $(ADD_LIB)
-	$(CC) -o $@ $(OBJS) $(ADD_LIB) $(DEBUG) $(CFLAGS) $(FLG_INC) $(FLG_LIB) $(LDFLAGS)
+$(TARGET) : $(OBJS) $(ADD_LIB) $(ADD_OBJ)
+	$(CC) -o $@ $(OBJS) $(ADD_OBJ) $(ADD_LIB) $(DEBUG) $(CFLAGS) $(FLG_INC) $(FLG_LIB) $(LDFLAGS)
 
 .c.o :
 	$(CC) -c $< $(CFLAGS) $(DEBUG) $(FLG_INC) -o $@

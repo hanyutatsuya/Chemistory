@@ -7,9 +7,9 @@
 #  VER   DATE       HISTORY
 # ----- ---------- -----------------------------------
 #  1.0   06/03/03   A.Yamada Create
-#  1.1   06/12/21   S.Nagata º¬π‘•‚•∏•Â°º•Î¿∏¿Æ∞Ã√÷§Ú
-#                            •Ω°º•π•«•£•Ï•Ø•»•Í§À —ππ
-#  2.0   08/12/02   K.Ameno X-M¬–±˛ΩÈ»«
+#  1.1   06/12/21   S.Nagata é¿çsÉÇÉWÉÖÅ[Éãê∂ê¨à íuÇ
+#                            É\Å[ÉXÉfÉBÉåÉNÉgÉäÇ…ïœçX
+#  2.0   08/12/02   K.Ameno X-MëŒâûèâî≈
 ######################################################
 CC       = /usr/bin/gcc
 AR       = /usr/bin/ar
@@ -20,8 +20,8 @@ DEBUG	 = -g
 CFLAGS   = -I$(HOME)/sqllib/include
 LDFLAGS  = -lbmlcom -lm -lrt
 BMLHOME  = $(HOME)/appl
-MAKEHOME = $(HOME)/appl/src/kns/DD203
-EXE_DIR  = $(HOME)/appl/src/kns/DD203/src
+MAKEHOME = $(HOME)/appl/src/kns/test/DD203
+EXE_DIR  = $(HOME)/appl/src/kns/test/DD203/src
 LIB_DB_DIR  = $(BMLHOME)/lib
 INC_DB_DIR  = $(BMLHOME)/inc
 INC_SUB_DIR = $(BMLHOME)/inc
@@ -34,6 +34,7 @@ FLG_INC = -I$(INC_DB_DIR) -I$(INC_SUB_DIR) -I$(INC_DIR)
 FLG_LIB = -L$(LIB_DB_DIR) -L$(HOME)/sqllib/lib
 ADD_LIB	= \
 	$(LIB_DB_DIR)/libbmlcom.a 
+ADD_OBJ	= $(MAKEHOME)/../../comm/kns_common.o
 
 INCS = \
 	$(INC_DIR)/DD203.h		\
@@ -71,13 +72,11 @@ all : $(TARGET)
 
 $(OBJS) : $(INCS)
 
-$(TARGET) : $(OBJS) $(ADD_LIB)
-	$(CC) -o $@ $(OBJS) $(ADD_LIB) $(DEBUG) $(CFLAGS) $(FLG_INC) $(FLG_LIB) $(LDFLAGS)
-#	$(CC) -o $@ $(OBJS) $(ADD_LIB) $(CFLAGS) $(FLG_INC) $(FLG_LIB) $(LDFLAGS)
+$(TARGET) : $(OBJS) $(ADD_LIB) $(ADD_OBJ)
+	$(CC) -o $@ $(OBJS) $(ADD_OBJ) $(ADD_LIB) $(DEBUG) $(CFLAGS) $(FLG_INC) $(FLG_LIB) $(LDFLAGS)
 
 .c.o :
 	$(CC) -c $< $(CFLAGS) $(DEBUG) $(FLG_INC) -o $@
-#	$(CC) -c $< $(CFLAGS) $(FLG_INC) -o $@
 
 clean :
 	$(RM) -f $(TARGET) $(OBJS)

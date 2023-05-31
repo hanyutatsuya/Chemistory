@@ -71,14 +71,14 @@ int main(int argc,char **argv)
 
 /*---------------------------------------------------------------
 fh（書式）
-	int		KnsParaInit(void)
+	int		KnsParaInit(char *ParaPath)
 hc（関数の機能）
 	関数の使用開始時の初期化
 rt（戻り値）
 		正常 : PARA_RET_NORMAL
 		異常 : PARA_RET_NORMAL 以外
 db（引数）
-		無し
+		ParaPath	パラメータファイルのパス
 er（エラー時の処理）
 		無し
 ---------------------------------------------------------------*/
@@ -174,8 +174,8 @@ int		KnsParaFind(char *Kmkcd,char *Value)
 
 	memset(sValue,0x00,sizeof(sValue));
 	for (nLoop=0;nLoop<nTblCount;nLoop++) {
-		if ((KmkTbl+nLoop)->kmkcd,Kmkcd,KMKTBL_LEN_KMKCD) == 0) {
-			strncpy(sValue,KmkTbl+nLoop)->Value,KMKTBL_LEN_VALUE);
+		if (strncmp((KmkTbl+nLoop)->kmkcd,Kmkcd,KMKTBL_LEN_KMKCD) == 0) {
+			strncpy(sValue,(KmkTbl+nLoop)->value,KMKTBL_LEN_VALUE);
 			sValue[KMKTBL_LEN_VALUE] = 0x00;
 			strcpy(Value,sValue);
 			break;
@@ -207,7 +207,7 @@ int		KnsParaFree(void)
 	int		nRet;
 
 	if (KmkTbl == NULL) {
-		return(RAPA_RET_NORMAL);
+		return(PARA_RET_NORMAL);
 	}
 
 	free(KmkTbl);
@@ -222,7 +222,7 @@ int		KnsParaFree(void)
 fh（書式）
 	int		KnsLowDataCheck(Kekka *pKekka,int nKekkaNum)
 hc（関数の機能）
-	メモリ領域を開放する
+	低値再検チェック
 rt（戻り値）
 		正常 : PARA_RET_NORMAL
 		異常 : PARA_RET_NORMAL 以外
@@ -238,7 +238,7 @@ int		KnsLowDataCheck(Kekka *pKekka,int nKekkaNum)
 	int		nLoop;
 	int		nFlg;
 	char	sKmkcd[KMKTBL_LEN_KMKCD+1];
-	char	sValue[KMKTBL_LEN_Value+1];
+	char	sValue[KMKTBL_LEN_VALUE+1];
 	char	sHjkka[KMKTBL_LEN_HJKKA+1];
 	double	dHjkka;
 	double	dLowData;
@@ -316,7 +316,7 @@ static	int		KnsParaOpen(char *ParaPath)
 	struct	stat	st;
 
 	if (ParaFp != NULL) {
-		return(RAPA_RET_NORMAL);
+		return(PARA_RET_NORMAL);
 	}
 
 	/*	相対パスチェック	*/
@@ -385,7 +385,7 @@ static	int		KnsParaClose(void)
 	int		nRet;
 
 	if (ParaFp != NULL) {
-		return(RAPA_RET_NORMAL);
+		return(PARA_RET_NORMAL);
 	}
 
 	nRet = fclose(ParaFp);
@@ -588,10 +588,10 @@ static	int		ParaNumCheck(char *inBuff)
 
 	strcpy(sWork,inBuff);
 
-	nLen = strlen(sInWork);
+	nLen = strlen(sWork);
 	nPoint = 0;
 	for (nLoop=0;nLoop<nLen;nLoop++) {
-		if (sWOrk[nLoop] == '.') {
+		if (sWork[nLoop] == '.') {
 			nPoint++;
 		} else {
 			if (isdigit((int)sWork[nLoop]) == 0) {
@@ -621,14 +621,14 @@ db（引数）
 er（エラー時の処理）
 		無し
 ---------------------------------------------------------------*/
-static	int		ParaDataSet(char *ReadBuff,int nIdx);
+static	int		ParaDataSet(char *ReadBuff,int nIdx)
 {
 	int		nLoop;
 	char	sWork[PARA_LENGTH_MAX+1];
 	char	*pWork;
 	KMKTBL	Tbl;
 
-	strcpy(sWork,sReadBuff);
+	strcpy(sWork,ReadBuff);
 	//	入力文字列中のTABをスペースに変換
 	for (nLoop=0;;nLoop++) {
 		if (sWork[nLoop] == 0x00) {
@@ -650,7 +650,7 @@ static	int		ParaDataSet(char *ReadBuff,int nIdx);
 			strncpy(Tbl.value,pWork,KMKTBL_LEN_VALUE);
 			Tbl.value[KMKTBL_LEN_VALUE] = 0x00;
 		}
-		memset((KmTbl+nIdx)->kmkcd,Tbl.kmkcd,sizeof(KMKTBL));
+		memcpy((KmkTbl+nIdx)->kmkcd,Tbl.kmkcd,sizeof(KMKTBL));
 	}
 
 	return(PARA_RET_NORMAL);

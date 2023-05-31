@@ -1,0 +1,120 @@
+問合者=電算課  対応時間(分)=60
+ケミストリーのパトランプ点灯
+
+障害通知メールも来ていたが文字化けで読めない。
+ファイル名が[FATAL_CS_ERR.log]なので、ＣＳのエラーの模様。
+メール本文に172.19.99.38だけ読める記述があったのでIPアドレスらしい。
+
+①CSの確認
+\\10.1.103.226\NAS_Backup\総研システム部\総研システム３課\01_ケミストリ\99_資料\ケミストリーシステムハードウェア構成_2104.xlsx
+から、ＣＳの８号機らしい。
+
+②接続号機の確認
+KEA00IAW21へログイン
+kea00sys@kea00apa $ ssh KEA00IAW21
+kea00sys@KEA00IAW21$ cd bin
+kea00sys@KEA00IAW21$ grep 172.19.99.38 *.ini
+DD201_24.ini:BUNSEKI_01         172.19.99.38,10004,24
+DD201_25.ini:BUNSEKI_01         172.19.99.38,10005,25
+と出るのでBMの24,25号機らしい。
+
+③オンラインの確認
+kea00apaで、
+kea00sys@kea00apa$ proc.sh
+-> 1
+-> 2
+で停止しているプロセスが無いか確認。
+※停止しているプロセスは無かった。
+※BMの24,25号機はKEA00IAW22で起動中
+
+④エラーメールが鬱陶しいので停止する。
+エラーメール送信とパトランプ点灯は
+~/shell/cron/chk_FATAL_Log.sh
+が行っている。
+/apdata/aplog/FATAL_CS_ERR.logを監視しているが、ファイルを作っている人がapサーバー上に見当たらない。
+
+CSのpingチェックはIAサーバーが行っている。
+KEA00IAW21へログイン
+kea00sys@kea00apa $ ssh KEA00IAW21
+kea00sys@KEA00IAW21$ cd shell
+kea00sys@KEA00IAW21$ cat chk_CS2232.sh
+#!/bin/bash
+############################################################
+#
+# chk_CS2232.sh CS2232導通状況監視シェル
+#
+# 2017-04-13 Create 関家
+#
+############################################################
+
+# 監視停止ファイルの設定
+STOP_DIR="/home/kea00sys/shell"
+STOP_FILE_NAME="STOP"
+# CS一覧
+CS2232_IP=(172.19.99.31 172.19.99.32 172.19.99.33 172.19.99.34 172.19.99.35 172.19.99.36 172.19.99.37 172.19.99.38)
+CS2232_NUM=${#CS2232_IP[*]}                      # CS の台数
+CS2232_NUM=`expr ${CS2232_NUM} - 1`
+
+DIR_LOG="/apdata/aplog"
+NAME_ERRLOG="FATAL"
+#NAME_ERRLOG="TST"
+EXTENSION_LOG=".log"
+
+DIR_LOCAL="/tmp"
+PS_KEKKA="cs_ping"
+ERR_APPL="err_cs"
+
+ERR_FLG="0"
+
+# 監視停止ファイルの存在確認。(ファイルが存在する場合、チェックをしない。)
+if [ -e ${STOP_DIR}/${STOP_FILE_NAME} ]; then
+        echo "監視停止ファイルが存在しています。"
+        exit 0
+fi
+
+for CS_NO in `seq 0 ${CS2232_NUM}`;
+do
+        CS2232=${CS2232_IP[${CS_NO}]}
+        echo "${CS2232}"
+        ping -w 10 -c 3 ${CS2232} > /dev/null
+        EXITSTATUS=$?
+        if [ ${EXITSTATUS} != "0" ]; then
+                ERR_FLG="1"
+                echo "${CS2232} : 導通が確認できません。" >> ${DIR_LOCAL}/${ERR_APPL}
+                echo "" >> ${DIR_LOCAL}/${ERR_APPL}
+                continue
+        fi
+done
+
+if [ ${ERR_FLG} = "1" ]; then
+        echo ${DIR_LOCAL}/${ERR_APPL}
+        mv ${DIR_LOCAL}/${ERR_APPL} ${DIR_LOG}/${NAME_ERRLOG}_CS_ERR${EXTENSION_LOG}
+fi
+
+exit 0
+kea00sys@KEA00IAW21$
+IPアドレスが列挙してあるところを修正すればpingチェックは行われないが、この時点でCSの８号機にpingが通るようになっていたため
+修正は見送った。
+
+chk_CS2232.shはそれぞれのIAサーバー(21～24)で行っているが、実際にapサーバーで使われているのはKEA00IAW21のエラーログファイルだけ。
+apサーバーがchk_IA_Log.shでKEA00IAW21の/apdata/aplog/FATAL_CS_ERR.logをftpで取得している。
+
+※注意１ IAサーバーは文字コードがEUCなため、sshでログインした場合はteraterm等の設定を変更しないといろいろ文字化けする。
+※注意２ エラーメールが文字化けしているのも、EUCで作成したファイルをSJISとして送信しているため。
+
+⑤原因
+CSの交換作業を行う際に、CS８号機だけ近くにコンセントが無かったのでBMのサービスコンセントから電源を取っていた。
+26日の朝に、BMのメンテナンスのためにBMの大元のブレーカーを落としたのでサービスコンセントにつながっていたCS８号機も停止してしまった。
+その後、ブレーカーを戻したのでCSも復旧した。
+27日にCSの電源をBM戸は別のコンセントへ移す予定。
+
+
+
+
+
+
+
+
+
+
+
