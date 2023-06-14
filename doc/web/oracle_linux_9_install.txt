@@ -10,7 +10,7 @@ sshでrootログインができないので設定
 次の行を追加
 PermitRootLogin yes
 
-sshdを再起動する
+sshdを再起動する21.
 # systemctl restart sshd
 
 
@@ -114,7 +114,7 @@ apache設定変更
 
 #ServerName www.example.com:80
 ↓
-ServerName oplkin:80
+ServerName kea00web:80
 
 <IfModule dir_module>
     DirectoryIndex index.html
@@ -176,16 +176,17 @@ ServerName oplkin:80
 %cd
 %chmod a+rx .
 
-httpd 自動起動
+httpd 再起動
 # systemctl restart httpd
 起動確認
 # systemctl status httpd
 
 php インストール
 
-# dnf -y install php.x86_64 php-xml.x86_64 php-xmlrpc.x86_64 php-pdo.x86_64 php-pgsql.x86_64
- php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-json.x86_64 php-mbstring.x86_64 php-odbc.x86_64
+# dnf -y install php.x86_64 php-xml.x86_64 php-pdo.x86_64 php-pgsql.x86_64
+ php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-mbstring.x86_64 php-odbc.x86_64
 
+php-xmlrpc.x86_64 php-json.x86_64 は無いのでinstallしない
 
 php設定変更
 /etc/php.ini 修正
@@ -292,24 +293,50 @@ perl用DB2モジュールをインストール
 # export DB2_HOME=/opt/ibm/db2/v11.5
 # export DB2LIB=/opt/ibm/db2/v11.5/lib64
 # cpan DBD::DB2
-Loading internal null logger. Install Log::Log4perl for logging messages
-Reading '/root/.local/share/.cpan/Metadata'
-  Database was generated on Thu, 13 Apr 2023 07:41:01 GMT
-CPAN: LWP::UserAgent loaded ok (v6.34)
-CPAN: Time::HiRes loaded ok (v1.9758)
-Fetching with LWP:
-http://www.cpan.org/authors/01mailrc.txt.gz
-CPAN: YAML loaded ok (v1.24)
+Loading internal logger. Log::Log4perl recommended for better logging
+
+CPAN.pm requires configuration, but most of it can be done automatically.
+If you answer 'no' below, you will enter an interactive dialog for each
+configuration option instead.
+
+Would you like to configure as much as possible automatically? [yes]yes←   ..........ここを入力
+CPAN: HTTP::Tiny loaded ok (v0.076)
+CPAN: Net::SSLeay loaded ok (v1.92)
+CPAN: IO::Socket::SSL loaded ok (v2.073)
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+CPAN: Term::ReadKey loaded ok (v2.38)
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/01mailrc.txt.gz
 Reading '/root/.local/share/.cpan/sources/authors/01mailrc.txt.gz'
-CPAN: Compress::Zlib loaded ok (v2.081)
+CPAN: Compress::Zlib loaded ok (v2.102)
 ............................................................................DONE
-Fetching with LWP:
-http://www.cpan.org/modules/02packages.details.txt.gz
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/modules/02packages.details.txt.gz
 Reading '/root/.local/share/.cpan/sources/modules/02packages.details.txt.gz'
-  Database was generated on Mon, 17 Apr 2023 00:17:02 GMT
+  Database was generated on Tue, 13 Jun 2023 06:17:02 GMT
+CPAN: HTTP::Date loaded ok (v6.05)
 ..............
-  New CPAN.pm version (v2.34) available.
-  [Currently running version is v2.18]
+  New CPAN.pm version (v2.36) available.
+  [Currently running version is v2.29]
   You might want to try
     install CPAN
     reload cpan
@@ -318,18 +345,49 @@ Reading '/root/.local/share/.cpan/sources/modules/02packages.details.txt.gz'
 
 
 ..............................................................DONE
-Fetching with LWP:
-http://www.cpan.org/modules/03modlist.data.gz
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/modules/03modlist.data.gz
 Reading '/root/.local/share/.cpan/sources/modules/03modlist.data.gz'
 DONE
 Writing /root/.local/share/.cpan/Metadata
 Running install for module 'DBD::DB2'
-Fetching with LWP:
-http://www.cpan.org/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz
 CPAN: Digest::SHA loaded ok (v6.02)
-Fetching with LWP:
-http://www.cpan.org/authors/id/R/RO/ROCKETDB/CHECKSUMS
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/id/R/RO/ROCKETDB/CHECKSUMS
 Checksum for /root/.local/share/.cpan/sources/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz ok
+CPAN: YAML loaded ok (v1.30)
 CPAN: CPAN::Meta::Requirements loaded ok (v2.140)
 CPAN: Parse::CPAN::Meta loaded ok (v2.150010)
 CPAN: CPAN::Meta loaded ok (v2.150010)
@@ -342,6 +400,7 @@ DB2_HOME environment variable (/opt/ibm/db2/v11.5) not valid.
 Warning: No success on command[/usr/bin/perl Makefile.PL]
   ROCKETDB/DBD-DB2-1.89.tar.gz
   /usr/bin/perl Makefile.PL -- NOT OK
+#
 
 
 DB2設定
@@ -455,7 +514,9 @@ fi
 
 unixODBC
 install
-# dnf -y install unixODBC.x86_64 unixODBC-devel.x86_64
+# dnf -y install unixODBC.x86_64
+ unixODBC-devel.x86_64は無いのでinstallしない
+
 設定
 iniファイルの場所を確認
 # odbcinst -j
@@ -525,9 +586,31 @@ SQL> quit
 #
 
 
-
 DB2のinstallが終わってGUIが不要になったら
 # systemctl set-default multi-user.target
 # reboot
+
+php-pfm へDB2の環境変数を反映させる
+
+/etc/php-fpm/www.confを修正
+
+# vi /etc/php-fpm/www.conf
+以下の行のコメントを外す
+;clear_env = no
+↓
+clear_env = no
+
+以下の行を追加
+env[DB2INSTANCE] = db2inst1
+env[DB2_HOME] = /home/db2inst1/sqllib
+env[DB2LIB] = /home/db2inst1/sqllib/lib
+env[IBM_DB_LIB] = /home/db2inst1/sqllib/lib
+env[IBM_DB_HOME] = /home/db2inst1/sqllib
+env[IBM_DB_DIR] = /home/db2inst1/sqllib
+env[IBM_DB_INCLUDE] = /home/db2inst1/sqllib/include
+env[PATH] = /home/db2inst1/sqllib/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+env[LD_LIBRARY_PATH] = /home/db2inst1/sqllib/lib64:/home/db2inst1/sqllib/lib64/gskit:/home/db2inst1/sqllib/lib32
+
+再起動して変更を反映
 
 
