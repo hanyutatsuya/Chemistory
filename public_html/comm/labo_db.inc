@@ -1,22 +1,22 @@
 
 <?php
-function GetDBConn()
+function GetDBConn($dbname="KEA00DB1")
 {
+
 	$dsn = "KEA00DB0";
 	$user = "kea00dbt";
 	$pass = "kea00dbt";
 
-//	putenv("DB2INSTANCE=db2inst1");
-//	putenv("DB2_HOME=/home/db2inst1/sqllib");
-//	putenv("DB2LIB=/home/db2inst1/sqllib/lib");
-//	putenv("IBM_DB_LIB=/home/db2inst1/sqllib/lib");
-//	putenv("IBM_DB_HOME=/home/db2inst1/sqllib");
-//	putenv("IBM_DB_INCLUDE=/home/db2inst1/sqllib/include");
-//	putenv("IBM_DB_DIR=/home/db2inst1/sqllib");
-
 	try {
+		if ($dbname == "KEA00DB0") {
+			$user = "kea00dbt";
+			$pass = "kea00dbt";
+		} else {
+			$user = "db2inst1";
+			$pass = "db2inst1";
+		}
 
-		$dsn = "odbc:KEA00DB0";
+		$dsn = "odbc:" . $dbname;
 	
 		$conn = new PDO($dsn,$user,$pass);
 	

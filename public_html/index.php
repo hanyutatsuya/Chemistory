@@ -3,6 +3,12 @@
 	require_once("comm/labo_html.inc");
 	require_once("comm/labo_db.inc");
 
+	$dbname = $_SESSION['dbname'];
+	if (empty($dbname)) {
+		$_SESSION['dbname'] = 'KEA00DB1';
+		$dbname = $_SESSION['dbname'];
+	}
+
 ?>
 
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">
