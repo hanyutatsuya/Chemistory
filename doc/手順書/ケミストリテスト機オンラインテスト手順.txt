@@ -1,0 +1,193 @@
+ケミストリテスト機テスト手順
+
+BM24,BM31,ZS050でテストする時の手順です。
+依頼展開～は別紙参照
+
+・Zテスト機確認
+kea00apkにteratermログイン
+kea00sys@kea00apk:~> df -k
+ファイルシス                                                      1K-ブロック      使用     使用可 使用% マウント位置
+devtmpfs                                                               490744         0     490744    0% /dev
+tmpfs                                                                  502696         0     502696    0% /dev/shm
+tmpfs                                                                  502696      1916     500780    1% /run
+tmpfs                                                                  502696         0     502696    0% /sys/fs/cgroup
+/dev/mapper/kea00apk--os--vg-root--lv                                 7792080   4500644    2875900   62% /
+/dev/dasdc1                                                            237556     50848     168508   24% /boot/zipl
+/dev/mapper/kea00apk--data--apdata--vg-kea00apk--data--apdata--lv    30582564  25255884    5310296   83% /apdata
+/dev/mapper/kea00apk--os--vg-opt--lv                                  8191416   1536784    6218820   20% /opt
+/dev/mapper/kea00apk--os--vg-var--lv                                  2514736    489920    1877360   21% /var
+/dev/mapper/kea00apk--os--vg-home--lv                                 2514736   1895484     471796   81% /home
+10.1.181.166:/mnt/array1/share/nfs                                 1919244544 298446080 1620798464   16% /nas
+KEA00IAW12:/apdata/today/file/KEA00/KEA00IA                          74660160  32325104   38542512   46% /apdata/today/f
+ile/KEA00/KEA00IAW12
+tmpfs                                                                  100540         0     100540    0% /run/user/1001
+kea00sys@kea00apk:~>
+
+KEA00IAW12:/apdata/today/file/KEA00/KEA00IAが存在していること。
+存在していない場合は下記のコマンドを実行する。
+kea00sys@kea00apk:~> su -
+Password: bmlroot
+# ./mount.sh
+
+・IAテスト機確認
+10.1.181.22にteratermログイン
+[kea00sys@KEA00IAW12 kea00sys]$ df -h
+Filesystem          サイズ  使用  残り 使用% マウント位置
+/dev/sda3              72G   31G   37G  46% /
+/dev/sda2              99M   26M   69M  28% /boot
+none                  501M     0  501M   0% /dev/shm
+/dev/sdb1             1.8T  1.3T  438G  75% /mnt/usb
+10.1.181.166:/mnt/array1/share/nfs
+                      1.8T  285G  1.6T  16% /nas
+kea00apk:/apdata/today/file/KEA00/kea00ap
+                       30G   25G  5.1G  83% /apdata/today/file/KEA00/kea00ap
+kea00apk:/apdata/aplog/DBOUT
+                       30G   25G  5.1G  83% /apdata/aplog/DBOUT
+[kea00sys@KEA00IAW12 kea00sys]$
+
+kea00apk:/apdata/today/file/KEA00/kea00apが存在していること。
+
+存在していない場合は下記のコマンドを実行する。
+[kea00sys@KEA00IAW12 kea00sys]$ su -
+Password: bmlroot
+# ./mount.sh
+
+・本番機オンライン停止
+kea00apaにteratermログイン
+kea00apaのプロセスチェックを停止
+kea00sys@kea00apa:~> crontab -e
+/home/kea00sys/shell/cron/chk_proc.shの行の先頭に#をつける。
+
+ZS050のテストをする場合
+ZS050用プロセスを停止
+kea00sys@kea00apa:~> cd ~/shell/daily
+kea00sys@kea00apa:~> ./prcZS_onoff.sh -STOP
+
+LABO,BMのテストをする場合
+オンラインプロセスを停止
+kea00sys@kea00apa:~> proc.sh
+-> [3]プロセス停止
+-> [2]ＩＡサーバ
+-> テストで使用する号機を指定
+-> y
+テストで使用する号気分繰り返す
+
+・テスト機オンラインプロセス起動
+ZS050のテストをする場合
+Zテスト機プログラム起動
+kea00apkにteratermログイン
+kea00sys@kea00apk:~> cd ~/shell/daily
+kea00sys@kea00apk:~> prcZS_onoff.sh -START
+
+LABO,BMのテストをする場合
+・テスト機設定修正(20230615設定済み)
+10.1.181.22にteratermログイン
+[kea00sys@KEA00IAW12 kea00sys]$ cd bin
+[kea00sys@KEA00IAW12 kea00sys]$ vi DD201_24.ini
+[kea00sys@KEA00IAW12 kea00sys]$ vi DD201_31.ini
+(本番(10.1.181.42の設定)に合わせる。分析機情報のところ)
+
+・IAテスト機プログラム起動
+10.1.181.22にteratermログイン
+[kea00sys@KEA00IAW12 kea00sys]$ cd /home/kea00sys/bin
+[kea00sys@KEA00IAW12 bin]$ ./ZD777.sh &
+[kea00sys@KEA00IAW12 bin]$ ./ZD888.sh &
+[kea00sys@KEA00IAW12 bin]$ /home/kea00sys/bin/ZD999IA /home/kea00sys/bin/ZD999IA.ini
+
+LABO
+[kea00sys@KEA00IAW12 bin]$ DD203 xx &
+BM
+[kea00sys@KEA00IAW12 kea00sys]$ DD201 xx &
+
+
+
+・前読み装置用ファイルの送信(Multiの場合)
+テスト機の/apdata/today/file/NSWS/Send/RkInfo/Multiに作成された
+テストで使用するラックの抽出
+ls -l *XXXXX.dat
+scp -p *XXXXX.dat 10.1.42.15:/apdata/today/file/NSWS/Send/RkInfo
+検査日が同じであればそのまま使用可能だが違っていればファイルの日付を本番の日付に変更する。
+本番機
+cd /apdata/today/file/NSWS/Send/RkInfo
+vi *dat
+mv *dat Multi
+前読み装置で登録する
+前読み装置で登録したトレーをテスト機へ送信
+cd /apdata/today/file/NSWS/Recv/TrRk
+scp -p SPXXX 10.1.42.147:/apdata/today/file/NSWS/Recv/TrRk
+
+
+テスト機の日付に戻す
+cd /apdata/today/file/NSWS/Recv
+vi SPXXX
+mv SPXXX TrRk
+
+
+
+
+各分析機からオーダーを送信。
+各種ディレクトリに問い合わせが保存されること。
+ZS050
+BM8040
+BM8060
+
+戻し
+・Zテスト機プログラム停止
+kea00apkにteratermログイン
+cd ~/shell/daily
+prcZS_onoff.sh -STOP
+
+・IAテスト機プログラム停止
+10.1.181.22にteratermログイン
+ps -ax | grep DD
+DD201,シェルを停止
+kill -USR1 <PID>
+
+・本番機オンライン起動
+kea00apaにteratermログイン
+共有メモリファイルを退避、作成
+cd /apdata/today/file/KEA00/kea00ap/ZS050
+mv 1_MD102.sav 1_MD102.sav_bk
+mv 2_MD102.sav 2_MD102.sav_bk
+touch 1_MD102.sav
+touch 2_MD102.sav
+cd ~/shell/daily
+prcZS_onoff.sh -START
+proc.sh
+2
+2
+24
+y
+31
+y
+33
+y
+kea00apaのプロセスチェックを起動
+crontab -e
+/home/kea00sys/shell/cron/chk_proc.shの行の先頭#を削除する。
+
+
+疎通確認
+BMからLISオーダー999000101を送信する。
+
+テストで使用した号機のIAサーバにログインする。
+[kea00sys@KEA00IAW22 Log]$ cd /home/kea00sys/appl/src/kns/DD201/dat/Log
+[kea00sys@KEA00IAW22 Log]$ grep 9990001 *
+com_24.log:1q 01010999000101    999000101     <ETX>71<CR><LF>
+com_31.log:1q 01010999000101    999000101     <ETX>71<CR><LF>
+[kea00sys@KEA00IAW22 Log]$
+
+
+kea00sys@kea00apa:/apdata/aplog> grep 9990001 *
+grep: DBOUT: ディレクトリです
+MD101_2_20220117.log:2022/01/17 19:35:24        T       kea00apa        51752   kea00sys        MD101   MD101.c         1528            00000000      問合せ受信: RackID[9990001] Pos[01] ME[4]
+MD101_2_20220117.log:2022/01/17 19:35:25        E       kea00apa        51752   kea00sys        MD101   MD101.c sFncIraiSend    1015          00000000        依頼ファイルが見つかりません。"依頼無し"の依頼MSG送信 File[/apdata/today/file/KEA00/kea00ap/ZS050/irai_file/OD_9990001_____001.dat_01] ME[4] ERR[2]
+MD101_2_20220117.log:2022/01/17 19:35:25        T       kea00apa        51752   kea00sys        MD101   MD101.c         1282            00000000      依頼データ送信: RackID[9990001] Pos[001] ME[4]
+kea00sys@kea00apa:/apdata/aplog>
+
+
+
+mv /apdata/today/file/KEA00/kea00ap/ZS050/*MD101.sav /apdata/aplog/
+mv /apdata/today/file/KEA00/kea00ap/ZS050/*MD102.sav /apdata/aplog/
+
+
