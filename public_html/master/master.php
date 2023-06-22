@@ -2,205 +2,143 @@
 <HTML lang="ja">
 
 <?php
-require_once("../comm/nsfr_html.inc");
-require_once("../comm/nsfr_db.inc");
-NsfrHeadOutput("ƒ}ƒXƒ^[ˆê——");
-NsfrLogOut("ƒ}ƒXƒ^[ˆê——");
+require_once("../comm/labo_html.inc");
+LaboHeadOutput("ãƒžã‚¹ã‚¿ãƒ¼ä¸€è¦§");
+LaboLogOut("ãƒžã‚¹ã‚¿ãƒ¼ä¸€è¦§");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
-NsfrTimeStamp();
+LaboTimeStamp();
 ?>
-<center><h2>ƒ}ƒXƒ^[ˆê——</h2></center>
+<center><h2>ãƒžã‚¹ã‚¿ãƒ¼ä¸€è¦§</h2></center>
 
+<HR>
 
 <table align = center border=0>
-<tr valign=top>
+	<tr valign=top>
 
-<td>
-<table bgcolor = white border>
+	<td>
+		<table bgcolor = white border>
 
-<tr>
-<th colspan = 2>ŠîŠ²</th>
-</tr>
-<tr>
-<th>ƒe[ƒuƒ‹–¼</th>
-<th>ƒ}ƒXƒ^[–¼Ì</th>
-</tr>
+			<tr>
+				<th colspan = 2>å…±é€š</th>
+			</tr>
+			<tr>
+				<th>ãƒ†ãƒ¼ãƒ–ãƒ«å</th>
+				<th>ãƒžã‚¹ã‚¿ãƒ¼åç§°</th>
+			</tr>
 
-<tr>
-<td><A href=smpmst.php>NFSMPMST</A></td>
-<td><A href=smpmst.php>ƒTƒ“ƒvƒŠƒ“ƒOƒ}ƒXƒ^</A></td>
-</tr>
+			<tr>
+				<td><A href=kmkmst.php>KMKMST</A></td>
+				<td><A href=kmkmstsmpmst.php>é …ç›®ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=kjnmst.php>KJNMST</A></td>
+				<td><A href=kjnmst.php>åŸºæº–å€¤ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=jdkmkmst.php>JDKMKMST</A></td>
+				<td><A href=jdkmkmst.php>è‡ªå‹•ç™ºç”Ÿé …ç›®ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=cmtmst.php>CMTMST</A></td>
+				<td><A href=cmtmst.php>ã‚³ãƒ¡ãƒ³ãƒˆãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=kkahskmst.php>KKAHSKMST</A></td>
+				<td><A href=kkahskmst.php>çµæžœè£œè¶³ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+		</table>
+	</td>
 
-<tr>
-<td><A href=kmkmst.php>NFKMKMST</A></td>
-<td><A href=kmkmst.php>€–Úƒ}ƒXƒ^</A></td>
-</tr>
+	<td>
+		<table bgcolor = white border>
 
-<tr>
-<td><A href=smpkm.php>SMP-KMK</A></td>
-<td><A href=smpkm.php>‚v‚rE€–Úƒ}ƒXƒ^</A></td>
-</tr>
+			<tr>
+				<th colspan = 2>ãƒ­ãƒ¼ã‚«ãƒ«</th>
+			</tr>
+			<tr>
+				<th>ãƒ†ãƒ¼ãƒ–ãƒ«å</th>
+				<th>ãƒžã‚¹ã‚¿ãƒ¼åç§°</th>
+			</tr>
 
-<tr>
-<td><A href=chkmst.php>NFCHKMST</A></td>
-<td><A href=chkmst.php>’·Šú•ÛŠÇ‹æ•ªƒ}ƒXƒ^</A></td>
-</tr>
+			<tr>
+				<td><A href=knsgmst.php>KNSGMST</A></td>
+				<td><A href=knsgmst.php>æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=rngchkmst.php>RNGCHKMST</A></td>
+				<td><A href=rngchkmst.php>ãƒ¬ãƒ³ã‚¸ãƒã‚§ãƒƒã‚¯ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=calckmkmst.php>CALCKMKMST</A></td>
+				<td><A href=calckmkmst.php>è¨ˆç®—é …ç›®ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=kkafltmst.php>KKAFLTMST</A></td>
+				<td><A href=kkafltmst.php>çµæžœãƒ•ã‚£ãƒ«ã‚¿ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=krkmkmst.php>KRKMKMST</A></td>
+				<td><A href=krkmkmst.php>é–¢é€£é …ç›®ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=skchkmst.php>SKCHKMST</A></td>
+				<td><A href=skchkmst.php>ç›¸é–¢é …ç›®ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=rrkchkmst.php>RRKCHKMST</A></td>
+				<td><A href=rrkchkmst.php>å±¥æ­´ãƒã‚§ãƒƒã‚¯ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=kskbrmst.php>KSKBRMST</A></td>
+				<td><A href=kskbrmst.php>å¸Œé‡ˆå€çŽ‡ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=memst.php>MEMST</A></td>
+				<td><A href=memst.php>åˆ†æžæ©Ÿãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=mechmst.php>MECHMST</A></td>
+				<td><A href=mechmst.php>åˆ†æžæ©Ÿãƒãƒ£ãƒãƒ«ãƒžã‚¹ã‚¿</A></td>
+			</tr>
 
-<tr>
-<td><A href=egsmst.php>NFEGSMST</A></td>
-<td><A href=egsmst.php>‰c‹ÆŠƒ}ƒXƒ^</A></td>
-</tr>
+		</table>
+	</td>
 
-<tr>
-<td><A href=cmtmst.php>NFCMTMST</A></td>
-<td><A href=cmtmst.php>ŒŸ‘ÌƒRƒƒ“ƒgƒ}ƒXƒ^</A></td>
-</tr>
+	<td>
+		<table bgcolor = white border>
 
-</table>
-</td>
+			<tr>
+				<th colspan = 2>ã‚·ã‚¹ãƒ†ãƒ ä½¿ç”¨</th>
+			</tr>
+			<tr>
+				<th>ãƒ†ãƒ¼ãƒ–ãƒ«å</th>
+				<th>ãƒžã‚¹ã‚¿ãƒ¼åç§°</th>
+			</tr>
 
+			<tr>
+				<td><A href=sysknrmst.php>SYSKNRMST</A></td>
+				<td><A href=sysknrmst.php>ã‚·ã‚¹ãƒ†ãƒ ç®¡ç†ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=usermst.php>USERMST</A></td>
+				<td><A href=usermst.php>ãƒ¦ãƒ¼ã‚¶ãƒ¼ãƒžã‚¹ã‚¿</A></td>
+			</tr>
+			<tr>
+				<td><A href=knokgnmst.php>KNOKGNMST</A></td>
+				<td><A href=knokgnmst.php>æ©Ÿèƒ½æ¨©é™ãƒžã‚¹ã‚¿</A></td>
+			</tr>
 
-
-<td>
-<table bgcolor = white border>
-
-<tr>
-<th colspan = 2>‹¤’Ê</th>
-</tr>
-<tr>
-<th>ƒe[ƒuƒ‹–¼</th>
-<th>ƒ}ƒXƒ^[–¼Ì</th>
-</tr>
-
-<tr>
-<td><A href=setup.php>NSETUPTBL</A></td>
-<td><A href=setup.php>ƒVƒXƒeƒ€Ý’èî•ñ</A></td>
-</tr>
-
-<tr>
-<td><A href=ssmst.php>NFSSMST</A></td>
-<td><A href=ssmst.php>Žd•ª‚¯Ží—Þƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=srimst.php>NFSRIMST</A></td>
-<td><A href=srimst.php>ŒŸ¸Ží—Þƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=jyomst.php>NFJYOMST</A></td>
-<td><A href=jyomst.php>ó‘Ôƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=bmrmst.php>NFBMRMST</A></td>
-<td><A href=bmrmst.php>•ª—Þƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=yokmst.php>NFYOKMST</A></td>
-<td><A href=yokmst.php>—eŠíƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=strmst.php>NFSTRMST</A></td>
-<td><A href=strmst.php>ƒTƒeƒ‰ƒCƒgƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=sismst.php>NFSISMST</A></td>
-<td><A href=sismst.php>Ž{Ýƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=sotmst.php>NFSOTMST</A></td>
-<td><A href=sotmst.php>‘•’uŠÇ—ƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=musr.php>M_USR</A></td>
-<td><A href=musr.php>ƒ†[ƒU[ŠÇ—ƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=mknkgn.php>M_KNKGN</A></td>
-<td><A href=mknkgn.php>‹@”\Œ ŒÀƒ}ƒXƒ^</A></td>
-</tr>
-
-</table>
-</td>
-
-<td>
-<table bgcolor = white border>
-
-<tr>
-<th colspan = 2>”FŽ¯ƒVƒXƒeƒ€—p</th>
-</tr>
-<tr>
-<th>ƒe[ƒuƒ‹–¼</th>
-<th>ƒ}ƒXƒ^[–¼Ì</th>
-</tr>
+		</table>
+	</td>
 
 </table>
-</td>
-
-
-<td>
-<table bgcolor = white border>
-
-<tr>
-<th colspan = 2>ƒtƒƒ“ƒeƒBƒA—p</th>
-</tr>
-<tr>
-<th>ƒe[ƒuƒ‹–¼</th>
-<th>ƒ}ƒXƒ^[–¼Ì</th>
-</tr>
-
-<tr>
-<td><A href=cjmst.php>FCJMST</A></td>
-<td><A href=cjmst.php>ƒZƒ‹î•ñƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=mjmst.php>FMJMST</A></td>
-<td><A href=mjmst.php>ƒ‚ƒWƒ…[ƒ‹î•ñƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=itmcmst.php>FITMCMST</A></td>
-<td><A href=itmcmst.php>‚h‚s‚d‚lƒR[ƒhƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=ngsmst.php>FNGSMST</A></td>
-<td><A href=ngsmst.php>•ª’‚m‚fˆ—ƒ}ƒXƒ^</A></td>
-</tr>
-
-<tr>
-<td><A href=zpatarn.php>FSIPTMST</A></td>
-<td><A href=zpatarn.php>ƒpƒLƒpƒLƒpƒ^[ƒ“ƒ}ƒXƒ^</A></td>
-</tr>
-
-</table>
-</td>
-
-</table>
-
 
 <HR>
 <P>
-<center><A href=bunmst.php>•ª’‹@ƒ}ƒXƒ^[Ý’è</A></center>
-</P>
-<HR>
-<P>
-<center><A href=chk_main.php>ƒ}ƒXƒ^[ƒ`ƒFƒbƒN</A></center>
-</P>
-<HR>
-<P>
-<center><A href=../index.php>ƒgƒbƒv‚É–ß‚é</A></center>
+<center><A href=../index.php>ãƒˆãƒƒãƒ—ã«æˆ»ã‚‹</A></center>
 </P>
 </BODY>
 </HTML>

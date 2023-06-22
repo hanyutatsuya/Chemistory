@@ -7,7 +7,7 @@ print <<<__HEADOUT__
 <TITLE>$title</TITLE>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <META http-equiv="Content-Style-Type" content="text/css">
-<link rel="stylesheet" href="/~labo/css/labo_html.css?
+<link rel="stylesheet" href="/~kea00sys/css/labo_html.css?
 __HEADOUT__;
 echo date('Ymd-Hi');
 printf("\">\n");
@@ -24,26 +24,13 @@ if ($refresh > 0) {
 printf("</HEAD>\n");
 }
 
-function MenteTailOut()
+function LaboTimeStamp()
 {
-
-print <<<__TAILOUT__
-<HR>
-<P>
-<center><A href=sysmente.php>メンテナンス処理に戻る</A></center>
-</P>
-
-__TAILOUT__;
-}
-
-function MasterTailOut()
-{
-print <<<__TAILOUT__
-<HR>
-<P>
-<center><A href=master.php>マスター一覧に戻る</A></center>
-</P>
-__TAILOUT__;
+	$dbname = $_SESSION['dbname'];
+	printf("<DIV align=right>\n");
+	printf("[%s] \n",$dbname);
+	printf("%s\n",date("Y-m-d H:i:s"));
+	printf("</DIV>\n");
 }
 
 function LaboBackPage()
@@ -54,40 +41,52 @@ function LaboBackPage()
 	printf("</P></center>\n");
 }
 
-function LaboTimeStamp()
+function MenteTailOut()
 {
-	printf("<DIV align=right>\n");
-	printf("%s\n",date("Y-m-d H:i:s"));
-	printf("</DIV>\n");
+print <<<__MENTETAILOUT__
+<HR>
+<P>
+<center><A href=../mente/sysmente.php>メンテナンス処理に戻る</A></center>
+</P>
+
+__MENTETAILOUT__;
+}
+
+function MasterTailOut()
+{
+print <<<__MASTERTAILOUT__
+<HR>
+<P>
+<center><A href=../master/master.php>マスター一覧に戻る</A></center>
+</P>
+__MASTERTAILOUT__;
 }
 
 function LaboLogOut($msg)
 {
-	$logfile = "/home/kea00sys/log/php_log";
+	$logfile = "/home/data/log/php_log";
 
-	if (file_exists($logfile) == TRUE)
+	if (file_exists($logfile) == TRUE) {
 		$fsz = filesize($logfile);
-	else
+	} else {
 		$fsz = 0;
-	if ($fsz > 10000000)
-		{
+	}
+
+	if ($fsz > 10000000) {
 		$old_log = sprintf("%s.30",$logfile);
-		if (file_exists($old_log) == TRUE)
-			{
+		if (file_exists($old_log) == TRUE) {
 			unlink($old_log);
-			}
-		for ($i=29;$i>=0;$i--)
-			{
+		}
+		for ($i=29;$i>=0;$i--) {
 			$old_log = sprintf("%s.%02d",$logfile,$i);
 			$new_log = sprintf("%s.%02d",$logfile,$i+1);
-			if (file_exists($old_log) == TRUE)
-				{
+			if (file_exists($old_log) == TRUE) {
 				rename($old_log,$new_log);
-				}
 			}
+		}
 		$new_log = sprintf("%s.00",$logfile);
 		rename($logfile,$new_log);
-		}
+	}
 
 	if (isset($_SERVER['REMOTE_ADDR'])) {
 		$ip = $_SERVER['REMOTE_ADDR'];
@@ -157,22 +156,22 @@ function InoConv($ino)
 {
 	$ed_ino = "";
 
-	if (strlen($ino) < 6)
+	if (strlen($ino) < 6) {
 		return $ed_ino;
+	}
 
-	if (strlen($ino) == 6)
-		{
+	if (strlen($ino) == 6) {
 		$ed_ino = "000" . $ino;
 		return $ed_ino;
-		}
+	}
 
-	if (strlen($ino) == 7)
-		{
+	if (strlen($ino) == 7) {
 		$ed_ino = "00" . $ino;
 		return $ed_ino;
-		}
+	}
 
 	$ed_ino = substr($ino,9);
+
 	return $ed_ino;
 }
 
@@ -183,60 +182,50 @@ function BarCcodeConv($barcode)
 	if (strlen($barcode) < 8)
 		return $ed_bar;
 
-	if (strlen($barcode) == 8)
-		{
+	if (strlen($barcode) == 8) {
 		$ed_bar = "000" . $barcode;
 		return $ed_bar;
-		}
+	}
 
-	if (strlen($barcode) == 9)
-		{
+	if (strlen($barcode) == 9) {
 		$ed_bar = "00" . $barcode;
 		return $ed_bar;
-		}
+	}
 
-	if (strlen($barcode) > 11)
-		{
+	if (strlen($barcode) > 11) {
 		$ketasum = 0;
 		$keta9 = 0;
-		for ($i=0;$i<11;$i++)
+		for ($i=0;$i<11;$i++) {
 			$ketasum += substr($barcode,$i,1);
+		}
 
-		if  ((int)substr($barcode,11,1) < 7)
+		if ((int)substr($barcode,11,1) < 7) {
 			$c1 = $ketasum % 7;
-		else
-			{
+		} else {
 			$c1 = $ketasum % 3;
 			$keta9 = 1;
-			}
-		if  ($c1 != (int)substr($barcode,11,1))
+		}
+		if ($c1 != (int)substr($barcode,11,1)) {
 			return $ed_bar;
+		}
 
-		if  ($keta9 == 0)
-			{
+		if ($keta9 == 0) {
 			//	現行バーコード
-			if  (strcnmp(substr($barcode,8,3),"000",3) == 0)
-				{
+			if (strcnmp(substr($barcode,8,3),"000",3) == 0) {
 				//	６桁バーコード
 				$ed_bar = "000" . substr($barcode,0,8);
-				}
-			else
-				{
+			} else {
 				//	７桁バーコード
 				$ed_bar = "00" . substr($barcode,8,3) . substr($barcode,2,6);
-				}
 			}
-		else
-			{
+		} else {
 			$ed_bar = substr($barcode,0,11);
 			//	９桁バーコード
-			}
 		}
-	else
-		{
+	} else {
 		$ed_bar = "00" . substr($barcode,0,9);
 		return $ed_bar;
-		}
+	}
 
 	return $ed_bar;
 }

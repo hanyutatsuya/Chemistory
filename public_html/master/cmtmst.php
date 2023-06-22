@@ -2,67 +2,81 @@
 <HTML lang="ja">
 
 <?php
-require_once("../comm/nsfr_html.inc");
-require_once("../comm/nsfr_db.inc");
-NsfrHeadOutput("���̃R�����g�}�X�^");
-NsfrLogOut("���̃R�����g�}�X�^");
+require_once("../comm/labo_html.inc");
+require_once("../comm/labo_db.inc");
+LaboHeadOutput("コメントマスタ");
+LaboLogOut("コメントマスタ");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
-NsfrTimeStamp();
+LaboTimeStamp();
 ?>
-<center><h2>���̃R�����g�}�X�^</h2></center>
+<center><h2>コメントマスタ</h2></center>
 
 <table align="center" bgcolor = "white" border>
-<tr>
-<th>�R�����g�R�[�h</th>
-<th>�R�����g���e</th>
-<th>�R�����g���</th>
-<th>�R�����g�敪</th>
-<th>�F���V�X�e���ۗ��t���O</th>
-<th>�J�n��</th>
-<th>�I����</th>
-<th>�쐬����</th>
-<th>�X�V����</th>
-<th>��Ǝ҂h�c</th>
-</tr>
+	<tr>
+		<th>コメントコード</th>
+		<th>コメント記号</th>
+		<th>コメント名カナ</th>
+		<th>コメント名漢字</th>
+		<th>検査結果１</th>
+		<th>検査結果補足</th>
+		<th>赤伝フラグ</th>
+		<th>異常値マーク</th>
+		<th>開始年月日</th>
+		<th>廃止年月日</th>
+		<th>変更担当者ＩＤ</th>
+		<th>情報更新日時</th>
+	</tr>
 
 <?php
 
-$conn = Get_DBConn();
+$conn = GetDBConn();
 
 if  ($conn){
-	$sql = "select * from nfcmtmst where ukflg = '1' order by cmtcd for read only";
-	foreach ($conn->query($sql) as $row)
-		{
+
+try {
+//	$sql = "select substr(CMCD,1,4) as CMCD,substr(CMTKG,1,4) as CMTKG,substr(cmtnm,1,30) as CMTNM,substr(cmtnmj,1,60) as CMTNMJ,knskka1,kkahskcd,akaden,ijouchi,kaiymd,haiymd,hnktntid,ksndh from cmtmst order by cmcd for read only";
+	$sql = "select * from cmtmst order by cmcd for read only";
+	foreach ($conn->query($sql) as $row) {
 		printf("<tr>\n");
-		printf("<td>%s</td>\n",$row['CMTCD']);
-		printf("<td>%s</td>\n",$row['CMTNM']);
-		printf("<td>%s</td>\n",$row['COMSYURU']);
-		printf("<td>%s</td>\n",$row['COMKUBUN']);
-		printf("<td>%s</td>\n",$row['NINSHOF']);
-		printf("<td>%s</td>\n",$row['STYMD']);
-		printf("<td>%s</td>\n",$row['EDYMD']);
-		printf("<td>%10.10s</td>\n",$row['SAKHM']);
-		printf("<td>%10.10s</td>\n",$row['KOUHM']);
-		printf("<td>%s</td>\n",$row['SAGYOID']);
+			printf("<td>%s</td>\n",$row['CMCD']);
+			printf("<td>%1.1s</td>\n",mb_convert_encoding(trim($row['CMTKG']),"UTF-8","sjis-win"));
+			printf("<td>%20.20s</td>\n",$row['CMTNM']);
+			printf("<td>%40.40s</td>\n",$row['CMTNMJ']);
+			printf("<td>%s</td>\n",$row['KNSKKA1']);
+			printf("<td>%s</td>\n",$row['KKAHSKCD']);
+			printf("<td>%s</td>\n",$row['AKADEN']);
+			printf("<td>%s</td>\n",$row['IJOUCHI']);
+			printf("<td>%10.10s</td>\n",$row['KAIYMD']);
+			printf("<td>%10.10s</td>\n",$row['HAIYMD']);
+			printf("<td>%s</td>\n",$row['HNKTNTID']);
+			printf("<td>%20.20s</td>\n",$row['KSNDH']);
 		printf("</tr>\n");
-		}
 	}
-	else
-	{
+}
+	catch (Exception $ex) {
+		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
+		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
+		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
+		printf("ERRCODE [%s]<BR>",$ex->getCode());
+	}
+
+} else {
 	echo "Connection failed";
-	}
+}
+
 $conn = null;
 
 ?>
 
 </table>
 
-<?php
-MasterTailOut();
-?>
+<HR>
+<P>
+<center><A href=../master/master.php>マスター一覧に戻る</A></center>
+</P>
 
 <HR>
 </BODY>

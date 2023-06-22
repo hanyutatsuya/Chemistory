@@ -1,7 +1,9 @@
 
 <?php
-function GetDBConn($dbname="KEA00DB1")
+function GetDBConn()
 {
+
+	$dbname = $_SESSION['dbname'];
 
 	$dsn = "KEA00DB0";
 	$user = "kea00dbt";
@@ -25,11 +27,11 @@ function GetDBConn($dbname="KEA00DB1")
 			printf("<P>ＤＢコネクションエラー</P>\n");
 			printf("</FONT>\n");
 		} else {
-			printf("<FONT color=blue>\n");
-			printf("<P>ＤＢコネクション ＯＫ</P>\n");
-			printf("</FONT>\n");
+//			printf("<FONT color=blue>\n");
+//			printf("<P>ＤＢコネクション ＯＫ</P>\n");
+//			printf("</FONT>\n");
 		}
-		$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+//		$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}
 
 //	catch (PDOException $PDOex) {
@@ -88,6 +90,12 @@ function LaboDBErrorMsg($sql,$errorinfo)
 	LaboLogOut(sprintf("[%s]",$errorinfo[2]));
 
 	return(NULL);
+}
+
+function GetUTF8String($instr)
+{
+	$outstr = mb_convert_encoding($instr,"UTF-8","auto");
+	return $outstr;
 }
 
 function GetShoribi($conn,$lbcode)

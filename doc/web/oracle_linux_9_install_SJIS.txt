@@ -1,0 +1,637 @@
+Oracle linux 9.1
+Mem 4G
+HDD 200G
+
+Server(GUI使用) でインストール
+
+sshでrootログインができないので設定
+# cd /etc/ssh
+# vi sshd_config  (ssh_config という名前のファイルもあるので注意する)
+次の行を追加
+PermitRootLogin yes
+
+sshdを再起動する21.
+# systemctl restart sshd
+
+
+dnf のproxy
+/etc/dnf/dnf.conf へ
+proxy=http://iproxy.bml.co.jp:8080
+を追加
+
+# dnf update
+
+# vi /etc/selinux/config
+SELINUX=disabled     ← enforcing から disabled に変更
+
+# reboot
+
+# dnf -y install wget
+# dnf -y install vsftpd ftp
+
+gcc,make インストール
+
+# dnf -y group install "Development Tools"
+# dnf -y install man-pages
+
+# dnf -y install git vim
+# dnf -y install chrony
+
+# dnf -y install glibc-locale-source.x86_64
+# localedef -f SHIFT_JIS -i ja_JP ja_JP.SJIS
+[warning] character map `SHIFT_JIS' is not ASCII compatible, locale not ISO C compliant [--no-warnings=ascii]
+#
+# cd
+# vi .bashrc
+最終行に追加
+export LANG=ja_JP.SJIS
+#
+
+rootでログインし直し
+
+wgetのproxy
+/etc/wgetrc
+の
+#https_proxy=http://...
+#http_proxy=http://...
+#ftp_proxy=http://...
+のコメントアウトを外してproxyのアドレスを記入
+
+ネットワーク情報の確認
+
+TEXTベースGUIツール
+#nmtui
+
+時計合わせ
+/etc/chrony.conf 修正
+
+pool 172.17.8.60 iburst  <- add
+
+# systemctl enable chronyd
+# systemctl start chronyd
+# systemctl status chronyd
+
+タイムゾーン設定
+# timedatectl set-timezone Asia/Tokyo
+確認
+# timedatectl show
+
+vsftpdのセットアップ
+
+# vi /etc/vsftpd/vsftpd.conf
+
+anonymous_enable=NO
+local_enable=YES
+write_enable=YES
+local_root=public_html
+chroot_local_user=YES
+chroot_list_enable=YES
+chroot_list_file=/etc/vsftpd/chroot_list
+listen=YES
+listen_ipv6=NO
+pam_service_name=vsftpd
+userlist_enable=YES
+use_localtime=YES
+
+# vi /etc/vsftpd/chroot_list
+
+# systemctl enable vsftpd
+# systemctl start vsftpd
+# systemctl status vsftpd
+
+# firewall-cmd --add-service=ftp --permanent
+# firewall-cmd --reload
+
+apache のインストール
+
+# dnf -y install httpd.x86_64 httpd-devel.x86_64 httpd-filesystem.noarch httpd-manual.noarch httpd-tools.x86_64
+
+httpd 起動
+# systemctl start httpd
+
+httpd 起動確認
+# systemctl status httpd
+
+httpd 自動起動
+# systemctl enable httpd
+
+firewallの許可設定
+
+# firewall-cmd --add-service=http --permanent
+# firewall-cmd --reload
+
+
+apache設定変更
+/etc/httpd/conf/httpd.conf 修正
+
+#ServerName www.example.com:80
+↓
+ServerName kea00web:80
+
+<IfModule dir_module>
+    DirectoryIndex index.html
+</IfModule>
+↓
+<IfModule dir_module>
+    DirectoryIndex index.html index.php
+</IfModule>
+
+/etc/httpd/conf.d/userdir.conf 修正
+
+<IfModule mod_userdir.c>
+    #
+    # UserDir is disabled by default since it can confirm the presence
+    # of a username on the system (depending on home directory
+    # permissions).
+    #
+    UserDir disabled
+
+    #
+    # To enable requests to /~user/ to serve the user's public_html
+    # directory, remove the "UserDir disabled" line above, and uncomment
+    # the following line instead:
+    #
+    #UserDir public_html
+</IfModule>
+↓
+<IfModule mod_userdir.c>
+    #
+    # UserDir is disabled by default since it can confirm the presence
+    # of a username on the system (depending on home directory
+    # permissions).
+    #
+    UserDir enabled
+
+    #
+    # To enable requests to /~user/ to serve the user's public_html
+    # directory, remove the "UserDir disabled" line above, and uncomment
+    # the following line instead:
+    #
+    UserDir public_html
+</IfModule>
+
+<Directory "/home/*/public_html">
+    AllowOverride FileInfo AuthConfig Limit Indexes
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+↓
+<Directory "/home/*/public_html">
+    #AllowOverride FileInfo AuthConfig Limit Indexes
+    AllowOverride None
+    Options MultiViews Indexes SymLinksIfOwnerMatch IncludesNoExec
+    Require method GET POST OPTIONS
+</Directory>
+
+
+ホームディレクトリのパーッミション変更
+%cd
+%chmod a+rx .
+
+httpd 再起動
+# systemctl restart httpd
+起動確認
+# systemctl status httpd
+
+php インストール
+
+# dnf -y install php.x86_64 php-xml.x86_64 php-pdo.x86_64 php-pgsql.x86_64
+ php-fpm.x86_64 php-gd.x86_64 php-cli.x86_64 php-common.x86_64 php-mbstring.x86_64 php-odbc.x86_64
+
+php-xmlrpc.x86_64 php-json.x86_64 は無いのでinstallしない
+
+php設定変更
+/etc/php.ini 修正
+
+[Date]
+; Defines the default timezone used by the date functions
+; http://php.net/date.timezone
+;date.timezone =
+↓
+[Date]
+; Defines the default timezone used by the date functions
+; http://php.net/date.timezone
+date.timezone = Asia/Tokyo
+
+phpinfoのdateの項に反映される
+
+[Session]
+…
+…
+…
+; Initialize session on request startup.
+; http://php.net/session.auto-start
+session.auto_start = 0
+↓
+[Session]
+…
+…
+…
+; Initialize session on request startup.
+; http://php.net/session.auto-start
+session.auto_start = 1
+
+セッション管理の自動スタート
+
+再起動して反映
+
+
+ユーザー作成
+/etc/group
+へグループbmlを追加(ID:1000)
+
+/etc/passwd
+へユーザーkea00sysを追加(ID:1000)
+グループbml
+パスワードkea00sys
+
+# cd /etc
+# vi group
+# vi passwd
+# pwconv
+# passwd kea00sys
+ユーザー kea00sys のパスワードを変更。
+新しいパスワード:
+よくないパスワード: このパスワードには一部に何らかの形でユーザー名が含まれています。
+新しいパスワードを再入力してください:
+passwd: すべての認証トークンが正しく更新できました。
+#
+
+ホームディレクトリ作成
+# cd /home
+# mkdir kea00sys
+# chown kea00sys:bml kea00sys
+# chmod a+rx kea00sys
+#
+
+DB2install
+
+rootでGUIログイン
+
+/etc/hosts編集(これをしないとDB2のinstallでエラーになる)
+自ホストのホスト名とＩＰアドレスを/etc/hostsへ登録しておく
+10.1.103.194 kea00web
+
+ケミストリーのＤＢサーバーのホスト名とＩＰアドレスも登録しておく
+10.1.41.144     kea00dbk
+10.1.41.65      kea00db
+
+
+db2clientの場合
+tar zxvf v11.5.5fp1_linuxx64_client.tar.gz
+tarを展開したディレクトリのdb2setupを実行
+typicalインストールだと開発ツールの一部がインストールされないので
+カスタムインストールで実行する。
+インスタンス作成も選択する。
+
+
+
+express-c,db2clientともに
+db2inst1ユーザーが作成されれば成功（インストール中にパスワード入力がある）
+作成されない場合はオプションに間違いがあるのでやり直し。
+
+proxyをbashに設定
+~/.bashrcを編集
+export https_proxy=http://iproxy.bml.co.jp:8080/
+export http_proxy=http://iproxy.bml.co.jp:8080/
+export ftp_proxy=http://iproxy.bml.co.jp:8080/
+
+を追加
+
+rootでログイン
+perl用DB2モジュールをインストール
+
+# dnf -y install perl-App-cpanminus
+# export DB2_HOME=/opt/ibm/db2/v11.5
+# export DB2LIB=/opt/ibm/db2/v11.5/lib64
+# cd
+vi .bashrc
+
+Loading internal logger. Log::Log4perl recommended for better logging
+
+CPAN.pm requires configuration, but most of it can be done automatically.
+If you answer 'no' below, you will enter an interactive dialog for each
+configuration option instead.
+
+Would you like to configure as much as possible automatically? [yes]yes←   ..........ここを入力
+CPAN: HTTP::Tiny loaded ok (v0.076)
+CPAN: Net::SSLeay loaded ok (v1.92)
+CPAN: IO::Socket::SSL loaded ok (v2.073)
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+CPAN: Term::ReadKey loaded ok (v2.38)
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/01mailrc.txt.gz
+Reading '/root/.local/share/.cpan/sources/authors/01mailrc.txt.gz'
+CPAN: Compress::Zlib loaded ok (v2.102)
+............................................................................DONE
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/modules/02packages.details.txt.gz
+Reading '/root/.local/share/.cpan/sources/modules/02packages.details.txt.gz'
+  Database was generated on Tue, 13 Jun 2023 06:17:02 GMT
+CPAN: HTTP::Date loaded ok (v6.05)
+..............
+  New CPAN.pm version (v2.36) available.
+  [Currently running version is v2.29]
+  You might want to try
+    install CPAN
+    reload cpan
+  to both upgrade CPAN.pm and run the new version without leaving
+  the current session.
+
+
+..............................................................DONE
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/modules/03modlist.data.gz
+Reading '/root/.local/share/.cpan/sources/modules/03modlist.data.gz'
+DONE
+Writing /root/.local/share/.cpan/Metadata
+Running install for module 'DBD::DB2'
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz
+CPAN: Digest::SHA loaded ok (v6.02)
+
+Proxy authentication needed!
+ (Note: to permanently configure username and password run
+   o conf proxy_user your_username
+   o conf proxy_pass your_password
+     )
+Username:
+Password:
+
+
+Fetching with HTTP::Tiny:
+https://cpan.org/authors/id/R/RO/ROCKETDB/CHECKSUMS
+Checksum for /root/.local/share/.cpan/sources/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz ok
+CPAN: YAML loaded ok (v1.30)
+CPAN: CPAN::Meta::Requirements loaded ok (v2.140)
+CPAN: Parse::CPAN::Meta loaded ok (v2.150010)
+CPAN: CPAN::Meta loaded ok (v2.150010)
+Configuring R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz with Makefile.PL
+
+Configuring DBD::DB2...
+Remember to actually read the README and CAVEATS files!
+
+DB2_HOME environment variable (/opt/ibm/db2/v11.5) not valid.
+Warning: No success on command[/usr/bin/perl Makefile.PL]
+  ROCKETDB/DBD-DB2-1.89.tar.gz
+  /usr/bin/perl Makefile.PL -- NOT OK
+#
+
+
+DB2設定
+express-c,db2client共通
+
+db2inst1でログイン
+$ vi .bashrc
+最終行に追加
+export LANG=ja_JP.SJIS
+$ 
+db2inst1でログインし直し
+
+$ db2
+db2 => catalog tcpip node KEA00ND1 remote kea00db server 50001
+db2 => catalog database KEA00DB as KEA00DB1 at node KEA00ND1
+db2 => catalog tcpip node KEA00ND0 remote kea00dbk server 50002
+db2 => catalog database KEA00DB as KEA00DB0 at node KEA00ND0
+db2 => terminate
+$
+
+確認
+$ db2
+db2 => list node directory
+
+ ノード・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+ノード 1 項目:
+
+ ノード名                       = KEA00ND0
+ コメント                             =
+ ディレクトリー項目タイプ       = LOCAL
+ プロトコル                     = TCPIP
+ ホスト名                       = kea00dbk
+ サービス名                     = 50002
+
+ノード 2 項目:
+
+ ノード名                       = KEA00ND1
+ コメント                             =
+ ディレクトリー項目タイプ       = LOCAL
+ プロトコル                     = TCPIP
+ ホスト名                       = kea00db
+ サービス名                     = 50001
+
+db2 => list database directory
+
+ システム・データベース・ディレクトリー
+
+ ディレクトリー中の項目数 = 2
+
+データベース 1 項目:
+
+ データベース別名                     = KEA00DB0
+ データベース名                             = KEA00DB
+ ノード名                             = KEA00ND0
+ データベース・リリース・レベル       = 15.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+データベース 2 項目:
+
+ データベース別名                     = KEA00DB1
+ データベース名                             = KEA00DB
+ ノード名                             = KEA00DB
+ データベース・リリース・レベル       = 15.00
+ コメント                       =
+ ディレクトリー項目タイプ             = リモート
+ カタログ・データベース・パーティション番号 = -1
+ 代替サーバー・ホスト名               =
+ 代替サーバーのポート番号             =
+
+db2 => terminate
+$
+
+確認
+
+$ db2 connect to kea00db0 user kea00dbt using kea00dbt
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXZ64 11.1.4.4
+ SQL 許可 ID            = KEA00DBT
+ ローカル・データベース別名 = KEA00DB0
+
+$ db2 terminate
+$
+$ db2 connect to kea00db1 user db2inst1 using db2inst1
+
+   データベース接続情報
+
+ データベース・サーバー = DB2/LINUXZ64 11.1.4.4
+ SQL 許可 ID            = DB2INST1
+ ローカル・データベース別名 = KEA00DB1
+
+$ db2 terminate
+$ 
+
+バージョン違いによるインストールディレクトリ名の違いを解消するため
+シンボリックリンクを張っておく
+rootでログイン
+# cd /opt/ibm/db2
+# ln -s V11.5 V11.1
+
+~/.bashrc へ以下の行を追加
+# vi .bashrc
+
+# The following three lines have been added by IBM DB2 instance utilities.
+if [ -f /home/db2inst1/sqllib/db2profile ]; then
+    . /home/db2inst1/sqllib/db2profile
+fi
+
+
+unixODBC
+install
+# dnf -y install unixODBC.x86_64
+ unixODBC-devel.x86_64は無いのでinstallしない
+
+設定
+iniファイルの場所を確認
+# odbcinst -j
+unixODBC 2.3.7
+DRIVERS............: /etc/odbcinst.ini
+SYSTEM DATA SOURCES: /etc/odbc.ini
+FILE DATA SOURCES..: /etc/ODBCDataSources
+USER DATA SOURCES..: /root/.odbc.ini
+SQLULEN Size.......: 8
+SQLLEN Size........: 8
+SQLSETPOSIROW Size.: 8
+#
+/etc/odbcinst.iniへDB2のDriverを登録
+
+# vi /etc/odbcinst.ini
+以下の行を追加
+# DB2 Driver
+[Db2]
+Description = Db2 Driver
+Driver = /home/db2inst1/sqllib/lib/libdb2.so
+Driver64 = /home/db2inst1/sqllib/lib/libdb2o.so
+fileusage=1
+dontdlclose=1
+
+DSN登録
+
+# vi /etc/odbc.ini
+以下の行を追加
+
+[ODBC Data Sources]
+kea00db0 = TestDB
+kea00db1 = HonbanDB
+
+[kea00db0]
+DESCRIPTION = Test DB
+DRIVER = Db2
+DATABASE = KEA00DB0
+
+[kea00db1]
+DESCRIPTION = Honban DB
+DRIVER = Db2
+DATABASE = KEA00DB1
+
+確認
+# isql -v kea00db0 kea00dbt kea00dbt
++---------------------------------------+
+| Connected!                            |
+|                                       |
+| sql-statement                         |
+| help [tablename]                      |
+| quit                                  |
+|                                       |
++---------------------------------------+
+SQL> quit
+#
+
+# isql -v kea00db1 db2inst1 db2inst1
++---------------------------------------+
+| Connected!                            |
+|                                       |
+| sql-statement                         |
+| help [tablename]                      |
+| quit                                  |
+|                                       |
++---------------------------------------+
+SQL> quit
+#
+
+
+DB2のinstallが終わってGUIが不要になったら
+# systemctl set-default multi-user.target
+# reboot
+
+php-pfm へDB2の環境変数を反映させる
+
+/etc/php-fpm/www.confを修正
+
+# vi /etc/php-fpm.d/www.conf
+以下の行のコメントを外す
+;clear_env = no
+↓
+clear_env = no
+
+以下の行を追加
+env[LANG] = ja_JP.SJIS
+env[DB2INSTANCE] = db2inst1
+env[DB2_HOME] = /home/db2inst1/sqllib
+env[DB2LIB] = /home/db2inst1/sqllib/lib
+env[IBM_DB_LIB] = /home/db2inst1/sqllib/lib
+env[IBM_DB_HOME] = /home/db2inst1/sqllib
+env[IBM_DB_DIR] = /home/db2inst1/sqllib
+env[IBM_DB_INCLUDE] = /home/db2inst1/sqllib/include
+env[PATH] = /home/db2inst1/sqllib/bin:/usr/local/bin:/usr/bin:/usr/local/sbin:/usr/sbin
+env[LD_LIBRARY_PATH] = /home/db2inst1/sqllib/lib64:/home/db2inst1/sqllib/lib64/gskit:/home/db2inst1/sqllib/lib32
+
+再起動して変更を反映
+
+

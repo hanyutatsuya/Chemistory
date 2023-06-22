@@ -4,41 +4,47 @@
 <?php
 	require_once("../comm/labo_html.inc");
 
-	if (isset($_COOKIE["LBCODE"])){
-		$lbcode = $_COOKIE["LBCODE"];
-	} else {
-		$lbcode = -1;
-	}
-
-
-//    $flag = setcookie("LBCODE", $lbcode);
-
 	LaboHeadOutput("メンテナンス処理");
 	LaboLogOut("メンテナンス処理");
 ?>
 
-<BODY background="/~labo/img/blue_p8b.gif">
+<BODY background="/~kea00sys/img/blue_p8b.gif">
 
 <?php
 	LaboTimeStamp();
 print <<<__MIDASHI__
-	<center><h2>メンテナンス処理</h2></center>
+	<center><h2>メンテナンス処理一覧</h2></center>
 __MIDASHI__;
 
-	if ($lbcode < 0) {
-print <<<__NOLBCODE__
-	<P><center>ラボコードが設定されていません</center></P>
-	<P><center>トップページからやり直してください</center></P>
-__NOLBCODE__;
-	} else {
-print <<<__LBCODEOK__
 
-<p><center>
-<A href=mnt_info.php>お知らせ情報メンテナンス</A>
-</center></P>
+print <<<__MENTE__
 
-__LBCODEOK__;
-	}
+	<HR>
+
+	<center><P>データーベース選択</P></center>
+	<table align="center" border>
+		<tr>
+			<th>処理名称</th>
+		</tr>
+
+		<tr>
+			<td><A href=dbselect.php>データーベース選択</A></td>
+		</tr>
+	</table>
+
+	<HR>
+
+	<center><P>システム照会処理</P></center>
+	<table align="center" border>
+		<tr>
+			<th>処理名称</th>
+		</tr>
+		<tr>
+			<td><A href=weblog.php>Ｗｅｂログファイル照会</A></td>
+		</tr>
+	</table>
+
+__MENTE__;
 
 ?>
 

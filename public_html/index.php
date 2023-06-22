@@ -1,7 +1,6 @@
 <?php
 
 	require_once("comm/labo_html.inc");
-	require_once("comm/labo_db.inc");
 
 	$dbname = $_SESSION['dbname'];
 	if (empty($dbname)) {
@@ -28,7 +27,7 @@
 
 	printf("<center><h2><A href=master/master.php>マスタ照会</A></h2></center>\n");
 	printf("<center><h2><A href=data/data.php>データ照会</A></h2></center>\n");
-	printf("<center><h2><A href=mente/mente.php>メンテナンス</A></h2></center>\n");
+	printf("<center><h2><A href=mente/sysmente.php>メンテナンス</A></h2></center>\n");
 //	printf("<DIV align=right><A href=php/phpinfo.php>phpinfo</A></DIV>\n");
 	printf("<HR>\n");
 
