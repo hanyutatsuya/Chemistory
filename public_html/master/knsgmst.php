@@ -22,8 +22,6 @@ LaboTimeStamp();
 		<th>セクションコード</th>
 		<th>検査法区分</th>
 		<th>検査グループ種別</th>
-		<th>赤伝フラグ</th>
-		<th>異常値マーク</th>
 		<th>分注グループ</th>
 		<th>運用区分</th>
 		<th>WS内規定本数（分注NG以外）</th>
