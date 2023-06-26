@@ -13,7 +13,7 @@ echo date('Ymd-Hi');
 printf("\">\n");
 
 if ($refresh == 0) {
-	printf("<META http-equiv=\"refresh\" content=\"1800,/~labo/index.php\">\n");
+	printf("<META http-equiv=\"refresh\" content=\"1800,/~kea00sys/index.php\">\n");
 }
 if ($refresh > 0) {
 	if ($refresh < 9999) {
@@ -103,6 +103,13 @@ function LaboLogOut($msg)
 	$logmsg = sprintf("%s [%s][%s] %s\n",$stamp,$ip,$page,$msg);
 	error_log($logmsg,3,$logfile);
 
+}
+
+function SjToUtfConv($instr)
+{
+	$outstr = "";
+	$outstr = mb_convert_encoding($instr,"UTF-8","SJIS-WIN");
+	return $outstr;
 }
 
 function TextAreaGet($instr)

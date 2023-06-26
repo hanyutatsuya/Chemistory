@@ -38,10 +38,6 @@ LaboTimeStamp();
 				<td><A href=kjnmst.php>基準値マスタ</A></td>
 			</tr>
 			<tr>
-				<td><A href=jdkmkmst.php>JDKMKMST</A></td>
-				<td><A href=jdkmkmst.php>自動発生項目マスタ</A></td>
-			</tr>
-			<tr>
 				<td><A href=cmtmst.php>CMTMST</A></td>
 				<td><A href=cmtmst.php>コメントマスタ</A></td>
 			</tr>
@@ -94,6 +90,10 @@ LaboTimeStamp();
 			<tr>
 				<td><A href=kskbrmst.php>KSKBRMST</A></td>
 				<td><A href=kskbrmst.php>希釈倍率マスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=jdkmkmst.php>JDKMKMST</A></td>
+				<td><A href=jdkmkmst.php>自動発生項目マスタ</A></td>
 			</tr>
 			<tr>
 				<td><A href=memst.php>MEMST</A></td>
