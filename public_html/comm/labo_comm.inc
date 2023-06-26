@@ -97,22 +97,22 @@ function barcode_conv($barcode)
 
 		if  ($keta9 == 0)
 			{
-			//	ç¾è¡Œãƒãƒ¼ã‚³ãƒ¼ãƒ‰
+			//	Œ»sƒo[ƒR[ƒh
 			if  (strcnmp(substr($barcode,8,3),"000",3) == 0)
 				{
-				//	ï¼–æ¡ãƒãƒ¼ã‚³ãƒ¼ãƒ‰
+				//	‚UŒ…ƒo[ƒR[ƒh
 				$ed_bar = "000" . substr($barcode,0,8);
 				}
 			else
 				{
-				//	ï¼—æ¡ãƒãƒ¼ã‚³ãƒ¼ãƒ‰
+				//	‚VŒ…ƒo[ƒR[ƒh
 				$ed_bar = "00" . substr($barcode,8,3) . substr($barcode,2,6);
 				}
 			}
 		else
 			{
 			$ed_bar = substr($barcode,0,11);
-			//	ï¼™æ¡ãƒãƒ¼ã‚³ãƒ¼ãƒ‰
+			//	‚XŒ…ƒo[ƒR[ƒh
 			}
 		}
 	else

@@ -37,14 +37,13 @@ $conn = GetDBConn();
 if  ($conn){
 
 try {
-//	$sql = "select substr(CMCD,1,4) as CMCD,substr(CMTKG,1,4) as CMTKG,substr(cmtnm,1,30) as CMTNM,substr(cmtnmj,1,60) as CMTNMJ,knskka1,kkahskcd,akaden,ijouchi,kaiymd,haiymd,hnktntid,ksndh from cmtmst order by cmcd for read only";
 	$sql = "select * from cmtmst order by cmcd for read only";
 	foreach ($conn->query($sql) as $row) {
 		printf("<tr>\n");
 			printf("<td>%s</td>\n",$row['CMCD']);
-			printf("<td>%1.1s</td>\n",mb_convert_encoding(trim($row['CMTKG']),"UTF-8","sjis-win"));
-			printf("<td>%20.20s</td>\n",$row['CMTNM']);
-			printf("<td>%40.40s</td>\n",$row['CMTNMJ']);
+			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTKG'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNM'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNMJ'],"UTF-8","SJIS-WIN"));
 			printf("<td>%s</td>\n",$row['KNSKKA1']);
 			printf("<td>%s</td>\n",$row['KKAHSKCD']);
 			printf("<td>%s</td>\n",$row['AKADEN']);
