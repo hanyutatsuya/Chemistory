@@ -57,7 +57,7 @@ function MasterTailOut()
 print <<<__MASTERTAILOUT__
 <HR>
 <P>
-<center><A href=../master/master.php>マスター一覧に戻る</A></center>
+<center><A href=master.php>マスター一覧に戻る</A></center>
 </P>
 __MASTERTAILOUT__;
 }

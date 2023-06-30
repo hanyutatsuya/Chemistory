@@ -7,7 +7,7 @@ LaboHeadOutput("マスター一覧");
 LaboLogOut("マスター一覧");
 ?>
 
-<BODY background="../img/mstback.gif">
+<BODY background="/~kea00sys/img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
@@ -29,10 +29,6 @@ LaboTimeStamp();
 				<th>マスター名称</th>
 			</tr>
 
-			<tr>
-				<td><A href=kmkmst.php>KMKMST</A></td>
-				<td><A href=kmkmstsmpmst.php>項目マスタ</A></td>
-			</tr>
 			<tr>
 				<td><A href=kjnmst.php>KJNMST</A></td>
 				<td><A href=kjnmst.php>基準値マスタ</A></td>
@@ -60,8 +56,20 @@ LaboTimeStamp();
 			</tr>
 
 			<tr>
+				<td><A href=knsgmst1ran.php>KNSGMST</A></td>
+				<td><A href=knsgmst1ran.php>検査グループ一覧</A></td>
+			</tr>
+			<tr>
 				<td><A href=knsgmst.php>KNSGMST</A></td>
 				<td><A href=knsgmst.php>検査グループマスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=kmkmst.php>KMKMST</A></td>
+				<td><A href=kmkmst.php>項目マスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=wskmk.php>KMKMST</A></td>
+				<td><A href=wskmk.php>WS・項目マスタ</A></td>
 			</tr>
 			<tr>
 				<td><A href=rngchkmst.php>RNGCHKMST</A></td>
