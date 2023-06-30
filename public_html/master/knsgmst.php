@@ -15,29 +15,28 @@ LaboTimeStamp();
 <center><h2>検査グループマスタ</h2></center>
 
 <?php
-$wscode = trim($_POST['knsgcd']);
-?>
+$knsgrp = trim($_REQUEST['KNSGRP']);
 
+printf("<P>\n");
+printf("<center>\n");
+printf("<FORM ACTION=\"wskmk.php\" METHOD=POST>\n");
+printf("検査グループ\n");
+printf("<INPUT TYPE=text NAME=KNSGRP SIZE=6 MAXLENGTH=5 value=\"%s\">\n",$knsgrp);
+printf("<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
+printf("</BUTTON>\n");
+printf("</FORM>\n");
+printf("</center>\n");
+printf("</P>\n");
+printf("<HR>\n");
 
-<P>
-<center>
-<FORM ACTION="knsgmst.php" METHOD="POST">
-検査グループ
-<INPUT TYPE=text NAME="knsgcd" SIZE=6 MAXLENGTH=4>
-<BUTTON TYPE=submit name=submit value="submit">検索</BUTTON>
-</FORM>
-</center>
-</P>
-
-<?php
 require_once("comm/knsgmst_tbl.inc");
 
-if (strlen($wscode) != 0) {
+if (strlen($knsgrp) != 0) {
 	$conn = GetDBConn();
 
 	if ($conn) {
 		printf("<HR>\n");
-		knsgmst_table($conn,$wscode);
+		knsgmst_table($conn,$knsgrp);
 	} else {
 		printf("Connection failed\n");
 	}
