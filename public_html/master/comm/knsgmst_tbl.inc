@@ -18,11 +18,11 @@ function knsgmst_table($conn,$wscode)
 			$wscd = sprintf("%d",$wscode);
 		}
 		printf("<table align=\"left\" bgcolor = \"white\" border>\n");
-		printf("<tr>\n");
-		printf("<th>項目</th>\n");
-		printf("<th>内容</th>\n");
-		printf("<th>備考</th>\n");
-		printf("</tr>\n");
+			printf("<tr>\n");
+				printf("<th>項目</th>\n");
+				printf("<th>内容</th>\n");
+				printf("<th>備考</th>\n");
+			printf("</tr>\n");
 
 		$sql = "select * from knsgmst where knsgrp = '$wscd' for read only";
 		foreach ($conn->query($sql) as $row) {

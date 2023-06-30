@@ -1,102 +1,223 @@
 <?php
-function nfsmpkm_table($conn,$wscode)
+function wskmk_table($conn,$wscode)
 {
-if  (!is_numeric($wscode))
-	{
-	if  (strlen($wscode) == 0)
-		{
-		return 0;
+	if (!is_numeric($wscode)) {
+		if (strlen($wscode) == 0) {
+			return 0;
+		} else {
+			printf("<center>\n");
+			printf("<h2>æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—å…¥åŠ›ã‚¨ãƒ©ãƒ¼</h2>\n");
+			printf("</center>\n");
+			printf("<HR>\n");
+			return -1;
 		}
-	else
-		{
-		printf("<center>\n");
-		printf("<h2>ƒTƒ“ƒvƒŠƒ“ƒOƒR[ƒh“ü—ÍƒGƒ‰[</h2>\n");
-		printf("</center>\n");
-		printf("<HR>\n");
-		return -1;
+	} else {
+		if (strlen($wscode) < 5) {
+			$wscd = sprintf("%04d",$wscode);
+		} else {
+			$wscd = sprintf("%d",$wscode);
 		}
-	}
-else
-	{
-	$wscd = sprintf("%04d",$wscode);
 
-	printf("<table align=left  border=0>\n");
-	printf("<tr valign=top>\n");
+		printf("<table align=left  border=0>\n");
+		printf("<tr valign=top>\n");
+	
+		printf("<td>\n");
 
-	printf("<td>\n");
-	printf("<table bgcolor = white border>\n");
-	printf("<tr>\n");
-	printf("<th nowrap>€–Ú</th>\n");
-	printf("<th nowrap>“à—e</th>\n");
-	printf("<th nowrap>”õl</th>\n");
-	printf("</tr>\n");
+			printf("<table align=\"left\" bgcolor = \"white\" border>\n");
+				printf("<tr>\n");
+					printf("<th>é …ç›®</th>\n");
+					printf("<th>å†…å®¹</th>\n");
+					printf("<th>å‚™è€ƒ</th>\n");
+				printf("</tr>\n");
+	
+			$sql = "select * from knsgmst where knsgrp = '$wscd' for read only";
+			foreach ($conn->query($sql) as $row) {
+	
+				printf("<tr>");
+					printf("<td>%s</td>",'æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSGRP']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+	
+				printf("<tr>");
+					printf("<td>%s</td>",'æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—åç§°');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSGRPNM']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—ç•¥ç§°');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSGRPRS']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ã‚»ã‚¯ã‚·ãƒ§ãƒ³ã‚³ãƒ¼ãƒ‰');
+					printf("<td>%s</td>",SjToUtfConv($row['SECCD']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'æ¤œæŸ»æ³•åŒºåˆ†');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSHOKBN']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'æ¤œæŸ»ã‚°ãƒ«ãƒ¼ãƒ—ç¨®åˆ¥');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSSBT']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'åˆ†æ³¨ã‚°ãƒ«ãƒ¼ãƒ—');
+					printf("<td>%s</td>",SjToUtfConv($row['BGROUP']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'é‹ç”¨åŒºåˆ†');
+					printf("<td>%s</td>",SjToUtfConv($row['UNYOKBN']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'WSå†…è¦å®šæœ¬æ•°(åˆ†æ³¨NGä»¥å¤–)');
+					printf("<td>%s</td>",SjToUtfConv($row['SEQKTHSOK']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'WSå†…è¦å®šæœ¬æ•°(åˆ†æ³¨NG)');
+					printf("<td>%s</td>",SjToUtfConv($row['SEQKTHSNG']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'WSä½œæˆè¦å‰‡(åˆ†æ³¨OK)');
+					printf("<td>%s</td>",SjToUtfConv($row['WSSSKSOK']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'WSä½œæˆè¦å‰‡(åˆ†æ³¨OKä»¥å¤–)');
+					printf("<td>%s</td>",SjToUtfConv($row['WSSSKSNG']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'åˆ†æ³¨é‡MIN');
+					printf("<td>%s</td>",SjToUtfConv($row['MINRYO']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'åˆ†æ³¨é‡MAX');
+					printf("<td>%s</td>",SjToUtfConv($row['MAXRYO']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ä½¿ç”¨ãƒˆãƒ¬ã‚¤(åˆå›)');
+					printf("<td>%s</td>",SjToUtfConv($row['SKITRAY']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ä½¿ç”¨ãƒˆãƒ¬ã‚¤(åˆ†æ³¨NG)');
+					printf("<td>%s</td>",SjToUtfConv($row['MBTTRAY']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ä½¿ç”¨ãƒˆãƒ¬ã‚¤(å†æ¤œ)');
+					printf("<td>%s</td>",SjToUtfConv($row['SKNTRAY']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ä½¿ç”¨ãƒˆãƒ¬ã‚¤(å†æ¸¬å®š)');
+					printf("<td>%s</td>",SjToUtfConv($row['SSTTRAY']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'æ›œæ—¥æŒ‡å®š');
+					printf("<td>%s</td>",SjToUtfConv($row['KNSYB']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'å®¹å™¨ã‚³ãƒ¼ãƒ‰');
+					printf("<td>%s</td>",SjToUtfConv($row['YKCD']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'åˆå›ç”¨WSå‡ºåŠ›å½¢å¼');
+					printf("<td>%s</td>",SjToUtfConv($row['SKIWSID']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'å†æ¤œãƒ»å†æ¸¬å®šç”¨WSå‡ºåŠ›å½¢å¼');
+					printf("<td>%s</td>",SjToUtfConv($row['SKNWSID']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'çµæœãƒªã‚¹ãƒˆå‡ºåŠ›å½¢å¼');
+					printf("<td>%s</td>",SjToUtfConv($row['KKALSTID']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'ãƒ©ãƒ™ãƒ«å‡ºåŠ›ID');
+					printf("<td>%s</td>",SjToUtfConv($row['SPLBLID']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'åˆ†æ³¨NGç”¨WSå‡ºåŠ›å½¢å¼');
+					printf("<td>%s</td>",SjToUtfConv($row['LSTYB1']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'å†æ¤œå±¥æ­´ç”¨WSå‡ºåŠ›å½¢å¼');
+					printf("<td>%s</td>",SjToUtfConv($row['LSTYB2']));
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'é–‹å§‹å¹´æœˆæ—¥');
+					printf("<td>%10.10s</td>",$row['KAIYMD']);
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'å»ƒæ­¢å¹´æœˆæ—¥');
+					printf("<td>%10.10s</td>",$row['HAIYMD']);
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'å¤‰æ›´æ‹…å½“è€…ï¼©ï¼¤');
+					printf("<td>%s</td>",$row['HNKTNTID']);
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+				printf("<tr>");
+					printf("<td>%s</td>",'æƒ…å ±æ›´æ–°æ—¥æ™‚');
+					printf("<td>%20.20s</td>",$row['KSNDH']);
+					printf("<td>%s</td>",' ');
+				printf("</tr>\n",' ');
+	
+			}
+			printf("</table>\n");
+		printf("</td>\n");
 
-	$sql = "select * from nfsmpmst where smpcd = '$wscd' and ukflg = '1' for read only";
-	$pdst = $conn->prepare($sql);
-	$pdst->execute();
-	$row = $pdst->fetch();
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ƒTƒ“ƒvƒŠƒ“ƒOƒR[ƒh',$row['SMPCD'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'d•ª‚¯æ–¼Ì',$row['SMPCDNM'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'‚h‚s‚d‚lƒR[ƒh',$row['ITMCD'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'‚h‚s‚d‚lƒR[ƒhŒQNo.',$row['ITMCDGNO'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ƒTƒeƒ‰ƒCƒg‚h‚c',$row['STID'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'d•ªæ‹æ•ª',$row['SWKKBN'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'d•ª‚¯ƒ‰ƒbƒN‚h‚c',$row['SWKLCKID'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'d•ª‚¯æ‚h‚c',$row['SWKSKID'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'•ª’‹æ•ª',$row['BCKBN'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ƒZƒ‹‹æ•ª',$row['SELKBN'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ƒ‚ƒWƒ…[ƒ‹‹æ•ª',$row['MDLKBN'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'’ÊíMAX’l',$row['TJMAXVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'’ÊíMIN’l',$row['TJMINVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'’ÊíBASE’l',$row['TJBSEVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'­—ÊMAX’l',$row['SRMAXVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'­—ÊMIN’l',$row['SRMINVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'­—ÊBASE’l',$row['SRBSEVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'¬™MAX’l',$row['SNMAXVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'¬™MIN’l',$row['SNMINVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'¬™BASE’l',$row['SNBSEVAL'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'‚r“€Œ‹‚e',$row['SUPURUZTKFLG'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ŠJn“ú',$row['STYMD'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'I—¹“ú',$row['EDYMD'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ì¬',$row['SAKHM'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'XV',$row['KOUHM'],' ');
-	printf("<tr><td nowrap>%s</td><td nowrap>%s</td><td nowrap>%s</td></tr>\n",'ì‹ÆÒ‚h‚c',$row['SAGYOID'],' ');
-	$pdst->closeCursor();
+		printf("<td>\n");
+			printf("<table bgcolor = white border>\n");
+				printf("<tr>\n");
+					printf("<th nowrap>è¦ªã‚³ãƒ¼ãƒ‰</th>\n");
+					printf("<th nowrap>é …ç›®ã‚³ãƒ¼ãƒ‰</th>\n");
+					printf("<th nowrap>é …ç›®åã‚«ãƒŠ</th>\n");
+					printf("<th nowrap>é …ç›®åæ¼¢å­—</th>\n");
+					printf("<th nowrap>è² è·åˆ†ç”»åŒºåˆ†</th>\n");
+				printf("</tr>\n");
+		
+				$sql = "";
+				$sql = $sql . "select oyakmkcd,kmkcd,kmkrs,kmkrsj,fkbnkkb ";
+				$sql = $sql . "from nfkmkmst where knsgrp = '$wscd' ";
+				$sql = $sql . "order by oyakmkcd,kmkcd for read only";
+				foreach ($conn->query($sql,PDO::FETCH_NUM) as $row) {
+					printf("<tr>\n");
+						printf("<td nowrap><A href=kmkmst.php?KMKCD=%s>%s</A></td>\n",$row[0],$row[0]);
+						printf("<td nowrap><A href=kmkmst.php?KMKCD=%s>%s</A></td>\n",$row[1],$row[1]);
+						printf("<td nowrap>%s</td>\n",SjToUtfConv($row[2]));
+						printf("<td nowrap>%s</td>\n",SjToUtfConv($row[3]));
+						printf("<td nowrap>%s</td>\n",SjToUtfConv($row[4]));
+					printf("</tr>\n");
+				}
+			printf("</table>\n");
+
+		printf("</td>\n");
+		
 	printf("</table>\n");
-	printf("</td>\n");
 
-	printf("<td>\n");
-	printf("<table bgcolor = white border>\n");
-	printf("<tr>\n");
-	printf("<th nowrap>eƒR[ƒh</th>\n");
-	printf("<th nowrap>€–ÚƒR[ƒh</th>\n");
-	printf("<th nowrap>€–Ú–¼</th>\n");
-	printf("<th nowrap>TBF</th>\n");
-	printf("<th nowrap>’Êí—Ê</th>\n");
-	printf("<th nowrap>­—Ê—Ê</th>\n");
-	printf("<th nowrap>¬™—Ê</th>\n");
-	printf("</tr>\n");
-
-	$sql = "";
-	$sql = $sql . "select oyakmkcd,kmkcd,kmknmr,bkfkkbn,tjbncryo,srbncryo,snbncryo ";
-	$sql = $sql . "from nfkmkmst where smpcd = '$wscd' and ukflg = '1' ";
-	$sql = $sql . "order by oyakmkcd,kmkcd for read only";
-	foreach ($conn->query($sql,PDO::FETCH_NUM) as $row)
-		{
-		printf("<tr>\n");
-		printf("<td nowrap><A href=kmkmst.php?KMKCD=%s>%s</A></td>\n",$row[0],$row[0]);
-		printf("<td nowrap><A href=kmkmst.php?KMKCD=%s>%s</A></td>\n",$row[1],$row[1]);
-		printf("<td nowrap>%s</td>\n",$row[2]);
-		printf("<td nowrap>%s</td>\n",$row[3]);
-		printf("<td nowrap>%s</td>\n",$row[4]);
-		printf("<td nowrap>%s</td>\n",$row[5]);
-		printf("<td nowrap>%s</td>\n",$row[6]);
-		printf("</tr>\n");
-		}
-	printf("</table>\n");
-	printf("</td>\n");
-
-	printf("</table>\n");
 	}
 	return 0;
 }
