@@ -201,7 +201,7 @@ function wskmk_table($conn,$wscode)
 		
 				$sql = "";
 				$sql = $sql . "select oyakmkcd,kmkcd,kmkrs,kmkrsj,fkbnkkb ";
-				$sql = $sql . "from nfkmkmst where knsgrp = '$wscd' ";
+				$sql = $sql . "from kmkmst where knsgrp = '$wscd' ";
 				$sql = $sql . "order by oyakmkcd,kmkcd for read only";
 				foreach ($conn->query($sql,PDO::FETCH_NUM) as $row) {
 					printf("<tr>\n");

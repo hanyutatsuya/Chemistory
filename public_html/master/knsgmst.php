@@ -19,7 +19,7 @@ $knsgrp = trim($_REQUEST['KNSGRP']);
 
 printf("<P>\n");
 printf("<center>\n");
-printf("<FORM ACTION=\"wskmk.php\" METHOD=POST>\n");
+printf("<FORM ACTION=\"knsgmst.php\" METHOD=POST>\n");
 printf("検査グループ\n");
 printf("<INPUT TYPE=text NAME=KNSGRP SIZE=6 MAXLENGTH=5 value=\"%s\">\n",$knsgrp);
 printf("<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
