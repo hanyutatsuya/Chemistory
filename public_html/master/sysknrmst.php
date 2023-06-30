@@ -32,212 +32,212 @@ try {
 
 		printf("<tr>\n");
 			printf("<td>ラボコード</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['LBCD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['LBCD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>サテライトＩＤ</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SATEID'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['SATEID']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>基準処理年月日</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['KJNSRIYMD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['KJNSRIYMD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>緊急基準処理年月日</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['KKJNSRIYMD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['KKJNSRIYMD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>次依頼処理年月日</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['NXIRISRIYMD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['NXIRISRIYMD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>次認識処理年月日</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['NCNSKSRIYMD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['NCNSKSRIYMD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>次分注処理年月日</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['NXBCHSRIYMD'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['NXBCHSRIYMD']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>依頼ＥＮＤフラグ</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDFLG'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDFLG']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>依頼ＥＮＤ日時</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDDH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDDH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>認識ＥＮＤフラグ</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDFLG'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDFLG']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>認識ＥＮＤ時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDDH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDDH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤフラグ</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHENDFLG'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHENDFLG']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤ－０時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND0DH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND0DH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤ－１時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND1DH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND1DH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤ－２時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND2DH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND2DH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤ－３時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND3DH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND3DH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>分注ＥＮＤ－４時刻</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND4DH'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND4DH']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>運用フラグ</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['UNYFLG'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['UNYFLG']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>送信通番</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SSNTUBN'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['SSNTUBN']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>ラボ名称</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['LABONM'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['LABONM']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>検査責任者</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['KNSMNGR'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['KNSMNGR']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>連絡先</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['TELNO'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['TELNO']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ01</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG01'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG01']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ02</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG02'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG02']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ03</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG03'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG03']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ04</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG04'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG04']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ05</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG05'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG05']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ06</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG06'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG06']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ07</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG07'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG07']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ08</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG08'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG08']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ09</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG09'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG09']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ10</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG10'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG10']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ11</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG11'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG11']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ12</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG12'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG12']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ13</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG13'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG13']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ14</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG14'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG14']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ15</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG15'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG15']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ16</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG16'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG16']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ17</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG17'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG17']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ18</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG18'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG18']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ19</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG19'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG19']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
 			printf("<td>処理確認フラグ20</td>\n");
-			printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG20'],"UTF-8","SJIS-WIN"));
+			printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG20']));
 		printf("</tr>\n");
 
 		printf("<tr>\n");
