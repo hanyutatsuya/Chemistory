@@ -94,9 +94,18 @@ function LaboDBErrorMsg($sql,$errorinfo)
 
 function GetUTF8String($instr)
 {
-	$outstr = mb_convert_encoding($instr,"UTF-8","auto");
+	$outstr = mb_convert_encoding($instr,"UTF-8","SJIS-WIN");
 	return $outstr;
 }
+
+function GetDBErrMsg($ex)
+{
+	LaboLogOut(sprintf("ERRMSG  [%s]",GetUTF8String($ex->getMessage())));
+	LaboLogOut(sprintf("ERRCODE [%s]",GetUTF8String($ex->getCode())));
+	printf("ERRMSG  [%s]<BR>",GetUTF8String($ex->getMessage()));
+	printf("ERRCODE [%s]<BR>",GetUTF8String($ex->getCode()));
+}
+
 
 function GetShoribi($conn,$lbcode)
 {

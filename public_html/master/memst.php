@@ -54,10 +54,7 @@ if ($conn) {
 		}
 	}
 	catch (Exception $ex) {
-		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
-		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
-		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
-		printf("ERRCODE [%s]<BR>",$ex->getCode());
+		GetDBErrMsg($ex);
 	}
 
 } else {
