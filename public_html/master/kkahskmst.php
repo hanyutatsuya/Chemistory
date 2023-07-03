@@ -29,27 +29,24 @@ LaboTimeStamp();
 
 $conn = GetDBConn();
 
-if  ($conn){
+if ($conn) {
 
-try {
-	$sql = "select * from kkahskmst order by kkahskcd for read only";
-	foreach ($conn->query($sql) as $row) {
-		printf("<tr>\n");
-			printf("<td>%s</td>\n",$row['KKAHSKCD']);
-			printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNM']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNMJ']));
-			printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-			printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-			printf("<td>%s</td>\n",$row['HNKTNTID']);
-			printf("<td>%20.20s</td>\n",$row['KSNDH']);
-		printf("</tr>\n");
+	try {
+		$sql = "select * from kkahskmst order by kkahskcd for read only";
+		foreach ($conn->query($sql) as $row) {
+			printf("<tr>\n");
+				printf("<td>%s</td>\n",$row['KKAHSKCD']);
+				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNM']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNMJ']));
+				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td>%s</td>\n",$row['HNKTNTID']);
+				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+			printf("</tr>\n");
+		}
 	}
-}
 	catch (Exception $ex) {
-		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
-		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
-		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
-		printf("ERRCODE [%s]<BR>",$ex->getCode());
+		GetDBErrMsg($ex);
 	}
 
 } else {

@@ -34,32 +34,29 @@ LaboTimeStamp();
 
 $conn = GetDBConn();
 
-if  ($conn){
+if ($conn) {
 
-try {
-	$sql = "select * from cmtmst order by cmcd for read only";
-	foreach ($conn->query($sql) as $row) {
-		printf("<tr>\n");
-			printf("<td>%s</td>\n",$row['CMCD']);
-			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTKG'],"UTF-8","SJIS-WIN"));
-			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNM'],"UTF-8","SJIS-WIN"));
-			printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNMJ'],"UTF-8","SJIS-WIN"));
-			printf("<td>%s</td>\n",$row['KNSKKA1']);
-			printf("<td>%s</td>\n",$row['KKAHSKCD']);
-			printf("<td>%s</td>\n",$row['AKADEN']);
-			printf("<td>%s</td>\n",$row['IJOUCHI']);
-			printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-			printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-			printf("<td>%s</td>\n",$row['HNKTNTID']);
-			printf("<td>%20.20s</td>\n",$row['KSNDH']);
-		printf("</tr>\n");
+	try {
+		$sql = "select * from cmtmst order by cmcd for read only";
+		foreach ($conn->query($sql) as $row) {
+			printf("<tr>\n");
+				printf("<td>%s</td>\n",$row['CMCD']);
+				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTKG'],"UTF-8","SJIS-WIN"));
+				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNM'],"UTF-8","SJIS-WIN"));
+				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNMJ'],"UTF-8","SJIS-WIN"));
+				printf("<td>%s</td>\n",$row['KNSKKA1']);
+				printf("<td>%s</td>\n",$row['KKAHSKCD']);
+				printf("<td>%s</td>\n",$row['AKADEN']);
+				printf("<td>%s</td>\n",$row['IJOUCHI']);
+				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td>%s</td>\n",$row['HNKTNTID']);
+				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+			printf("</tr>\n");
+		}
 	}
-}
 	catch (Exception $ex) {
-		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
-		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
-		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
-		printf("ERRCODE [%s]<BR>",$ex->getCode());
+		GetDBErrMsg($ex);
 	}
 
 } else {

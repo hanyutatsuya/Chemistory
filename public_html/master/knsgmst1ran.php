@@ -52,50 +52,47 @@ LaboTimeStamp();
 
 $conn = GetDBConn();
 
-if  ($conn){
+if ($conn) {
 
-try {
-	$sql = "select * from knsgmst order by knsgrp for read only";
-	foreach ($conn->query($sql) as $row) {
-		printf("<tr>\n");
-			printf("<td>%s</td>\n",$row['KNSGRP']);
-			printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRPNM']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRPRS']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SECCD']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KNSHOKBN']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KNSSBT']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['BGROUP']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['UNYOKBN']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SEQKTHSOK']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SEQKTHSNG']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['WSSSKSOK']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['WSSSKSNG']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['MINRYO']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['MAXRYO']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SKITRAY']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['MBTTRAY']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SKNTRAY']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SSTTRAY']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KNSYB']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['YKCD']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SKIWSID']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SKNWSID']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['KKALSTID']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['SPLBLID']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['LSTYB1']));
-			printf("<td>%s</td>\n",SjToUtfConv($row['LSTYB2']));
-			printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-			printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-			printf("<td>%s</td>\n",$row['HNKTNTID']);
-			printf("<td>%20.20s</td>\n",$row['KSNDH']);
-		printf("</tr>\n");
+	try {
+		$sql = "select * from knsgmst order by knsgrp for read only";
+		foreach ($conn->query($sql) as $row) {
+			printf("<tr>\n");
+				printf("<td>%s</td>\n",$row['KNSGRP']);
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRPNM']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRPRS']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SECCD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSHOKBN']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSSBT']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BGROUP']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['UNYOKBN']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SEQKTHSOK']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SEQKTHSNG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['WSSSKSOK']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['WSSSKSNG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['MINRYO']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['MAXRYO']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SKITRAY']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['MBTTRAY']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SKNTRAY']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SSTTRAY']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSYB']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['YKCD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SKIWSID']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SKNWSID']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KKALSTID']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SPLBLID']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['LSTYB1']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['LSTYB2']));
+				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td>%s</td>\n",$row['HNKTNTID']);
+				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+			printf("</tr>\n");
+		}
 	}
-}
 	catch (Exception $ex) {
-		LaboLogOut(sprintf("ERRMSG  [%s]",$ex->getMessage()));
-		LaboLogOut(sprintf("ERRCODE [%s]",$ex->getCode()));
-		printf("ERRMSG  [%s]<BR>",$ex->getMessage());
-		printf("ERRCODE [%s]<BR>",$ex->getCode());
+		GetDBErrMsg($ex);
 	}
 
 } else {

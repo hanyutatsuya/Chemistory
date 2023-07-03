@@ -102,8 +102,8 @@ function GetDBErrMsg($ex)
 {
 	LaboLogOut(sprintf("ERRMSG  [%s]",GetUTF8String($ex->getMessage())));
 	LaboLogOut(sprintf("ERRCODE [%s]",GetUTF8String($ex->getCode())));
-	printf("ERRMSG  [%s]<BR>",GetUTF8String($ex->getMessage()));
-	printf("ERRCODE [%s]<BR>",GetUTF8String($ex->getCode()));
+	printf("<P>ERRMSG  [%s]</P>\n",GetUTF8String($ex->getMessage()));
+	printf("<P>ERRCODE [%s]</P>\n",GetUTF8String($ex->getCode()));
 }
 
 
