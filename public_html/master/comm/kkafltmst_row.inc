@@ -63,7 +63,7 @@ function kkafltmst_row($conn,$wscode,$kcode)
 			$sql = $sql . "knsgrp = '$wcode' and ";
 		}
 		$sql = $sql . "kmkcd = '$kmcd' ";
-		$sql = $sql . "order by knsgrp,kmkcd,fltkka for read only";
+		$sql = $sql . "order by knsgrp,kmkcd,sstcd,fltkka for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRP']));
