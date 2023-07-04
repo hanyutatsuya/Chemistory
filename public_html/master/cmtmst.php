@@ -41,13 +41,13 @@ if ($conn) {
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
 				printf("<td>%s</td>\n",$row['CMCD']);
-				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTKG'],"UTF-8","SJIS-WIN"));
-				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNM'],"UTF-8","SJIS-WIN"));
-				printf("<td>%s</td>\n",mb_convert_encoding($row['CMTNMJ'],"UTF-8","SJIS-WIN"));
-				printf("<td>%s</td>\n",$row['KNSKKA1']);
-				printf("<td>%s</td>\n",$row['KKAHSKCD']);
-				printf("<td>%s</td>\n",$row['AKADEN']);
-				printf("<td>%s</td>\n",$row['IJOUCHI']);
+				printf("<td>%s</td>\n",SjToUtfConv($row['CMTKG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['CMTNM']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['CMTNMJ']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSKKA1']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKCD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['AKADEN']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['IJOUCHI']));
 				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
 				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
 				printf("<td>%s</td>\n",$row['HNKTNTID']);

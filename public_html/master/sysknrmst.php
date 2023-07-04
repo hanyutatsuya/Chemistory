@@ -32,127 +32,127 @@ if ($conn) {
 	
 			printf("<tr>\n");
 				printf("<td>ラボコード</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['LBCD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['LBCD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>サテライトＩＤ</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['SATEID']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SATEID']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>基準処理年月日</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['KJNSRIYMD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KJNSRIYMD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>緊急基準処理年月日</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['KKJNSRIYMD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KKJNSRIYMD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>次依頼処理年月日</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['NXIRISRIYMD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['NXIRISRIYMD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>次認識処理年月日</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['NCNSKSRIYMD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['NCNSKSRIYMD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>次分注処理年月日</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['NXBCHSRIYMD']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['NXBCHSRIYMD']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>依頼ＥＮＤフラグ</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDFLG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['IRIENDFLG']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>依頼ＥＮＤ日時</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['IRIENDDH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['IRIENDDH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>認識ＥＮＤフラグ</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDFLG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['NSKENDFLG']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>認識ＥＮＤ時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['NSKENDDH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['NSKENDDH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤフラグ</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHENDFLG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHENDFLG']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤ－０時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND0DH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHEND0DH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤ－１時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND1DH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHEND1DH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤ－２時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND2DH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHEND2DH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤ－３時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND3DH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHEND3DH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>分注ＥＮＤ－４時刻</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['BCHEND4DH']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['BCHEND4DH']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>運用フラグ</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['UNYFLG']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['UNYFLG']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>送信通番</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['SSNTUBN']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SSNTUBN']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>ラボ名称</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['LABONM']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['LABONM']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>検査責任者</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['KNSMNGR']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['KNSMNGR']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>連絡先</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['TELNO']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['TELNO']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>処理確認フラグ01</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG01']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG01']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>処理確認フラグ02</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG02']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG02']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
 				printf("<td>処理確認フラグ03</td>\n");
-				printf("<td>%s</td>\n",mb_convert_encoding($row['SRIKNFLG03']));
+				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG03']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
