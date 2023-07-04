@@ -68,8 +68,12 @@ LaboTimeStamp();
 				<td><A href=kmkmst.php>項目マスタ</A></td>
 			</tr>
 			<tr>
-				<td><A href=wskmk.php>KMKMST</A></td>
+				<td><A href=wskmk.php>WSKMKMST</A></td>
 				<td><A href=wskmk.php>WS・項目マスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=check1ran.php>CHECK</A></td>
+				<td><A href=check1ran.php>チェックマスタ一覧</A></td>
 			</tr>
 			<tr>
 				<td><A href=rngchkmst.php>RNGCHKMST</A></td>

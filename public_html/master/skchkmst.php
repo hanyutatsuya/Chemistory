@@ -4,15 +4,15 @@
 <?php
 require_once("../comm/labo_html.inc");
 require_once("../comm/labo_db.inc");
-LaboHeadOutput("結果フィルタマスタ");
-LaboLogOut("結果フィルタマスタ");
+LaboHeadOutput("相関チェックマスタ");
+LaboLogOut("相関チェックマスタ");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
-<center><h2>結果フィルタマスタ</h2></center>
+<center><h2>相関チェックマスタ</h2></center>
 
 <?php
 $kcode = trim($_REQUEST['KMKCD']);
@@ -20,7 +20,7 @@ $knsgrp = trim($_REQUEST['KNSGRP']);
 
 printf("<P>\n");
 printf("<center>\n");
-printf("<FORM ACTION=\"kkafltmst.php\" METHOD=POST>\n");
+printf("<FORM ACTION=\"skchkmst.php\" METHOD=POST>\n");
 printf("検査グループ\n");
 printf("<INPUT TYPE=text NAME=KNSGRP SIZE=6 MAXLENGTH=4 value=\"%s\">\n",$knsgrp);
 printf("　項目コード\n");
@@ -32,13 +32,13 @@ printf("</center>\n");
 printf("</P>\n");
 printf("<HR>\n");
 
-require_once("comm/kkafltmst_row.inc");
+require_once("comm/skchkmst_row.inc");
 
 if (strlen($kcode) != 0) {
 	$conn = GetDBConn();
 
 	if ($conn) {
-		kkafltmst_row($conn,$knsgrp,$kcode);
+		skchkmst_row($conn,$knsgrp,$kcode);
 	} else {
 		echo "Connection failed";
 	}
