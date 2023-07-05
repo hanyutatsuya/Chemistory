@@ -19,7 +19,7 @@ function krkmkmst_row($conn,$wscode,$kcode)
 		}
 	}
 
-	printf("<table align=\"center\" bgcolor = \"white\" border>\n");
+	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
 			printf("<th>項目コード</th>\n");
 			printf("<th>関連項目コード</th>\n");
@@ -31,7 +31,7 @@ function krkmkmst_row($conn,$wscode,$kcode)
 
 	try {
 		$sql = "select * from krkmkmst where ";
-		$sql = $sql . "kmkcd = sgrp = '$kmcd' ";
+		$sql = $sql . "kmkcd = '$kmcd' ";
 		$sql = $sql . "order by kmkcd,krkmkcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
@@ -40,14 +40,14 @@ function krkmkmst_row($conn,$wscode,$kcode)
 				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
 				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
 				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+				printf("<td>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
-		printf("</table>\n");
 	}
 	catch (Exception $ex) {
 		GetDBErrMsg($ex);
 	}
+	printf("</table>\n");
 
 	return 0;
 }

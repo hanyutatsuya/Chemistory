@@ -293,13 +293,13 @@ function kmkmst_table($conn,$kcode)
 
 			printf("<tr>");
 				printf("<td>%s</td>",'開始年月日');
-				printf("<td>%s</td>",SjToUtfConv($row['KAIYMD']));
+				printf("<td>%10.10s</td>",SjToUtfConv($row['KAIYMD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
 				printf("<td>%s</td>",'廃止年月日');
-				printf("<td>%s</td>",SjToUtfConv($row['HAIYMD']));
+				printf("<td>%10.10s</td>",SjToUtfConv($row['HAIYMD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
@@ -311,7 +311,7 @@ function kmkmst_table($conn,$kcode)
 
 			printf("<tr>");
 				printf("<td>%s</td>",'情報更新日時');
-				printf("<td>%s</td>",SjToUtfConv($row['KSNDH']));
+				printf("<td>%10.10s</td>",SjToUtfConv($row['KSNDH']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 

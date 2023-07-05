@@ -49,7 +49,7 @@ if ($conn) {
 				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
 				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
 				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+				printf("<td>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 	}

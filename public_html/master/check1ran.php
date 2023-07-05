@@ -25,7 +25,7 @@ printf("検査グループ\n");
 printf("<INPUT TYPE=text NAME=KNSGRP SIZE=6 MAXLENGTH=4 value=\"%s\">\n",$knsgrp);
 printf("　項目コード\n");
 printf("<INPUT TYPE=text NAME=KMKCD SIZE=9 MAXLENGTH=7 value=\"%s\">\n",$kcode);
-printf("<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
+printf("　<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
 printf("</BUTTON>\n");
 printf("</FORM>\n");
 printf("</center>\n");
@@ -43,35 +43,40 @@ if (strlen($kcode) != 0) {
 	$conn = GetDBConn();
 
 	if ($conn) {
-		printf("<P>\n");
 		printf("項目マスタ\n");
+		printf("<BR>\n");
 		kmkmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
-		printf("<P>\n");
+		printf("<BR>\n");
 		printf("レンジチェックマスタ\n");
+		printf("<BR>\n");
 		rngchkmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
-		printf("<P>\n");
+		printf("<BR>\n");
 		printf("計算項目マスタ\n");
+		printf("<BR>\n");
 		calckmkmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
-		printf("<P>\n");
+		printf("<BR>\n");
 		printf("結果フィルタマスタ\n");
+		printf("<BR>\n");
 		kkafltmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
-		printf("<P>\n");
+		printf("<BR>\n");
 		printf("関連項目マスタ\n");
+		printf("<BR>\n");
 		krkmkmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
-		printf("<P>\n");
+		printf("<BR>\n");
 		printf("相関項目マスタ\n");
+		printf("<BR>\n");
 		skchkmst_row($conn,$knsgrp,$kcode);
-		printf("</P>\n");
+		printf("<BR clear=all>\n");
 
 	} else {
 		echo "Connection failed";

@@ -247,7 +247,7 @@ if ($conn) {
 	
 			printf("<tr>\n");
 				printf("<td>情報更新日時</td>\n");
-				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+				printf("<td>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 	
 		}

@@ -37,7 +37,7 @@ function rngchkmst_row($conn,$wscode,$kcode)
 		}
 	}
 
-	printf("<table align=\"center\" bgcolor = \"white\" border>\n");
+	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
 			printf("<th>範囲区分</th>\n");
 			printf("<th>検査グループ</th>\n");
@@ -77,7 +77,7 @@ function rngchkmst_row($conn,$wscode,$kcode)
 				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
 				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
 				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+				printf("<td>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 		printf("</table>\n");

@@ -181,7 +181,7 @@ function wskmk_table($conn,$wscode)
 				printf("</tr>\n",' ');
 				printf("<tr>");
 					printf("<td>%s</td>",'情報更新日時');
-					printf("<td>%20.20s</td>",$row['KSNDH']);
+					printf("<td>%10.10s</td>",$row['KSNDH']);
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 	
