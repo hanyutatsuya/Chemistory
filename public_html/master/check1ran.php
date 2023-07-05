@@ -33,11 +33,14 @@ printf("</P>\n");
 printf("<HR>\n");
 
 require_once("comm/kmkmst_row.inc");
+require_once("comm/jdkmkmst_row.inc");
 require_once("comm/rngchkmst_row.inc");
 require_once("comm/calckmkmst_row.inc");
 require_once("comm/kkafltmst_row.inc");
 require_once("comm/krkmkmst_row.inc");
 require_once("comm/skchkmst_row.inc");
+require_once("comm/rrkchkmst_row.inc");
+require_once("comm/kskbrmst_row.inc");
 
 if (strlen($kcode) != 0) {
 	$conn = GetDBConn();
@@ -46,6 +49,12 @@ if (strlen($kcode) != 0) {
 		printf("項目マスタ\n");
 		printf("<BR>\n");
 		kmkmst_row($conn,$knsgrp,$kcode);
+		printf("<BR clear=all>\n");
+
+		printf("<BR>\n");
+		printf("自動発生項目マスタ\n");
+		printf("<BR>\n");
+		jdkmkmst_row($conn,$knsgrp,$kcode);
 		printf("<BR clear=all>\n");
 
 		printf("<BR>\n");
@@ -76,6 +85,18 @@ if (strlen($kcode) != 0) {
 		printf("相関項目マスタ\n");
 		printf("<BR>\n");
 		skchkmst_row($conn,$knsgrp,$kcode);
+		printf("<BR clear=all>\n");
+
+		printf("<BR>\n");
+		printf("履歴チェックマスタ\n");
+		printf("<BR>\n");
+		rrkchkmst_row($conn,$knsgrp,$kcode);
+		printf("<BR clear=all>\n");
+
+		printf("<BR>\n");
+		printf("希釈倍率マスタ\n");
+		printf("<BR>\n");
+		kskbrmst_row($conn,$knsgrp,$kcode);
 		printf("<BR clear=all>\n");
 
 	} else {

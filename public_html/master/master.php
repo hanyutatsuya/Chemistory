@@ -48,6 +48,28 @@ LaboTimeStamp();
 		<table bgcolor = white border>
 
 			<tr>
+				<th colspan = 2>一覧</th>
+			</tr>
+			<tr>
+				<th>テーブル名</th>
+				<th>マスター名称</th>
+			</tr>
+
+			<tr>
+				<td><A href=wskmk.php>WSKMKMST</A></td>
+				<td><A href=wskmk.php>WS・項目マスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=check1ran.php>CHECK</A></td>
+				<td><A href=check1ran.php>チェックマスタ一覧</A></td>
+			</tr>
+		</table>
+	</td>
+
+	<td>
+		<table bgcolor = white border>
+
+			<tr>
 				<th colspan = 2>ローカル</th>
 			</tr>
 			<tr>
@@ -66,14 +88,6 @@ LaboTimeStamp();
 			<tr>
 				<td><A href=kmkmst.php>KMKMST</A></td>
 				<td><A href=kmkmst.php>項目マスタ</A></td>
-			</tr>
-			<tr>
-				<td><A href=wskmk.php>WSKMKMST</A></td>
-				<td><A href=wskmk.php>WS・項目マスタ</A></td>
-			</tr>
-			<tr>
-				<td><A href=check1ran.php>CHECK</A></td>
-				<td><A href=check1ran.php>チェックマスタ一覧</A></td>
 			</tr>
 			<tr>
 				<td><A href=rngchkmst.php>RNGCHKMST</A></td>
@@ -114,6 +128,10 @@ LaboTimeStamp();
 			<tr>
 				<td><A href=mechmst.php>MECHMST</A></td>
 				<td><A href=mechmst.php>分析機チャネルマスタ</A></td>
+			</tr>
+			<tr>
+				<td><A href=zslinemst.php>ZSLINEMST</A></td>
+				<td><A href=zslinemst.php>ZSライン制御マスタ</A></td>
 			</tr>
 
 		</table>
