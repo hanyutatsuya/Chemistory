@@ -18,8 +18,9 @@ print <<<__DBSELOUT__
 <FORM ACTION="dbselgo.php" METHOD="POST">
 <P>
 <center>
-<INPUT TYPE=RADIO NAME=KUBUN VALUE="0" checked><TT>KEA00DB1(本番ＤＢ)</TT><BR>
-<INPUT TYPE=RADIO NAME=KUBUN VALUE="1"><TT>KEA00DB0(開発ＤＢ)</TT><BR>
+<INPUT TYPE=RADIO NAME=KUBUN VALUE="0" checked><TT> KEA00DB1(本番ＤＢ)</TT><BR>
+<BR>
+<INPUT TYPE=RADIO NAME=KUBUN VALUE="1"><TT> KEA00DB0(開発ＤＢ)</TT><BR>
 </center>
 <BR>
 <center><BUTTON type=submit name=submit value="submit">選択

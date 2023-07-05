@@ -6,7 +6,7 @@ function calckmkmst_row($conn,$wscode,$kcode)
 			$wcode = 0;
 		} else {
 			printf("<center>\n");
-			printf("<h2>検査グループ入力エラー</h2>\n");
+			printf("<h2>検査G入力エラー</h2>\n");
 			printf("</center>\n");
 			printf("<HR>\n");
 			return -1;
@@ -24,7 +24,7 @@ function calckmkmst_row($conn,$wscode,$kcode)
 			return 0;
 		} else {
 			printf("<center>\n");
-			printf("<h2>項目コード入力エラー</h2>\n");
+			printf("<h2>項目CD入力エラー</h2>\n");
 			printf("</center>\n");
 			printf("<HR>\n");
 			return -1;
@@ -39,10 +39,10 @@ function calckmkmst_row($conn,$wscode,$kcode)
 
 	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
-			printf("<th>検査グループ</th>\n");
-			printf("<th>項目コード</th>\n");
-			printf("<th>施設コード</th>\n");
-			printf("<th>材料コード</th>\n");
+			printf("<th>検査G</th>\n");
+			printf("<th>項目CD</th>\n");
+			printf("<th>施設CD</th>\n");
+			printf("<th>材料CD</th>\n");
 			printf("<th>計算式</th>\n");
 			printf("<th>開始年月日</th>\n");
 			printf("<th>廃止年月日</th>\n");

@@ -17,9 +17,9 @@ LaboTimeStamp();
 <table align="center" bgcolor = "white" border>
 	<tr>
 		<th>分析機区分</th>
-		<th>内部項目コード</th>
+		<th>内部項目CD</th>
 		<th>チャネル名称</th>
-		<th>項目コード</th>
+		<th>項目CD</th>
 		<th>開始年月日</th>
 		<th>廃止年月日</th>
 		<th>変更担当者ＩＤ</th>

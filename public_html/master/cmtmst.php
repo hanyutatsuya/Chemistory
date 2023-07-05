@@ -16,13 +16,13 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>コメントコード</th>
+		<th>コメントCD</th>
 		<th>コメント記号</th>
 		<th>コメント名カナ</th>
 		<th>コメント名漢字</th>
 		<th>検査結果１</th>
 		<th>検査結果補足</th>
-		<th>赤伝フラグ</th>
+		<th>赤伝F</th>
 		<th>異常値マーク</th>
 		<th>開始年月日</th>
 		<th>廃止年月日</th>

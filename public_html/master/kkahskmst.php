@@ -16,7 +16,7 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>結果補足コード</th>
+		<th>結果補足CD</th>
 		<th>結果補足名称カナ</th>
 		<th>結果補足名称漢字</th>
 		<th>開始年月日</th>

@@ -6,7 +6,7 @@ function kjnmst_row($conn,$wscode,$kcode)
 			return 0;
 		} else {
 			printf("<center>\n");
-			printf("<h2>項目コード入力エラー</h2>\n");
+			printf("<h2>項目CD入力エラー</h2>\n");
 			printf("</center>\n");
 			printf("<HR>\n");
 			return -1;
@@ -21,10 +21,10 @@ function kjnmst_row($conn,$wscode,$kcode)
 
 	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
-			printf("<th>項目コード</th>\n");
+			printf("<th>項目CD</th>\n");
 			printf("<th>基準値Ｎｏ</th>\n");
 			printf("<th>世代Ｎｏ</th>\n");
-			printf("<th>材料コード</th>\n");
+			printf("<th>材料CD</th>\n");
 			printf("<th>年齢範囲区分</th>\n");
 			printf("<th>その他区分</th>\n");
 			printf("<th>日齢(下)</th>\n");

@@ -6,7 +6,7 @@ function wskmk_table($conn,$wscode)
 			return 0;
 		} else {
 			printf("<center>\n");
-			printf("<h2>検査グループ入力エラー</h2>\n");
+			printf("<h2>検査G入力エラー</h2>\n");
 			printf("</center>\n");
 			printf("<HR>\n");
 			return -1;
@@ -34,23 +34,23 @@ function wskmk_table($conn,$wscode)
 			foreach ($conn->query($sql) as $row) {
 	
 				printf("<tr>");
-					printf("<td>%s</td>",'検査グループ');
+					printf("<td>%s</td>",'検査G');
 					printf("<td>%s</td>",SjToUtfConv($row['KNSGRP']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 	
 				printf("<tr>");
-					printf("<td>%s</td>",'検査グループ名称');
+					printf("<td>%s</td>",'検査G名称');
 					printf("<td>%s</td>",SjToUtfConv($row['KNSGRPNM']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 				printf("<tr>");
-					printf("<td>%s</td>",'検査グループ略称');
+					printf("<td>%s</td>",'検査G略称');
 					printf("<td>%s</td>",SjToUtfConv($row['KNSGRPRS']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 				printf("<tr>");
-					printf("<td>%s</td>",'セクションコード');
+					printf("<td>%s</td>",'SECCD');
 					printf("<td>%s</td>",SjToUtfConv($row['SECCD']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
@@ -60,12 +60,12 @@ function wskmk_table($conn,$wscode)
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 				printf("<tr>");
-					printf("<td>%s</td>",'検査グループ種別');
+					printf("<td>%s</td>",'検査G種別');
 					printf("<td>%s</td>",SjToUtfConv($row['KNSSBT']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 				printf("<tr>");
-					printf("<td>%s</td>",'分注グループ');
+					printf("<td>%s</td>",'分注G');
 					printf("<td>%s</td>",SjToUtfConv($row['BGROUP']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
@@ -130,7 +130,7 @@ function wskmk_table($conn,$wscode)
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
 				printf("<tr>");
-					printf("<td>%s</td>",'容器コード');
+					printf("<td>%s</td>",'容器CD');
 					printf("<td>%s</td>",SjToUtfConv($row['YKCD']));
 					printf("<td>%s</td>",' ');
 				printf("</tr>\n",' ');
@@ -192,8 +192,8 @@ function wskmk_table($conn,$wscode)
 		printf("<td>\n");
 			printf("<table bgcolor = white border>\n");
 				printf("<tr>\n");
-					printf("<th nowrap>親コード</th>\n");
-					printf("<th nowrap>項目コード</th>\n");
+					printf("<th nowrap>親CD</th>\n");
+					printf("<th nowrap>項目CD</th>\n");
 					printf("<th nowrap>項目名カナ</th>\n");
 					printf("<th nowrap>項目名漢字</th>\n");
 					printf("<th nowrap>負荷分画区分</th>\n");

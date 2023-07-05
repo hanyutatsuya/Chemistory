@@ -31,7 +31,7 @@ if ($conn) {
 		foreach ($conn->query($sql) as $row) {
 	
 			printf("<tr>\n");
-				printf("<td>ラボコード</td>\n");
+				printf("<td>ラボCD</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['LBCD']));
 			printf("</tr>\n");
 	
@@ -66,7 +66,7 @@ if ($conn) {
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>依頼ＥＮＤフラグ</td>\n");
+				printf("<td>依頼ＥＮＤF</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['IRIENDFLG']));
 			printf("</tr>\n");
 	
@@ -76,7 +76,7 @@ if ($conn) {
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>認識ＥＮＤフラグ</td>\n");
+				printf("<td>認識ＥＮＤF</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['NSKENDFLG']));
 			printf("</tr>\n");
 	
@@ -86,7 +86,7 @@ if ($conn) {
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>分注ＥＮＤフラグ</td>\n");
+				printf("<td>分注ＥＮＤF</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['BCHENDFLG']));
 			printf("</tr>\n");
 	
@@ -116,7 +116,7 @@ if ($conn) {
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>運用フラグ</td>\n");
+				printf("<td>運用F</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['UNYFLG']));
 			printf("</tr>\n");
 	
@@ -141,102 +141,102 @@ if ($conn) {
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ01</td>\n");
+				printf("<td>処理確認F01</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG01']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ02</td>\n");
+				printf("<td>処理確認F02</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG02']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ03</td>\n");
+				printf("<td>処理確認F03</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG03']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ04</td>\n");
+				printf("<td>処理確認F04</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG04']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ05</td>\n");
+				printf("<td>処理確認F05</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG05']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ06</td>\n");
+				printf("<td>処理確認F06</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG06']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ07</td>\n");
+				printf("<td>処理確認F07</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG07']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ08</td>\n");
+				printf("<td>処理確認F08</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG08']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ09</td>\n");
+				printf("<td>処理確認F09</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG09']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ10</td>\n");
+				printf("<td>処理確認F10</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG10']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ11</td>\n");
+				printf("<td>処理確認F11</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG11']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ12</td>\n");
+				printf("<td>処理確認F12</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG12']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ13</td>\n");
+				printf("<td>処理確認F13</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG13']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ14</td>\n");
+				printf("<td>処理確認F14</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG14']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ15</td>\n");
+				printf("<td>処理確認F15</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG15']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ16</td>\n");
+				printf("<td>処理確認F16</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG16']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ17</td>\n");
+				printf("<td>処理確認F17</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG17']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ18</td>\n");
+				printf("<td>処理確認F18</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG18']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ19</td>\n");
+				printf("<td>処理確認F19</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG19']));
 			printf("</tr>\n");
 	
 			printf("<tr>\n");
-				printf("<td>処理確認フラグ20</td>\n");
+				printf("<td>処理確認F20</td>\n");
 				printf("<td>%s</td>\n",SjToUtfConv($row['SRIKNFLG20']));
 			printf("</tr>\n");
 	

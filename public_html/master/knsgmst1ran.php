@@ -4,25 +4,25 @@
 <?php
 require_once("../comm/labo_html.inc");
 require_once("../comm/labo_db.inc");
-LaboHeadOutput("検査グループマスタ");
-LaboLogOut("検査グループマスタ");
+LaboHeadOutput("検査Gマスタ");
+LaboLogOut("検査Gマスタ");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
-<center><h2>検査グループマスタ</h2></center>
+<center><h2>検査Gマスタ</h2></center>
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>検査グループ</th>
-		<th>検査グループ名称</th>
-		<th>検査グループ略称</th>
-		<th>セクションコード</th>
+		<th>検査G</th>
+		<th>検査G名称</th>
+		<th>検査G略称</th>
+		<th>SECCD</th>
 		<th>検査法区分</th>
-		<th>検査グループ種別</th>
-		<th>分注グループ</th>
+		<th>検査G種別</th>
+		<th>分注G</th>
 		<th>運用区分</th>
 		<th>WS内規定本数（分注NG以外）</th>
 		<th>WS内規定本数（分注NG）</th>
@@ -35,7 +35,7 @@ LaboTimeStamp();
 		<th>使用トレイ（再検）</th>
 		<th>使用トレイ（再測定）</th>
 		<th>曜日指定</th>
-		<th>容器コード</th>
+		<th>容器CD</th>
 		<th>初回用WS出力形式</th>
 		<th>再検・再測定用WS出力形式</th>
 		<th>結果リスト出力形式</th>

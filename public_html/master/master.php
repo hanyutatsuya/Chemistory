@@ -79,11 +79,11 @@ LaboTimeStamp();
 
 			<tr>
 				<td><A href=knsgmst1ran.php>KNSGMST</A></td>
-				<td><A href=knsgmst1ran.php>検査グループ一覧</A></td>
+				<td><A href=knsgmst1ran.php>検査G一覧</A></td>
 			</tr>
 			<tr>
 				<td><A href=knsgmst.php>KNSGMST</A></td>
-				<td><A href=knsgmst.php>検査グループマスタ</A></td>
+				<td><A href=knsgmst.php>検査Gマスタ</A></td>
 			</tr>
 			<tr>
 				<td><A href=kmkmst.php>KMKMST</A></td>

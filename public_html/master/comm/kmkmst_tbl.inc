@@ -6,7 +6,7 @@ function kmkmst_table($conn,$kcode)
 			return 0;
 		} else {
 			printf("<center>\n");
-			printf("<h2>項目コード入力エラー</h2>\n");
+			printf("<h2>項目CD入力エラー</h2>\n");
 			printf("</center>\n");
 			printf("<HR>\n");
 			return -1;
@@ -28,13 +28,13 @@ function kmkmst_table($conn,$kcode)
 		foreach ($conn->query($sql) as $row) {
 
 			printf("<tr>");
-				printf("<td>%s</td>",'検査グループ');
+				printf("<td>%s</td>",'検査G');
 				printf("<td>%s</td>",SjToUtfConv($row['KNSGRP']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'項目コード');
+				printf("<td>%s</td>",'項目CD');
 				printf("<td>%s</td>",SjToUtfConv($row['KMKCD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -88,13 +88,13 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'サンプリングコード');
+				printf("<td>%s</td>",'サンプリングCD');
 				printf("<td>%s</td>",SjToUtfConv($row['SMPCD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'親項目コード');
+				printf("<td>%s</td>",'親項目CD');
 				printf("<td>%s</td>",SjToUtfConv($row['OYAKMKCD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -106,13 +106,13 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'セクションコード');
+				printf("<td>%s</td>",'SECCD');
 				printf("<td>%s</td>",SjToUtfConv($row['SECCD']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'親展フラグ');
+				printf("<td>%s</td>",'親展F');
 				printf("<td>%s</td>",SjToUtfConv($row['STNFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -142,19 +142,19 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'凍結フラグ');
+				printf("<td>%s</td>",'凍結F');
 				printf("<td>%s</td>",SjToUtfConv($row['TSKFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'透析フラグ');
+				printf("<td>%s</td>",'透析F');
 				printf("<td>%s</td>",SjToUtfConv($row['TKTFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'ＬＴ未満フラグ');
+				printf("<td>%s</td>",'ＬＴ未満F');
 				printf("<td>%s</td>",SjToUtfConv($row['LTMMNFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -184,7 +184,7 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'夜間検査フラグ');
+				printf("<td>%s</td>",'夜間検査F');
 				printf("<td>%s</td>",SjToUtfConv($row['YKNKNSFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -208,13 +208,13 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'計算項目フラグ');
+				printf("<td>%s</td>",'計算項目F');
 				printf("<td>%s</td>",SjToUtfConv($row['KSNKMKFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'補正有無フラグ');
+				printf("<td>%s</td>",'補正有無F');
 				printf("<td>%s</td>",SjToUtfConv($row['HSIUMFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -238,13 +238,13 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'乳び溶血優先フラグ');
+				printf("<td>%s</td>",'乳び溶血優先F');
 				printf("<td>%s</td>",SjToUtfConv($row['NYUYOUFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'定性・定量フラグ');
+				printf("<td>%s</td>",'定性・定量F');
 				printf("<td>%s</td>",SjToUtfConv($row['TSTRFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
@@ -256,31 +256,31 @@ function kmkmst_table($conn,$kcode)
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'照合チェック採用フラグ');
+				printf("<td>%s</td>",'照合チェック採用F');
 				printf("<td>%s</td>",SjToUtfConv($row['SGCHKFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'血清情報影響フラグ');
+				printf("<td>%s</td>",'血清情報影響F');
 				printf("<td>%s</td>",SjToUtfConv($row['KSJHFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'希釈測定結果照合フラグ');
+				printf("<td>%s</td>",'希釈測定結果照合F');
 				printf("<td>%s</td>",SjToUtfConv($row['KSSGFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'XbarM集計フラグ');
+				printf("<td>%s</td>",'XbarM集計F');
 				printf("<td>%s</td>",SjToUtfConv($row['XMSKFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');
 
 			printf("<tr>");
-				printf("<td>%s</td>",'XbarMチェックフラグ');
+				printf("<td>%s</td>",'XbarMチェックF');
 				printf("<td>%s</td>",SjToUtfConv($row['XMCHKFLG']));
 				printf("<td>%s</td>",' ');
 			printf("</tr>\n",' ');

@@ -4,15 +4,15 @@
 <?php
 require_once("../comm/labo_html.inc");
 require_once("../comm/labo_db.inc");
-LaboHeadOutput("検査グループ・項目マスタ");
-LaboLogOut("検査グループ・項目マスタ");
+LaboHeadOutput("検査G・項目マスタ");
+LaboLogOut("検査G・項目マスタ");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
-<center><h2>検査グループ・項目マスタ</h2></center>
+<center><h2>検査G・項目マスタ</h2></center>
 
 <?php
 $knsgrp = trim($_REQUEST['KNSGRP']);
@@ -20,7 +20,7 @@ $knsgrp = trim($_REQUEST['KNSGRP']);
 printf("<P>\n");
 printf("<center>\n");
 printf("<FORM ACTION=\"wskmk.php\" METHOD=POST>\n");
-printf("検査グループ\n");
+printf("検査G\n");
 printf("<INPUT TYPE=text NAME=KNSGRP SIZE=6 MAXLENGTH=5 value=\"%s\">\n",$knsgrp);
 printf("<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
 printf("</BUTTON>\n");

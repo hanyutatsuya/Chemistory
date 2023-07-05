@@ -16,7 +16,7 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>検査グループ</th>
+		<th>検査G</th>
 		<th>測定ライン</th>
 		<th>開始年月日</th>
 		<th>廃止年月日</th>
