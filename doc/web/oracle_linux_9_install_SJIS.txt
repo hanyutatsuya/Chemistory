@@ -304,9 +304,7 @@ perl用DB2モジュールをインストール
 # dnf -y install perl-App-cpanminus
 # export DB2_HOME=/opt/ibm/db2/v11.5
 # export DB2LIB=/opt/ibm/db2/v11.5/lib64
-# cd
-vi .bashrc
-
+# cpan DBD::DB2
 Loading internal logger. Log::Log4perl recommended for better logging
 
 CPAN.pm requires configuration, but most of it can be done automatically.

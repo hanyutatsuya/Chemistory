@@ -16,18 +16,18 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>コメントCD</th>
-		<th>コメント記号</th>
-		<th>コメント名カナ</th>
-		<th>コメント名漢字</th>
-		<th>検査結果１</th>
-		<th>検査結果補足</th>
-		<th>赤伝F</th>
-		<th>異常値マーク</th>
-		<th>開始年月日</th>
-		<th>廃止年月日</th>
-		<th>変更担当者ＩＤ</th>
-		<th>情報更新日時</th>
+		<th nowrap>コメントCD</th>
+		<th nowrap>コメント記号</th>
+		<th nowrap>コメント名カナ</th>
+		<th nowrap>コメント名漢字</th>
+		<th nowrap>検査結果１</th>
+		<th nowrap>検査結果補足</th>
+		<th nowrap>赤伝F</th>
+		<th nowrap>異常値マーク</th>
+		<th nowrap>開始年月日</th>
+		<th nowrap>廃止年月日</th>
+		<th nowrap>変更担当者ＩＤ</th>
+		<th nowrap>情報更新日時</th>
 	</tr>
 
 <?php
@@ -40,18 +40,18 @@ if ($conn) {
 		$sql = "select * from cmtmst order by cmcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",$row['CMCD']);
-				printf("<td>%s</td>\n",SjToUtfConv($row['CMTKG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['CMTNM']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['CMTNMJ']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSKKA1']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['AKADEN']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['IJOUCHI']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%10.10s</td>\n",$row['KSNDH']);
+				printf("<td nowrap>%s</td>\n",$row['CMCD']);
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['CMTKG']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['CMTNM']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['CMTNMJ']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KNSKKA1']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KKAHSKCD']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['AKADEN']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['IJOUCHI']));
+				printf("<td nowrap>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowrap>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowrap>%s</td>\n",$row['HNKTNTID']);
+				printf("<td nowrap>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 	}
