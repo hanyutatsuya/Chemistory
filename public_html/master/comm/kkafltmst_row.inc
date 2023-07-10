@@ -39,22 +39,22 @@ function kkafltmst_row($conn,$wscode,$kcode)
 
 	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
-			printf("<th>検査G</th>\n");
-			printf("<th>項目CD</th>\n");
-			printf("<th>変換結果</th>\n");
-			printf("<th>下限値</th>\n");
-			printf("<th>上限値</th>\n");
-			printf("<th>検査結果１</th>\n");
-			printf("<th>検査結果２</th>\n");
-			printf("<th>検査結果２区分</th>\n");
-			printf("<th>検査結果補足</th>\n");
-			printf("<th>表示結果</th>\n");
-			printf("<th>施設CD</th>\n");
-			printf("<th>適用F</th>\n");
-			printf("<th>開始年月日</th>\n");
-			printf("<th>廃止年月日</th>\n");
-			printf("<th>変更担当者ＩＤ</th>\n");
-			printf("<th>情報更新日時</th>\n");
+			printf("<th nowarp>検査G</th>\n");
+			printf("<th nowarp>項目CD</th>\n");
+			printf("<th nowarp>変換結果</th>\n");
+			printf("<th nowarp>下限値</th>\n");
+			printf("<th nowarp>上限値</th>\n");
+			printf("<th nowarp>検査結果１</th>\n");
+			printf("<th nowarp>検査結果２</th>\n");
+			printf("<th nowarp>検査結果２区分</th>\n");
+			printf("<th nowarp>検査結果補足</th>\n");
+			printf("<th nowarp>表示結果</th>\n");
+			printf("<th nowarp>施設CD</th>\n");
+			printf("<th nowarp>適用F</th>\n");
+			printf("<th nowarp>開始年月日</th>\n");
+			printf("<th nowarp>廃止年月日</th>\n");
+			printf("<th nowarp>変更担当者ＩＤ</th>\n");
+			printf("<th nowarp>情報更新日時</th>\n");
 		printf("</tr>\n");
 
 	try {
@@ -66,22 +66,22 @@ function kkafltmst_row($conn,$wscode,$kcode)
 		$sql = $sql . "order by knsgrp,kmkcd,sstcd,fltkka for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRP']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KMKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['FLTKKA']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['MINVAL']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['MAXVAL']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSKKA1']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSKKA2']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSKKA2KBN']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['HJKKA']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['SSTCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['TKYKBN']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%10.10s</td>\n",$row['KSNDH']);
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSGRP']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KMKCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['FLTKKA']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['MINVAL']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['MAXVAL']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSKKA1']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSKKA2']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSKKA2KBN']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KKAHSKCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['HJKKA']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['SSTCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['TKYKBN']));
+				printf("<td nowarp>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowarp>%s</td>\n",$row['HNKTNTID']);
+				printf("<td nowarp>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 		printf("</table>\n");

@@ -16,13 +16,13 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>結果補足CD</th>
-		<th>結果補足名称カナ</th>
-		<th>結果補足名称漢字</th>
-		<th>開始年月日</th>
-		<th>廃止年月日</th>
-		<th>変更担当者ＩＤ</th>
-		<th>情報更新日時</th>
+		<th nowarp>結果補足CD</th>
+		<th nowarp>結果補足名称カナ</th>
+		<th nowarp>結果補足名称漢字</th>
+		<th nowarp>開始年月日</th>
+		<th nowarp>廃止年月日</th>
+		<th nowarp>変更担当者ＩＤ</th>
+		<th nowarp>情報更新日時</th>
 	</tr>
 
 <?php
@@ -35,13 +35,13 @@ if ($conn) {
 		$sql = "select * from kkahskmst order by kkahskcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",$row['KKAHSKCD']);
-				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNM']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KKAHSKNMJ']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%20.20s</td>\n",$row['KSNDH']);
+				printf("<td nowarp>%s</td>\n",$row['KKAHSKCD']);
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KKAHSKNM']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KKAHSKNMJ']));
+				printf("<td nowarp>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowarp>%s</td>\n",$row['HNKTNTID']);
+				printf("<td nowarp>%20.20s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 	}

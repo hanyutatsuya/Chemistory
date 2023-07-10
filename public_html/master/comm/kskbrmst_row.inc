@@ -39,16 +39,16 @@ function kskbrmst_row($conn,$wscode,$kcode)
 
 	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
-			printf("<th>分析機区分</th>\n");
-			printf("<th>検査G</th>\n");
-			printf("<th>項目CD</th>\n");
-			printf("<th>希釈倍率</th>\n");
-			printf("<th>希釈下限値</th>\n");
-			printf("<th>希釈上限値</th>\n");
-			printf("<th>分析条件</th>\n");
-			printf("<th>開始年月日</th>\n");
-			printf("<th>廃止年月日</th>\n");
-			printf("<th>情報更新日時</th>\n");
+			printf("<th nowarp>分析機区分</th>\n");
+			printf("<th nowarp>検査G</th>\n");
+			printf("<th nowarp>項目CD</th>\n");
+			printf("<th nowarp>希釈倍率</th>\n");
+			printf("<th nowarp>希釈下限値</th>\n");
+			printf("<th nowarp>希釈上限値</th>\n");
+			printf("<th nowarp>分析条件</th>\n");
+			printf("<th nowarp>開始年月日</th>\n");
+			printf("<th nowarp>廃止年月日</th>\n");
+			printf("<th nowarp>情報更新日時</th>\n");
 		printf("</tr>\n");
 
 	try {
@@ -60,16 +60,16 @@ function kskbrmst_row($conn,$wscode,$kcode)
 		$sql = $sql . "order by knsgrp,kmkcd,bskkbn,ksbr for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",SjToUtfConv($row['BSKKBN']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRP']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KMKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KSBR']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KMIN']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KMAX']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['HNKTNTID']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['KSNDH']);
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['BSKKBN']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSGRP']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KMKCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KSBR']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KMIN']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KMAX']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['HNKTNTID']));
+				printf("<td nowarp>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 		printf("</table>\n");

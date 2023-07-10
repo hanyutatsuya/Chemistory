@@ -39,15 +39,15 @@ function jdkmkmst_row($conn,$wscode,$kcode)
 
 	printf("<table align=\"left\" bgcolor = \"white\" border>\n");
 		printf("<tr>\n");
-			printf("<th>検査G</th>\n");
-			printf("<th>項目CD</th>\n");
-			printf("<th>自動発生検査G</th>\n");
-			printf("<th>自動発生項目CD</th>\n");
-			printf("<th>報告有無F</th>\n");
-			printf("<th>開始年月日</th>\n");
-			printf("<th>廃止年月日</th>\n");
-			printf("<th>変更担当者ＩＤ</th>\n");
-			printf("<th>情報更新日時</th>\n");
+			printf("<th nowarp>検査G</th>\n");
+			printf("<th nowarp>項目CD</th>\n");
+			printf("<th nowarp>自動発生検査G</th>\n");
+			printf("<th nowarp>自動発生項目CD</th>\n");
+			printf("<th nowarp>報告有無F</th>\n");
+			printf("<th nowarp>開始年月日</th>\n");
+			printf("<th nowarp>廃止年月日</th>\n");
+			printf("<th nowarp>変更担当者ＩＤ</th>\n");
+			printf("<th nowarp>情報更新日時</th>\n");
 		printf("</tr>\n");
 
 	try {
@@ -59,15 +59,15 @@ function jdkmkmst_row($conn,$wscode,$kcode)
 		$sql = $sql . "order by knsgrp,kmkcd,jknsgrp,jkmkcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRP']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KMKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['JKNSGRP']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['JKMKCD']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['HHKUMFLG']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%10.10s</td>\n",$row['KSNDH']);
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSGRP']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KMKCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['JKNSGRP']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['JKMKCD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['HHKUMFLG']));
+				printf("<td nowarp>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowarp>%s</td>\n",$row['HNKTNTID']);
+				printf("<td nowarp>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 	}

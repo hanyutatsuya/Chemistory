@@ -16,12 +16,12 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>検査G</th>
-		<th>測定ライン</th>
-		<th>開始年月日</th>
-		<th>廃止年月日</th>
-		<th>変更担当者ＩＤ</th>
-		<th>情報更新日時</th>
+		<th nowarp>検査G</th>
+		<th nowarp>測定ライン</th>
+		<th nowarp>開始年月日</th>
+		<th nowarp>廃止年月日</th>
+		<th nowarp>変更担当者ＩＤ</th>
+		<th nowarp>情報更新日時</th>
 	</tr>
 
 <?php
@@ -34,12 +34,12 @@ if ($conn) {
 		$sql = "select * from zslinemst order by knsgrp,line for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNSGRP']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['LINE']));
-				printf("<td>%10.10s</td>\n",$row['KAIYMD']);
-				printf("<td>%10.10s</td>\n",$row['HAIYMD']);
-				printf("<td>%s</td>\n",$row['HNKTNTID']);
-				printf("<td>%10.10s</td>\n",$row['KSNDH']);
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNSGRP']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['LINE']));
+				printf("<td nowarp>%10.10s</td>\n",$row['KAIYMD']);
+				printf("<td nowarp>%10.10s</td>\n",$row['HAIYMD']);
+				printf("<td nowarp>%s</td>\n",$row['HNKTNTID']);
+				printf("<td nowarp>%10.10s</td>\n",$row['KSNDH']);
 			printf("</tr>\n");
 		}
 	}

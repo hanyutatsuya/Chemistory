@@ -16,18 +16,18 @@ LaboTimeStamp();
 
 <table align="center" bgcolor = "white" border>
 	<tr>
-		<th>ユーザーＩＤ</th>
-		<th>システムＩＤ</th>
-		<th>照会権限F</th>
-		<th>入力権限F</th>
-		<th>修正権限F</th>
-		<th>親展閲覧権限F</th>
-		<th>患者名参照権限F</th>
-		<th>汎用F</th>
-		<th>開始年月日</th>
-		<th>終了年月日</th>
-		<th>登録年月日</th>
-		<th>変更年月日</th>
+		<th nowarp>ユーザーＩＤ</th>
+		<th nowarp>システムＩＤ</th>
+		<th nowarp>照会権限F</th>
+		<th nowarp>入力権限F</th>
+		<th nowarp>修正権限F</th>
+		<th nowarp>親展閲覧権限F</th>
+		<th nowarp>患者名参照権限F</th>
+		<th nowarp>汎用F</th>
+		<th nowarp>開始年月日</th>
+		<th nowarp>終了年月日</th>
+		<th nowarp>登録年月日</th>
+		<th nowarp>変更年月日</th>
 	</tr>
 
 <?php
@@ -40,18 +40,18 @@ if ($conn) {
 		$sql = "select * from knokgnmst order by userid for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
-				printf("<td>%s</td>\n",SjToUtfConv($row['USERID']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['SYSTEMID']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['SYKIOKFLG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['NRYKOKFLG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['SYSIOKFLG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['SNTNOKFLG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['KNJAOKFLG']));
-				printf("<td>%s</td>\n",SjToUtfConv($row['GENERALFLG']));
-				printf("<td>%10.10s</td>\n",SjToUtfConv($row['STAYMD']));
-				printf("<td>%10.10s</td>\n",SjToUtfConv($row['ENDYMD']));
-				printf("<td>%10.10s</td>\n",SjToUtfConv($row['TRKYMD']));
-				printf("<td>%10.10s</td>\n",SjToUtfConv($row['HNKYMD']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['USERID']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['SYSTEMID']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['SYKIOKFLG']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['NRYKOKFLG']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['SYSIOKFLG']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['SNTNOKFLG']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['KNJAOKFLG']));
+				printf("<td nowarp>%s</td>\n",SjToUtfConv($row['GENERALFLG']));
+				printf("<td nowarp>%10.10s</td>\n",SjToUtfConv($row['STAYMD']));
+				printf("<td nowarp>%10.10s</td>\n",SjToUtfConv($row['ENDYMD']));
+				printf("<td nowarp>%10.10s</td>\n",SjToUtfConv($row['TRKYMD']));
+				printf("<td nowarp>%10.10s</td>\n",SjToUtfConv($row['HNKYMD']));
 			printf("</tr>\n");
 		}
 	}
