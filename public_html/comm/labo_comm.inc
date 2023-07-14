@@ -24,7 +24,7 @@ function barcode_edit($barcd)
 function ymd_edit($ymd)
 {
 	$ed_ymd = "";
-	$ed_ymd = substr($ymd,0,4) . "/" . substr($ymd,4,2) . "/" . substr($ymd,6,2);
+	$ed_ymd = substr($ymd,0,4) . "-" . substr($ymd,4,2) . "-" . substr($ymd,6,2);
 	return $ed_ymd;
 }
 
@@ -97,22 +97,22 @@ function barcode_conv($barcode)
 
 		if  ($keta9 == 0)
 			{
-			//	現行バーコード
+			//	so[R[h
 			if  (strcnmp(substr($barcode,8,3),"000",3) == 0)
 				{
-				//	６桁バーコード
+				//	Uo[R[h
 				$ed_bar = "000" . substr($barcode,0,8);
 				}
 			else
 				{
-				//	７桁バーコード
+				//	Vo[R[h
 				$ed_bar = "00" . substr($barcode,8,3) . substr($barcode,2,6);
 				}
 			}
 		else
 			{
 			$ed_bar = substr($barcode,0,11);
-			//	９桁バーコード
+			//	Xo[R[h
 			}
 		}
 	else
