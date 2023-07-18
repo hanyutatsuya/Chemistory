@@ -15,14 +15,14 @@ LaboTimeStamp();
 <center><h2>チェックマスタ一覧</h2></center>
 
 <?php
-$utkymd = trim($_REQUEST['YTKYMD']);
+$utkymd = trim($_REQUEST['UTKYMD']);
 $irino = trim($_REQUEST['IRINO']);
 
 printf("<P>\n");
 printf("<center>\n");
 printf("<FORM ACTION=\"irino.php\" METHOD=POST>\n");
 printf("受付日\n");
-printf("<INPUT TYPE=text NAME=YTKYMD SIZE=6 MAXLENGTH=4 value=\"%s\">\n",$utkymd);
+printf("<INPUT TYPE=text NAME=UTKYMD SIZE=10 MAXLENGTH=8 value=\"%s\">\n",$utkymd);
 printf("　依頼書№\n");
 printf("<INPUT TYPE=text NAME=IRINO SIZE=9 MAXLENGTH=7 value=\"%s\">\n",$irino);
 printf("　<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
@@ -42,7 +42,7 @@ require_once("comm/kenpos_row.inc");
 require_once("comm/realchk_row.inc");
 require_once("comm/kekka_row.inc");
 
-if (strlen($kcode) != 0) {
+if (strlen($irino) != 0) {
 	$conn = GetDBConn();
 
 	if ($conn) {
@@ -101,7 +101,7 @@ if (strlen($kcode) != 0) {
 printf("<HR>\n");
 LaboBackPage();
 printf("<HR>\n");
-MasterTailOut();
+DataTailOut();
 
 ?>
 

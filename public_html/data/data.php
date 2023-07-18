@@ -15,7 +15,7 @@ LaboTimeStamp();
 
 <HR>
 
-<table bgcolor = white border>
+<table align="center" bgcolor = white border>
 
 	<tr>
 		<th nowarp>テーブル名</th>

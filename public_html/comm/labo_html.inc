@@ -62,6 +62,16 @@ print <<<__MASTERTAILOUT__
 __MASTERTAILOUT__;
 }
 
+function DataTailOut()
+{
+print <<<__DATATAILOUT__
+<HR>
+<P>
+<center><A href=data.php>データ照会に戻る</A></center>
+</P>
+__DATATAILOUT__;
+}
+
 function LaboLogOut($msg)
 {
 	$logfile = "/home/data/log/php_log";
