@@ -18,21 +18,13 @@ LaboTimeStamp();
 <table align="center" bgcolor = white border>
 
 	<tr>
-		<th nowarp>テーブル名</th>
-		<th nowarp>データ名称</th>
+		<th nowarp>処理名</th>
+		<th nowarp>処理名称</th>
 	</tr>
 
 	<tr>
 		<td nowarp><A href=irino.php>IRINO</A></td>
 		<td nowarp><A href=irino.php>№対応照会</A></td>
-	</tr>
-	<tr>
-		<td nowarp><A href=cmtmst.php>CMTMST</A></td>
-		<td nowarp><A href=cmtmst.php>コメントマスタ</A></td>
-	</tr>
-	<tr>
-		<td nowarp><A href=kkahskmst.php>KKAHSKMST</A></td>
-		<td nowarp><A href=kkahskmst.php>結果補足マスタ</A></td>
 	</tr>
 </table>
 

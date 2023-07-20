@@ -4,15 +4,16 @@
 <?php
 require_once("../comm/labo_html.inc");
 require_once("../comm/labo_db.inc");
-LaboHeadOutput("チェックマスタ一覧");
-LaboLogOut("チェックマスタ一覧");
+require_once("../comm/labo_comm.inc");
+LaboHeadOutput("№対応照会");
+LaboLogOut("№対応照会");
 ?>
 
 <BODY background="../img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
-<center><h2>チェックマスタ一覧</h2></center>
+<center><h2>№対応照会</h2></center>
 
 <?php
 $utkymd = trim($_REQUEST['UTKYMD']);
@@ -30,7 +31,6 @@ printf("</BUTTON>\n");
 printf("</FORM>\n");
 printf("</center>\n");
 printf("</P>\n");
-printf("<HR>\n");
 
 require_once("comm/kanjya_row.inc");
 require_once("comm/irai_row.inc");
@@ -43,12 +43,13 @@ require_once("comm/realchk_row.inc");
 require_once("comm/kekka_row.inc");
 
 if (strlen($irino) != 0) {
+	printf("<HR>\n");
 	$conn = GetDBConn();
 
 	if ($conn) {
 		printf("患者情報\n");
 		printf("<BR>\n");
-		kmkmst_row($conn,$utkymd,$irino);
+		kanjya_row($conn,$utkymd,$irino);
 		printf("<BR clear=all>\n");
 
 		printf("依頼情報\n");

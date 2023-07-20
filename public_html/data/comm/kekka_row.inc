@@ -7,7 +7,6 @@ function kekka_row($conn,$utkymd,$irino)
 		printf("</center>\n");
 		printf("<HR>\n");
 		return -1;
-		}
 	} else {
 		if (strlen($utkymd) != 8) {
 			printf("<center>\n");
@@ -23,7 +22,7 @@ function kekka_row($conn,$utkymd,$irino)
 				printf("<HR>\n");
 				return -1;
 			} else {
-				$udate ymd_edit($utkymd);
+				$udate = ymd_edit($utkymd);
 			}
 		}
 	}
@@ -146,7 +145,7 @@ function kekka_row($conn,$utkymd,$irino)
 			printf("<th nowrap>履歴チェック</th>\n");
 			printf("<th nowrap>照合チェック</th>\n");
 			printf("<th nowrap>計算チェック</th>\n");
-			printf("<th nowrap>100%チェック</th>\n");
+			printf("<th nowrap>100%%チェック</th>\n");
 			printf("<th nowrap>透析前後チェック</th>\n");
 			printf("<th nowrap>希釈再検チェック</th>\n");
 			printf("<th nowrap>校正処理</th>\n");
@@ -170,7 +169,7 @@ function kekka_row($conn,$utkymd,$irino)
 		$sql = "select * from kekka where ";
 		$sql = $sql . "utkymd = '$udate' and ";
 		$sql = $sql . "irino = '$ino' ";
-		$sql = $sql . "knsgrp,oyakmkcd,kmkcd for read only";
+		$sql = $sql . "order by knssu,knsgrp,oyakmkcd,kmkcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KNSKISYMD']));

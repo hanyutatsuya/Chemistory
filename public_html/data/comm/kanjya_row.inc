@@ -7,7 +7,6 @@ function kanjya_row($conn,$utkymd,$irino)
 		printf("</center>\n");
 		printf("<HR>\n");
 		return -1;
-		}
 	} else {
 		if (strlen($utkymd) != 8) {
 			printf("<center>\n");
@@ -23,7 +22,7 @@ function kanjya_row($conn,$utkymd,$irino)
 				printf("<HR>\n");
 				return -1;
 			} else {
-				$udate ymd_edit($utkymd);
+				$udate = ymd_edit($utkymd);
 			}
 		}
 	}

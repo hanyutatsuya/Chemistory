@@ -7,7 +7,6 @@ function realchk_row($conn,$utkymd,$irino)
 		printf("</center>\n");
 		printf("<HR>\n");
 		return -1;
-		}
 	} else {
 		if (strlen($utkymd) != 8) {
 			printf("<center>\n");
@@ -23,7 +22,7 @@ function realchk_row($conn,$utkymd,$irino)
 				printf("<HR>\n");
 				return -1;
 			} else {
-				$udate ymd_edit($utkymd);
+				$udate = ymd_edit($utkymd);
 			}
 		}
 	}
@@ -70,7 +69,7 @@ function realchk_row($conn,$utkymd,$irino)
 			printf("<th nowrap>履歴チェックF</th>\n");
 			printf("<th nowrap>照合チェックF</th>\n");
 			printf("<th nowrap>計算チェックF</th>\n");
-			printf("<th nowrap>100%チェックF</th>\n");
+			printf("<th nowrap>100%%チェックF</th>\n");
 			printf("<th nowrap>透析前後チェックF</th>\n");
 			printf("<th nowrap>希釈再検チェックF</th>\n");
 			printf("<th nowrap>校正処理F</th>\n");
@@ -90,7 +89,7 @@ function realchk_row($conn,$utkymd,$irino)
 			printf("<th nowrap>履歴チェックパラメータ</th>\n");
 			printf("<th nowrap>照合チェックパラメータ</th>\n");
 			printf("<th nowrap>計算チェックパラメータ</th>\n");
-			printf("<th nowrap>100%チェックパラメータ</th>\n");
+			printf("<th nowrap>100%%チェックパラメータ</th>\n");
 			printf("<th nowrap>透析前後チェックパラメータ</th>\n");
 			printf("<th nowrap>希釈再検チェックパラメータ</th>\n");
 			printf("<th nowrap>校正処理パラメータ</th>\n");
@@ -109,7 +108,7 @@ function realchk_row($conn,$utkymd,$irino)
 		$sql = "select * from realchk where ";
 		$sql = $sql . "utkymd = '$udate' and ";
 		$sql = $sql . "irino = '$ino' ";
-		$sql = $sql . "order by smpcd,kmkcd for read only";
+		$sql = $sql . "order by knssu,knsgrp,kmkcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KNSKISYMD']));

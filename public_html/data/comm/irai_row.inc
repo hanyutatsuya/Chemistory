@@ -7,7 +7,6 @@ function irai_row($conn,$utkymd,$irino)
 		printf("</center>\n");
 		printf("<HR>\n");
 		return -1;
-		}
 	} else {
 		if (strlen($utkymd) != 8) {
 			printf("<center>\n");
@@ -23,7 +22,7 @@ function irai_row($conn,$utkymd,$irino)
 				printf("<HR>\n");
 				return -1;
 			} else {
-				$udate ymd_edit($utkymd);
+				$udate = ymd_edit($utkymd);
 			}
 		}
 	}
@@ -99,7 +98,7 @@ function irai_row($conn,$utkymd,$irino)
 		$sql = "select * from irai where ";
 		$sql = $sql . "utkymd = '$udate' and ";
 		$sql = $sql . "irino = '$ino' ";
-		$sql = $sql . "knsgrp,oyakmkcd,kmkcd for read only";
+		$sql = $sql . "order by knsgrp,oyakmkcd,kmkcd for read only";
 		foreach ($conn->query($sql) as $row) {
 			printf("<tr>\n");
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['UTKYMD']));
