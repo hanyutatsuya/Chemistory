@@ -40,12 +40,12 @@ done
 awk -f ${AWKFILE} ${TMPFILE} > ${PRTFILE}
 cat ${PRTFILE}
 
-read -p "印刷しますか？(y/n):" yn
-case "$yn" in
-	[yY]*)
-		echo "OK";;
-	*)
-		echo "終了します"
-esac
+echo -n "印刷しますか？(y/n):"
+read yn
+if [ "${yn}" = "Y" ] || [ "${yn}" = "y" ]; then
+	npdl -15 -a4p < ${PRTFILE} | lp -d prt01 |& iconv -f utf8 -t sjis
+else
+	echo "終了します"
+fi
 
 exit $EXECSTS
