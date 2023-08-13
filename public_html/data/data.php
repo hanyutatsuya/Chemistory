@@ -24,7 +24,11 @@ LaboTimeStamp();
 
 	<tr>
 		<td nowarp><A href=irino.php>IRINO</A></td>
-		<td nowarp><A href=irino.php>№対応照会</A></td>
+		<td nowarp><A href=irino.php>依頼書№対応照会</A></td>
+	</tr>
+	<tr>
+		<td nowarp><A href=kekka.php>KEKKA</A></td>
+		<td nowarp><A href=kekka.php>結果照会</A></td>
 	</tr>
 </table>
 
