@@ -1,0 +1,45 @@
+問合者=電算課  対応時間(分)=120
+23:35 ケミストリーのパトランプ点灯の連絡
+
+RUI_KEKKAの削除処理に時間がかかっている。
+通常は10000件の削除が10数秒で進むところ、20分以上かかっていた。
+
+15分以上ログファイルの更新がなかったため、日次処理のチェックにかかって
+パトランプが点灯した。
+
+しばらく経過を見ていたが、削除のペースが変わらないので処理をいったん中断する。
+
+1. 日次処理をkillコマンドでで終了させる。
+$ ps -ax | grep daily
+$ kill -9
+
+2. IAのDBサーバーでDB2を再起動。
+$ db2 list application
+$ cd shell
+$ sh ./dbn_force.sh
+$ db2 list application
+$ sh ./dbn_reboot.sh
+
+3. 中断した日次処理の再実行
+$ /home/kea00sys/shell/daily/del_ruishu_730.sh kea00db db2inst1 db2inst1 
+再実行したが、削除のペースが変わらなかった。
+KEA00IAW08でdb2 list applicationを実行したところ、アプリがまだ残っている。
+
+4. 再度db2の再起動
+$ cd shell
+$ ./weekly_reboot.sh
+
+5. 中断した日次処理の再実行
+$ /home/kea00sys/shell/daily/del_ruishu_730.sh kea00db db2inst1 db2inst1 
+処理スピードが戻っていることを確認。
+
+~/shell/daily/daily.shを参照して残りの日次処理を実行。
+$ /home/kea00sys/shell/daily/runstats_rireki.sh kea00db db2inst1 db2inst1 
+$ /home/kea00sys/shell/daily/runstats_ruishu.sh kea00db db2inst1 db2inst1 
+
+/apdata/oldday/2023-07-21/daily.logの最後に日次処理終了のメッセージを追加。
+（前日のログからコピペ）
+
+
+
+
