@@ -23,6 +23,10 @@ LaboTimeStamp();
 	</tr>
 
 	<tr>
+		<td nowarp><A href=kensu.php>KENSU</A></td>
+		<td nowarp><A href=kensu.php>件数一覧</A></td>
+	</tr>
+	<tr>
 		<td nowarp><A href=irino.php>IRINO</A></td>
 		<td nowarp><A href=irino.php>依頼書№対応照会</A></td>
 	</tr>
