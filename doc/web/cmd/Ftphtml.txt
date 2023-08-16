@@ -17,6 +17,9 @@ mput *
 cd ../master
 lcd ../master
 mput *
+cd ../check
+lcd ../check
+mput *
 cd ../data
 lcd ../data
 mput *

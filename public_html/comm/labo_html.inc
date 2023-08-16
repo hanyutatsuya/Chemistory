@@ -72,6 +72,16 @@ print <<<__DATATAILOUT__
 __DATATAILOUT__;
 }
 
+function CheckTailOut()
+{
+print <<<__CHECKTAILOUT__
+<HR>
+<P>
+<center><A href=check.php>チェック処理に戻る</A></center>
+</P>
+__CHECKTAILOUT__;
+}
+
 function LaboLogOut($msg)
 {
 	$logfile = "/home/data/log/php_log";

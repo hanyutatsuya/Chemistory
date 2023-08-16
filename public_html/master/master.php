@@ -7,7 +7,7 @@ LaboHeadOutput("マスター一覧");
 LaboLogOut("マスター一覧");
 ?>
 
-<BODY background="/~kea00sys/img/mstback.gif">
+<BODY background="../img/mstback.gif">
 <?php
 LaboTimeStamp();
 ?>
