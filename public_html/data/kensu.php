@@ -31,6 +31,8 @@ printf("</P>\n");
 
 if (strlen($utkymd) != 0) {
 
+	$udate = "";
+
 	if (!is_numeric($utkymd)) {
 		printf("<center>\n");
 		printf("<h2>受付日入力エラー</h2>\n");
@@ -53,8 +55,12 @@ if (strlen($utkymd) != 0) {
 			}
 		}
 	}
+}
 
-	printf("<HR>\n");
+printf("<HR>\n");
+
+if (strlen($udate) != 0) {
+
 	$conn = GetDBConn();
 
 	if ($conn) {
@@ -77,15 +83,33 @@ if (strlen($utkymd) != 0) {
 					printf("<td nowarp>患者数</td>\n");
 					printf("<td  align=right nowarp>%s</td>\n",number_format($cnt_kanja));
 				printf("</tr>\n");
-	
+
+				$sql = "";
+				$sql = $sql . "select sum(cnt) from ( ";
+				$sql = $sql . "select knsgrp as ws,count(distinct irino) as cnt ";
+				$sql = $sql . "from irai ";
+				$sql = $sql . "where utkymd = '$udate' ";
+				$sql = $sql . "group by knsgrp )" ;
+				$sql = $sql . "for read only with ur";
+
+				foreach ($conn->query($sql,PDO::FETCH_NUM) as $row) {
+					$cnt_ws = $row[0];
+					break;
+				}
+
+				printf("<tr>\n");
+					printf("<td nowarp>依頼WS数</td>\n");
+					printf("<td  align=right nowarp>%s</td>\n",number_format($cnt_ws));
+				printf("</tr>\n");
+
 				$sql = "select count(*) from irai where utkymd = '$udate' for read only with ur";
 				foreach ($conn->query($sql,PDO::FETCH_NUM) as $row) {
 					$cnt_irai = $row[0];
 					break;
 				}
-	
+
 				printf("<tr>\n");
-					printf("<td nowarp>依頼数</td>\n");
+					printf("<td nowarp>依頼項目数</td>\n");
 					printf("<td  align=right nowarp>%s</td>\n",number_format($cnt_irai));
 				printf("</tr>\n");
 	
