@@ -53,6 +53,11 @@ LaboTimeStamp();
 	</tr>
 
 	<tr>
+		<td nowarp><A href=control.php>CTRLKKA</A></td>
+		<td nowarp><A href=control.php>コントロール結果情報</A></td>
+	</tr>
+
+	<tr>
 		<td nowarp><A href=apllog.php>APLLOG</A></td>
 		<td nowarp><A href=apllog.php>ログ情報</A></td>
 	</tr>
