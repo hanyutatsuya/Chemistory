@@ -5,6 +5,7 @@ binary
 prom
 cd public_html
 mput *.php
+mput *.ico
 cd comm
 lcd comm
 mput *

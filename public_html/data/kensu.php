@@ -114,9 +114,12 @@ if (strlen($udate) != 0) {
 				printf("</tr>\n");
 	
 			printf("</table>\n");
-	
+
 			printf("<BR clear=all>\n");
-	
+			printf("<center>\n");
+			printf("<p>検査グループ別依頼数\n</p>");
+			printf("</center>\n");
+
 			printf("<table align=\"center\" bgcolor = white border>\n");
 				printf("<tr>\n");
 					printf("<th nowrap>検査G</th>\n");
