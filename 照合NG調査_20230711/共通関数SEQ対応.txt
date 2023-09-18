@@ -1,0 +1,55 @@
+共通関数SEQ対応
+
+新規テーブルラックマスタ名マスタ
+select * from mst_racknm order by startseq
+hno	hname	kbn	startseq	endseq
+1	白血球像                        	スライド                        	1	1000
+2	白血球像                        	DI60                            	1001	22000
+3	赤血球形態                      	再検確認                        	22001	42000
+4	赤血球形態                      	スライド                        	42001	43000
+5	PLT・WBC                        	再検確認                        	43001	64000
+6	定型外                          	用手受付                        	64001	65000
+7	形態単独                        	スライド                        	65001	66000
+8	その他                          	スライド                        	66001	67000
+9	特染                            	スライド                        	67001	68000
+10	ＡＬＰ染色                      	スライド                        	68001	69000
+11	原虫                            	スライド                        	69001	70000
+12	ＣＰＣ・粘                      	用手受付                        	70001	71000
+13	鼻汁EOSINO                      	スライド                        	71001	76000
+14	赤沈                            	用手受付                        	76001	81000
+15	ＢＡＬＦ                        	用手受付                        	81001	82000
+16	穿刺液汎用                      	用手受付                        	82001	83000
+17	穿刺液特定                      	用手受付                        	83001	84000
+18	好酸球喀痰                      	用手受付                        	84001	85000
+19	好中球数                        	用手受付                        	85001	86000
+
+ソースコード
+・DI像に一致しているか
+If useq1 > 1000 And useq1 < 10000 Then
+select count(*) from mst_racknm where 1001 between startseq and endseq and hno=2
+
+・PLTWBCだったら赤血球形態SEQに合わせる
+If useq1 > 10000 And useq1 < 30000 Then
+ If useq1 > 20000 Then
+     useq11 = useq1 - 10000
+     useq12 = useq2 - 10000
+     useq21 = useq1
+     useq22 = useq2
+ Else
+     useq11 = useq1
+     useq12 = useq2
+     useq21 = useq1 + 10000
+     useq22 = useq2 + 10000
+ End If
+select count(*) from mst_racknm a1 where a1.hno in(3,5)
+and not exists (select * from mst_racknm a2 where 43001 between a2.startseq and a2.endseq and a2.hno in(3,5) and a2.hno=a1.hno)
+
+・全血スライドのみ抽出
+If (useqno > 1000) And (useqno < 10000) Or
+       (useqno > 10000) And (useqno < 19000) Or
+       (useqno > 20000) And (useqno < 29000) Then
+select count(*) from mst_racknm where hno in(2,3,5) and 43001 between startseq and endseq
+
+ElseIf (useqno > 30000 And useqno < 100000) Or
+            (useqno < 1000) Then
+select count(*) from mst_racknm where (hno=1 or hno>=6) and 74001 between startseq and endseq
