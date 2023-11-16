@@ -65,8 +65,10 @@ function kekka_data($conn,$utkymd,$irino)
 			printf("<th nowrap>GOKI</th>\n");
 			printf("<th nowrap>ME-SEQ</th>\n");
 			printf("<th nowrap>基準値No</th>\n");
-			printf("<th nowrap>パニックレンジF</th>\n");
-			printf("<th nowrap>検査室パニックレンジF</th>\n");
+			printf("<th nowrap>PANIC</th>\n");
+			printf("<th nowrap>検査室P</th>\n");
+			printf("<th nowrap>結果換算F</th>\n");
+			printf("<th nowrap>結果修正F</th>\n");
 			printf("<th nowrap>異常値区分(男)</th>\n");
 			printf("<th nowrap>異常値区分(女)</th>\n");
 			printf("<th nowrap>異常値区分(不明)</th>\n");
@@ -114,6 +116,7 @@ function kekka_data($conn,$utkymd,$irino)
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['PNCRGFLG']));
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KNSPNCRGFLG']));
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KKAKSFLG']));
+				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['KKASSFLG']));
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['IJKBNM']));
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['IJKBNF']));
 				printf("<td nowrap>%s</td>\n",SjToUtfConv($row['IJKBNN']));
