@@ -9,6 +9,7 @@ set ftplog=%basedir%\cmd\ftplog.txt
 cd /d %htmldir%
 
 ftp -s:%cmddir%Ftphtml.txt
+ftp -s:%cmddir%Ftphtml91.txt
 
 cd /d %~dp0
 pause

@@ -1,16 +1,17 @@
-Oracle linux 9.1
+Oracle linux 9.2
 Mem 4G
 HDD 200G
 
 Server(GUI使用) でインストール
 
-sshでrootログインができないので設定
+
+sshでrootログインができない場合
 # cd /etc/ssh
 # vi sshd_config  (ssh_config という名前のファイルもあるので注意する)
 次の行を追加
 PermitRootLogin yes
 
-sshdを再起動する21.
+sshdを再起動する
 # systemctl restart sshd
 
 
@@ -42,13 +43,6 @@ SHIFT_JISのインストール
 # localedef -f SHIFT_JIS -i ja_JP ja_JP.SJIS
 [warning] character map `SHIFT_JIS' is not ASCII compatible, locale not ISO C compliant [--no-warnings=ascii]
 #
-# cd
-# vi .bashrc
-最終行に追加
-export LANG=ja_JP.SJIS
-#
-
-rootでログインし直し
 
 wgetのproxy
 /etc/wgetrc
@@ -285,8 +279,6 @@ typicalインストールだと開発ツールの一部がインストールさ�
 カスタムインストールで実行する。
 インスタンス作成も選択する。
 
-
-
 express-c,db2clientともに
 db2inst1ユーザーが作成されれば成功（インストール中にパスワード入力がある）
 作成されない場合はオプションに間違いがあるのでやり直し。
@@ -299,121 +291,19 @@ export ftp_proxy=http://iproxy.bml.co.jp:8080/
 
 を追加
 
+バージョン違いによるインストールディレクトリ名の違いを解消するため
+シンボリックリンクを張っておく
 rootでログイン
-perl用DB2モジュールをインストール
+# cd /opt/ibm/db2
+# ln -s V11.5 V11.1
 
-# dnf -y install perl-App-cpanminus
-# export DB2_HOME=/opt/ibm/db2/v11.5
-# export DB2LIB=/opt/ibm/db2/v11.5/lib64
-# cpan DBD::DB2
-Loading internal logger. Log::Log4perl recommended for better logging
+~/.bashrc へ以下の行を追加
+# vi .bashrc
 
-CPAN.pm requires configuration, but most of it can be done automatically.
-If you answer 'no' below, you will enter an interactive dialog for each
-configuration option instead.
-
-Would you like to configure as much as possible automatically? [yes]yes←   ..........ここを入力
-CPAN: HTTP::Tiny loaded ok (v0.076)
-CPAN: Net::SSLeay loaded ok (v1.92)
-CPAN: IO::Socket::SSL loaded ok (v2.073)
-
-Proxy authentication needed!
- (Note: to permanently configure username and password run
-   o conf proxy_user your_username
-   o conf proxy_pass your_password
-     )
-Username:
-CPAN: Term::ReadKey loaded ok (v2.38)
-Password:
-
-
-Fetching with HTTP::Tiny:
-https://cpan.org/authors/01mailrc.txt.gz
-Reading '/root/.local/share/.cpan/sources/authors/01mailrc.txt.gz'
-CPAN: Compress::Zlib loaded ok (v2.102)
-............................................................................DONE
-
-Proxy authentication needed!
- (Note: to permanently configure username and password run
-   o conf proxy_user your_username
-   o conf proxy_pass your_password
-     )
-Username:
-Password:
-
-
-Fetching with HTTP::Tiny:
-https://cpan.org/modules/02packages.details.txt.gz
-Reading '/root/.local/share/.cpan/sources/modules/02packages.details.txt.gz'
-  Database was generated on Tue, 13 Jun 2023 06:17:02 GMT
-CPAN: HTTP::Date loaded ok (v6.05)
-..............
-  New CPAN.pm version (v2.36) available.
-  [Currently running version is v2.29]
-  You might want to try
-    install CPAN
-    reload cpan
-  to both upgrade CPAN.pm and run the new version without leaving
-  the current session.
-
-
-..............................................................DONE
-
-Proxy authentication needed!
- (Note: to permanently configure username and password run
-   o conf proxy_user your_username
-   o conf proxy_pass your_password
-     )
-Username:
-Password:
-
-
-Fetching with HTTP::Tiny:
-https://cpan.org/modules/03modlist.data.gz
-Reading '/root/.local/share/.cpan/sources/modules/03modlist.data.gz'
-DONE
-Writing /root/.local/share/.cpan/Metadata
-Running install for module 'DBD::DB2'
-
-Proxy authentication needed!
- (Note: to permanently configure username and password run
-   o conf proxy_user your_username
-   o conf proxy_pass your_password
-     )
-Username:
-Password:
-
-
-Fetching with HTTP::Tiny:
-https://cpan.org/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz
-CPAN: Digest::SHA loaded ok (v6.02)
-
-Proxy authentication needed!
- (Note: to permanently configure username and password run
-   o conf proxy_user your_username
-   o conf proxy_pass your_password
-     )
-Username:
-Password:
-
-
-Fetching with HTTP::Tiny:
-https://cpan.org/authors/id/R/RO/ROCKETDB/CHECKSUMS
-Checksum for /root/.local/share/.cpan/sources/authors/id/R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz ok
-CPAN: YAML loaded ok (v1.30)
-CPAN: CPAN::Meta::Requirements loaded ok (v2.140)
-CPAN: Parse::CPAN::Meta loaded ok (v2.150010)
-CPAN: CPAN::Meta loaded ok (v2.150010)
-Configuring R/RO/ROCKETDB/DBD-DB2-1.89.tar.gz with Makefile.PL
-
-Configuring DBD::DB2...
-Remember to actually read the README and CAVEATS files!
-
-DB2_HOME environment variable (/opt/ibm/db2/v11.5) not valid.
-Warning: No success on command[/usr/bin/perl Makefile.PL]
-  ROCKETDB/DBD-DB2-1.89.tar.gz
-  /usr/bin/perl Makefile.PL -- NOT OK
-#
+# The following three lines have been added by IBM DB2 instance utilities.
+if [ -f /home/db2inst1/sqllib/db2profile ]; then
+    . /home/db2inst1/sqllib/db2profile
+fi
 
 
 DB2設定
