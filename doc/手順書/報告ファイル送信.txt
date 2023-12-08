@@ -1,0 +1,34 @@
+
+１．GD105 検査結果報告 を起動しておく
+２．クライアントから報告処理を行う
+
+/apdata/today/online/host/SendにA00_.....というファイル名で報告ファイルができる
+
+３．HULFT設定変更
+utladmin -sでHULFT管理画面を起動
+システム管理→配信管理情報→SY00SA00→
+転送グループＩＤをkittogapからkitga20aへ変更する
+
+システム管理→転送グループ情報→kitga20a→
+登録されているホスト名がkitga20aである事を確認しておく
+
+４．報告ファイル送信
+報告ファイル /apdata/today/online/host/Send/A00_.... を /apdata/today/online/host/Send/data にコピーする。
+utladmin -sでHULFT管理画面を起動
+配信状況照会→SY00SA00にカーソルを合わせてCtrl+uを入力
+ファイルが送信される。
+
+報告ファイルが複数ある場合は上記を繰り返し。
+
+utlsend -f SY00SA00 でも送信されるが間違えるのが怖いのでytladminから送信
+
+５．HULFT設定変更の戻し
+utladmin -sでHULFT管理画面を起動
+システム管理→配信管理情報→SY00SA00→
+転送グループＩＤをkitga20aからkittogapへ戻す
+
+システム管理→転送グループ情報→kittogap→
+登録されているホスト名がkithul01である事を確認しておく
+
+HULFTの設定は忘れずに戻しておく。
+

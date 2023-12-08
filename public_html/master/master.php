@@ -164,6 +164,33 @@ LaboTimeStamp();
 		</table>
 	</td>
 
+	<td>
+		<table bgcolor = white border>
+
+			<tr>
+				<th colspan = 2>管理情報</th>
+			</tr>
+			<tr>
+				<th nowarp>テーブル名</th>
+				<th nowarp>マスター名称</th>
+			</tr>
+
+			<tr>
+				<td nowarp><A href=wsseq.php>WSSEQKNRI</A></td>
+				<td nowarp><A href=wsseq.php>WS-SEQ管理情報</A></td>
+			</tr>
+			<tr>
+				<td nowarp><A href=kenseq.php>KNSSEQKNRI</A></td>
+				<td nowarp><A href=kenseq.php>検査SEQ管理情報</A></td>
+			</tr>
+			<tr>
+				<td nowarp><A href=hokoku.php>HKKKNRI</A></td>
+				<td nowarp><A href=hokoku.php>報告管理情報</A></td>
+			</tr>
+
+		</table>
+	</td>
+
 </table>
 
 <HR>

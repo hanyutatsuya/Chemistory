@@ -48,11 +48,6 @@ LaboTimeStamp();
 	</tr>
 
 	<tr>
-		<td nowarp><A href=hokoku.php>HKKKNRI</A></td>
-		<td nowarp><A href=hokoku.php>報告管理情報</A></td>
-	</tr>
-
-	<tr>
 		<td nowarp><A href=control.php>CTRLKKA</A></td>
 		<td nowarp><A href=control.php>コントロール結果情報</A></td>
 	</tr>
