@@ -180,8 +180,8 @@ LaboTimeStamp();
 				<td nowarp><A href=wsseq.php>WS-SEQ管理情報</A></td>
 			</tr>
 			<tr>
-				<td nowarp><A href=kenseq.php>KNSSEQKNRI</A></td>
-				<td nowarp><A href=kenseq.php>検査SEQ管理情報</A></td>
+				<td nowarp><A href=knsseq.php>KNSSEQKNRI</A></td>
+				<td nowarp><A href=knsseq.php>検査SEQ管理情報</A></td>
 			</tr>
 			<tr>
 				<td nowarp><A href=hokoku.php>HKKKNRI</A></td>
