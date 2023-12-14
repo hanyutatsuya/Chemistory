@@ -27,6 +27,11 @@ LaboTimeStamp();
 		<td nowarp><A href=knsflg.php>検査結果フラグ異常確認</A></td>
 	</tr>
 
+	<tr>
+		<td nowarp><A href=pg12.php>PG12</A></td>
+		<td nowarp><A href=pg12.php>PG1/PG2比チェック</A></td>
+	</tr>
+
 </table>
 
 <HR>
