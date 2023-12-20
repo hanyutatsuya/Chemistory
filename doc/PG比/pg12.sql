@@ -21,7 +21,11 @@ and k3.irino = k1.irino
 and k3.kmkcd = '0003736'
 and k3.knsflg in ('E','X','S')
 and k3.siyflg = '1'
-and (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq)
+and ((substr(k1.bskgok,1,2) != substr(k2.bskgok,1,2) or substr(k2.bskgok,1,2) != substr(k3.bskgok,1,2))
+or (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq))
+and k1.bskgok > 0
+and k2.bskgok > 0
+and k3.bskgok > 0
 and k1.bskseq > 0
 and k2.bskseq > 0
 and k3.bskseq > 0
@@ -60,7 +64,12 @@ and k4.irino = k1.irino
 and k4.kmkcd in ('0021645','0021993','0022669','0022676')
 and k4.knsflg in ('E','X','S')
 and k4.siyflg = '1'
-and (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq or k3.bskseq != k4.bskseq)
+and ((substr(k1.bskgok,1,2) != substr(k2.bskgok,1,2) or substr(k2.bskgok,1,2) != substr(k3.bskgok,1,2) or substr(k3.bskgok,1,2) != substr(k4.bskgok,1,2))
+or (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq or k3.bskseq != k4.bskseq))
+and k1.bskgok > 0
+and k2.bskgok > 0
+and k3.bskgok > 0
+and k4.bskgok > 0
 and k1.bskseq > 0
 and k2.bskseq > 0
 and k3.bskseq > 0

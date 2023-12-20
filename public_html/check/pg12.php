@@ -60,7 +60,11 @@ if ($conn) {
 			$sql = $sql . "and k3.kmkcd = '0003736' ";
 			$sql = $sql . "and k3.knsflg in ('E','X','S') ";
 			$sql = $sql . "and k3.siyflg = '1' ";
-			$sql = $sql . "and (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq) ";
+			$sql = $sql . "and ((substr(k1.bskgok,1,2) != substr(k2.bskgok,1,2) or substr(k2.bskgok,1,2) != substr(k3.bskgok,1,2)) ";
+			$sql = $sql . "or (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq)) ";
+			$sql = $sql . "and k1.bskgok > 0 ";
+			$sql = $sql . "and k2.bskgok > 0 ";
+			$sql = $sql . "and k3.bskgok > 0 ";
 			$sql = $sql . "and k1.bskseq > 0 ";
 			$sql = $sql . "and k2.bskseq > 0 ";
 			$sql = $sql . "and k3.bskseq > 0 ";
@@ -99,7 +103,12 @@ if ($conn) {
 			$sql = $sql . "and k4.kmkcd in ('0021645','0021993','0022669','0022676') ";
 			$sql = $sql . "and k4.knsflg in ('E','X','S') ";
 			$sql = $sql . "and k4.siyflg = '1' ";
-			$sql = $sql . "and (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq or k3.bskseq != k4.bskseq) ";
+			$sql = $sql . "and ((substr(k1.bskgok,1,2) != substr(k2.bskgok,1,2) or substr(k2.bskgok,1,2) != substr(k3.bskgok,1,2) or substr(k3.bskgok,1,2) != substr(k4.bskgok,1,2)) ";
+			$sql = $sql . "or (k1.bskseq != k2.bskseq or k2.bskseq != k3.bskseq or k3.bskseq != k4.bskseq)) ";
+			$sql = $sql . "and k1.bskgok > 0 ";
+			$sql = $sql . "and k2.bskgok > 0 ";
+			$sql = $sql . "and k3.bskgok > 0 ";
+			$sql = $sql . "and k4.bskgok > 0 ";
 			$sql = $sql . "and k1.bskseq > 0 ";
 			$sql = $sql . "and k2.bskseq > 0 ";
 			$sql = $sql . "and k3.bskseq > 0 ";

@@ -7,6 +7,7 @@ print <<<__HEADOUT__
 <TITLE>$title</TITLE>
 <META http-equiv="Content-Type" content="text/html; charset=UTF-8">
 <META http-equiv="Content-Style-Type" content="text/css">
+<link rel="icon" href="/~kea00sys/favicon.ico">
 <link rel="stylesheet" href="/~kea00sys/css/labo_html.css?
 __HEADOUT__;
 echo date('Ymd-Hi');

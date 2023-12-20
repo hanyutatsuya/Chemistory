@@ -16,9 +16,9 @@
 <?php
 	LaboHeadOutput("ケミストリー");
 	LaboLogOut("ケミストリー");
-?>
 
-<BODY background="img/blue_p8b1.gif">
+	printf("<BODY background=\"img/blue_p8b1.gif\">\n");
+?>
 
 <DIV align=right><A href=mente/sysmente.php STYLE="text-decoration:none;">　</A></DIV>
 
