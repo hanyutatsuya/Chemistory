@@ -16,50 +16,9 @@ LaboTimeStamp();
 <center><h2>検査結果フラグ異常確認</h2></center>
 
 <?php
-$utkymd = trim($_REQUEST['UTKYMD']);
-
-printf("<P>\n");
-printf("<center>\n");
-printf("<FORM ACTION=\"knsflg.php\" METHOD=POST>\n");
-printf("受付日\n");
-printf("<INPUT TYPE=text NAME=UTKYMD SIZE=10 MAXLENGTH=8 value=\"%s\">\n",$utkymd);
-printf("　<BUTTON TYPE=submit name=submit value=\"submit\">検索\n");
-printf("</BUTTON>\n");
-printf("</FORM>\n");
-printf("</center>\n");
-printf("</P>\n");
-
-if (strlen($utkymd) != 0) {
-
-	$udate = "";
-
-	if (!is_numeric($utkymd)) {
-		printf("<center>\n");
-		printf("<h2>受付日入力エラー</h2>\n");
-		printf("</center>\n");
-		printf("<HR>\n");
-	} else {
-		if (strlen($utkymd) != 8) {
-			printf("<center>\n");
-			printf("<h2>受付日入力エラー</h2>\n");
-			printf("</center>\n");
-			printf("<HR>\n");
-		} else {
-			if (ymd_check($utkymd) == false) {
-				printf("<center>\n");
-				printf("<h2>受付日フォーマットエラー</h2>\n");
-				printf("</center>\n");
-				printf("<HR>\n");
-			} else {
-				$udate = ymd_edit($utkymd);
-			}
-		}
-	}
-}
 
 printf("<HR>\n");
 
-if (strlen($udate) != 0) {
 
 	$conn = GetDBConn();
 
@@ -82,8 +41,9 @@ if (strlen($udate) != 0) {
 	
 				$sql = "";
 				$sql = $sql . "select distinct ka.utkymd,ka.irino,ka.kmkcd,km.kmkrs,ka.knssu,ka.kkajkcd,ka.knsflg,ka.skkka ";
-				$sql = $sql . "from kekka ka,kmkmst km ";
-				$sql = $sql . "where ka.utkymd = '$udate' ";
+				$sql = $sql . "from kekka ka,kmkmst km ,sysknrmst s ";
+				$sql = $sql . "where s.lbcd = '001' ";
+				$sql = $sql . "and ka.sriymd = s.kjnsriymd ";
 				$sql = $sql . "and ka.knsflg = 'M' ";
 				$sql = $sql . "and ka.kkajkcd = '3' ";
 				$sql = $sql . "and km.knsgrp = ka.knsgrp ";
@@ -127,8 +87,9 @@ if (strlen($udate) != 0) {
 		
 					$sql = "";
 					$sql = $sql . "select distinct ka.utkymd,ka.irino,ka.kmkcd,km.kmkrs,ka.knssu,ka.kkajkcd,ka.knsflg,ka.skkka ";
-					$sql = $sql . "from kekka ka,kmkmst km ";
-					$sql = $sql . "where ka.utkymd = '$udate' ";
+					$sql = $sql . "from kekka ka,kmkmst km ,sysknrmst s ";
+					$sql = $sql . "where s.lbcd = '001' ";
+					$sql = $sql . "and ka.sriymd = s.kjnsriymd ";
 					$sql = $sql . "and km.knsgrp = ka.knsgrp ";
 					$sql = $sql . "and km.kmkcd = ka.kmkcd ";
 					$sql = $sql . "and exists (select * from kekka k1 ";
@@ -180,7 +141,6 @@ if (strlen($udate) != 0) {
 	}
 	$conn = null;
 	printf("<br clear=all>\n");
-}
 
 printf("<HR>\n");
 LaboBackPage();
