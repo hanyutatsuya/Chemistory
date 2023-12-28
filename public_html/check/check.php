@@ -32,6 +32,11 @@ LaboTimeStamp();
 		<td nowarp><A href=pg12.php>PG1/PG2比チェック</A></td>
 	</tr>
 
+	<tr>
+		<td nowarp><A href=lowdata.php>LOWDATA</A></td>
+		<td nowarp><A href=lowdata.php>低値再検検体</A></td>
+	</tr>
+
 </table>
 
 <HR>
