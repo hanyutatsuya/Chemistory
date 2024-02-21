@@ -20,7 +20,7 @@ utladmin -sでHULFT管理画面を起動
 
 報告ファイルが複数ある場合は上記を繰り返し。
 
-utlsend -f SY00SA00 でも送信されるが間違えるのが怖いのでytladminから送信
+utlsend -f SY00SA00 でも送信されるが間違えるのが怖いのでutladminから送信
 
 ５．HULFT設定変更の戻し
 utladmin -sでHULFT管理画面を起動
