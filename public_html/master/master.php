@@ -133,6 +133,10 @@ LaboTimeStamp();
 				<td nowarp><A href=zslinemst.php>ZSLINEMST</A></td>
 				<td nowarp><A href=zslinemst.php>ZSライン制御マスタ</A></td>
 			</tr>
+			<tr>
+				<td nowarp><A href=chkzokmst.php>CHKZOKMST</A></td>
+				<td nowarp><A href=chkzokmst.php>属性チェックマスタ</A></td>
+			</tr>
 
 		</table>
 	</td>

@@ -1,0 +1,15 @@
+UPDATE employees
+SET salary = CASE
+    WHEN department = 'Sales' THEN salary * 1.1
+    WHEN department = 'IT' THEN salary * 1.2
+    ELSE salary
+END
+WHERE hire_date < '2022-01-01';
+
+UPDATE products
+SET stock = CASE
+    WHEN price > 1000 THEN stock - 1
+    WHEN price < 500 THEN stock + 1
+    ELSE stock
+END
+WHERE category = 'Electronics';

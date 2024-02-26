@@ -22,3 +22,18 @@ Cre    再検  0.30以下  20.00以上
 ⑧属性エラーでCreが再検値の場合、Creの再検データを受け取って照合NGなら推算GFRも初回値も照合NG確定画面に表示される。CreはNG確定したものが報告可能。推算GFRはマイナス値で再検。
 
 
+
+保留依頼情報テーブル(HKHRIRAI)あり
+HKKHRKBN == 1
+
+結果テーブル
+KANRENFLG = '2'
+KNSFLG = 'A'
+KKAJKCD = '3'
+↓
+
+更新
+Cre  KNSFLG = 'S'
+eGFR KNSFLG = 'H' 'A'の方が良いか?
+TNYRKFLG = '1' 必要か?
+
