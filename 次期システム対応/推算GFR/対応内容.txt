@@ -34,6 +34,8 @@ KKAJKCD = '3'
 
 更新
 Cre  KNSFLG = 'S'
-eGFR KNSFLG = 'H' 'A'の方が良いか?
+eGFR KNSFLG = 'H' 
 TNYRKFLG = '1' 必要か?
+
+eGFRは属性修正後自動で報告可能になる。
 
