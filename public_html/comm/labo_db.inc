@@ -3,7 +3,7 @@
 function GetDBConn()
 {
 
-	$dbname = $_SESSION['dbname'];
+	$dbname = $_SESSION['keadbname'];
 
 	$dsn = "KEA00DB0";
 	$user = "kea00dbt";
@@ -30,6 +30,7 @@ function GetDBConn()
 //			printf("<FONT color=blue>\n");
 //			printf("<P>ＤＢコネクション ＯＫ</P>\n");
 //			printf("</FONT>\n");
+			$_SESSION['keadbname'] = $dbname;
 		}
 //		$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 	}

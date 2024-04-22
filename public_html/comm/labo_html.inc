@@ -27,7 +27,7 @@ printf("</HEAD>\n");
 
 function LaboTimeStamp()
 {
-	$dbname = $_SESSION['dbname'];
+	$dbname = $_SESSION['keadbname'];
 	printf("<DIV align=right>\n");
 	printf("[%s] \n",$dbname);
 	printf("%s\n",date("Y-m-d H:i:s"));

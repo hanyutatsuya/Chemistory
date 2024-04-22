@@ -29,7 +29,7 @@ printf("<P>\n");
 printf("<center>データーベースを(%s)%sへ変更します</center>\n",$dbname,$name);
 printf("</P>\n");
 
-$_SESSION['dbname'] = $dbname;
+$_SESSION['keadbname'] = $dbname;
 ?>
 
 
